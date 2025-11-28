@@ -1,0 +1,13 @@
+<template>
+  <lightning-card title="Onboarding Wizard">
+    <div class="slds-p-around_small">
+      <c-onboarding-basic-info-form oncreated={handleCandidateCreated}></c-onboarding-basic-info-form>
+
+      <template if:true={candidateId}>
+        <div class="slds-m-top_medium">
+          <c-onboarding-chat-widget candidate-id={candidateId} preferred-language={preferredLanguage}></c-onboarding-chat-widget>
+        </div>
+      </template>
+    </div>
+  </lightning-card>
+</template>

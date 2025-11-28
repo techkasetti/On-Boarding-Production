@@ -1,0 +1,36 @@
+/*
+ * chatFirstRegistration.css
+ * This file styles the entire chat component, including its position on the page.
+ */
+
+/* This new wrapper centers the component and controls its width */
+.center-container {
+    margin: 2rem auto; /* Horizontally centers the div and adds space at the top/bottom */
+    width: 50vw; /* Sets width to 50% of the viewport (browser window) width */
+    max-width: 960px; /* Prevents the component from getting too wide on large screens */
+    min-width: 480px; /* Ensures the component doesn't get too narrow on small screens */
+}
+
+/* Main container for the chat messages */
+.chat-container {
+    background-color: #f9f9f9;
+    border: 1px solid #d4d4d4;
+    border-radius: .25rem;
+    padding: 1rem;
+    max-height: 450px; /* Adjust this height as needed */
+    overflow-y: auto; /* Enables the vertical scrollbar */
+    scroll-behavior: smooth; /* Adds a nice, smooth scrolling animation */
+}
+
+/* Style for each individual message row */
+.message-row {
+    margin-bottom: 0.75rem;
+}
+
+/* Increase the font size for the message text */
+.message-text {
+    font-size: 1.3em; /* You can make this larger, e.g., 1.2em */
+    line-height: 1.5;
+    white-space: pre-wrap; /* Ensures line breaks are respected */
+    word-wrap: break-word;
+}

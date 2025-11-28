@@ -1,0 +1,22 @@
+<template>
+  <lightning-card title="Assessment Inspector">
+    <div class="slds-p-around_medium">
+      <lightning-input label="Assessment Id" value={assessmentId} onchange={onIdChange}></lightning-input>
+      <lightning-button label="Load" onclick={handleLoad} variant="brand"></lightning-button>
+
+      <template if:true={loading}><lightning-spinner alternative-text="Loading" size="small"></lightning-spinner></template>
+
+      <template if:true={assessment}>
+        <div class="slds-m-top_small">
+          <h3>Raw Input</h3>
+          <pre>{assessment.RawInput__c}</pre>
+          <h3>Triggered Rules</h3>
+          <div>{assessment.TriggeredRules__c}</div>
+          <h3>Score</h3>
+          <pre>{assessment.ScoreJSON__c}</pre>
+        </div>
+      </template>
+      <template if:true={error}><div class="slds-text-color_error">{error}</div></template>
+    </div>
+  </lightning-card>
+</template>

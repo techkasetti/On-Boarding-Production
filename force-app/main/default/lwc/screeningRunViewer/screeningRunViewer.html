@@ -1,0 +1,34 @@
+<template>
+  <lightning-card title="Screening Runs">
+    <div class="slds-p-around_medium">
+      <lightning-button label="Refresh" onclick={handleRefresh} variant="neutral"></lightning-button>
+
+      <template if:true={loading}>
+        <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+      </template>
+
+      <template if:true={runs}>
+        <template for:each={runs} for:item="r">
+          <div key={r.Id} class="slds-box slds-m-top_small">
+            <div class="slds-grid slds-grid_align-spread">
+              <div>
+                <strong>{r.Name}</strong>
+                <div class="slds-text-body_small">Status: {r.Status__c} • Jurisdiction: {r.Jurisdiction__c}</div>
+              </div>
+              <div>
+                <lightning-button label="Inspect" data-id={r.Id} onclick={handleInspect}></lightning-button>
+              </div>
+            </div>
+
+            <!-- bind to a boolean property on the record object, not a function call -->
+            <template if:true={r.__isSelected}>
+              <pre>{r.ScoreJSON__c}</pre>
+            </template>
+          </div>
+        </template>
+      </template>
+
+      <template if:true={error}><div class="slds-text-color_error">{error}</div></template>
+    </div>
+  </lightning-card>
+</template>

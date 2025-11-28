@@ -1,0 +1,22 @@
+<template>
+  <lightning-card title="Schema Version History">
+    <div class="slds-p-around_medium">
+      <template if:true={versions}>
+        <template for:each={versions} for:item="v">
+          <article key={v.Version__c} class="slds-box slds-m-bottom_small">
+            <div class="slds-grid slds-grid_align-spread">
+              <div>
+                <strong>Version {v.Version__c}</strong>
+                <div class="slds-text-body_small">Applied at: {v.AppliedAt__c}</div>
+              </div>
+              <div>
+                <lightning-button label="Activate" data-version={v.Version__c} onclick={handleActivate}></lightning-button>
+              </div>
+            </div>
+          </article>
+        </template>
+      </template>
+      <template if:true={error}><div class="slds-text-color_error">{error}</div></template>
+    </div>
+  </lightning-card>
+</template>

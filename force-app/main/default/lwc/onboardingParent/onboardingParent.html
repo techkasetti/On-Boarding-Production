@@ -1,0 +1,11 @@
+<template>
+    <h1>My Onboarding Application</h1>
+
+    <!-- 
+      The parent component listens for the 'wizardstep' event 
+      and calls its own 'handleWizardStep' method when it hears it.
+    -->
+    <c-onboarding-wizard onwizardstep={handleWizardStep}></c-onboarding-wizard>
+
+    <div>Current Step: {currentStep}</div>
+</template>

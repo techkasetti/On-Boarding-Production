@@ -1,0 +1,125 @@
+<template>
+    <lightning-card title="Multi-Step Onboarding Controller" icon-name="standard:user">
+        <div class="slds-p-around_medium">
+            <!-- Loading Spinner -->
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading..." variant="brand"></lightning-spinner>
+            </template>
+
+            <!-- Main View: Chat -->
+            <template if:true={isChatView}>
+                <div class="chat-container">
+                    <div class="slds-chat">
+                        <ul class="slds-chat-list">
+                            <template for:each={conversationHistory} for:item="message">
+                                <li key={message.id} class={message.cssClass}>
+                                    <div class="slds-chat-message">
+                                        <div class="slds-chat-message__body">
+                                            <div class="slds-chat-message__text slds-chat-message__text_pre-wrap">
+                                                <span>{message.text}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </template>
+                            <template if:true={isBotTyping}>
+                                <li class="slds-chat-listitem slds-chat-listitem_inbound">
+                                    <div class="slds-chat-message">
+                                        <div class="slds-chat-message__body">
+                                            <div class="slds-chat-message__text">
+                                                <div class="typing-indicator"><span></span><span></span><span></span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    <div class="slds-p-around_medium slds-border_top">
+                        <lightning-input label="Your Message" variant="label-hidden" value={currentMessage} onchange={handleChatChange} onkeydown={handleChatKeyDown} placeholder="Type your message..." disabled={isBotTyping}></lightning-input>
+                        <lightning-button label="Send" onclick={handleChatSend} class="slds-m-top_small"></lightning-button>
+                    </div>
+                </div>
+                <div class="slds-align_absolute-center slds-m-top_medium">
+                    <lightning-button variant="base" label="Switch to Form" onclick={switchToFormView}></lightning-button>
+                </div>
+            </template>
+
+            <!-- Main View: Form -->
+            <template if:true={isFormView}>
+                <!-- Step 1: Basic Information -->
+                <template if:true={isStep1}>
+                    <h3 class="slds-section-title--divider">Step 1: Basic Information</h3>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input name="firstName" label="First Name" value={firstName} onchange={handleChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input name="lastName" label="Last Name" value={lastName} onchange={handleChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1">
+                            <lightning-input type="email" name="email" label="Email Address" value={email} onblur={handleEmailBlur} onchange={handleChange} required></lightning-input>
+                        </div>
+                    </div>
+                    <div class="slds-m-top_medium slds-float_right">
+                        <lightning-button variant="brand" label="Next to Step 2" onclick={handleNextStep1}></lightning-button>
+                    </div>
+                </template>
+
+                <!-- Step 2: Detailed Information -->
+                <template if:true={isStep2}>
+                    <h3 class="slds-section-title--divider">Step 2: Detailed Information</h3>
+                    
+                    <template if:true={isExistingCandidate}>
+                        <div class="slds-box slds-theme_info slds-m-bottom_medium">
+                            <p>A profile with this email already exists. Please review your information below. No further action is required.</p>
+                        </div>
+                    </template>
+                    
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <div class="slds-col slds-size_1-of-2"><lightning-input name="phone" label="Phone" value={phone} onchange={handleChange} required disabled={isExistingCandidate}></lightning-input></div>
+                        <div class="slds-col slds-size_1-of-1"><lightning-input name="streetAddress" label="Street Address" value={streetAddress} onchange={handleChange} required disabled={isExistingCandidate}></lightning-input></div>
+                        <div class="slds-col slds-size_1-of-3"><lightning-input name="city" label="City" value={city} onchange={handleChange} required disabled={isExistingCandidate}></lightning-input></div>
+                        <div class="slds-col slds-size_1-of-3"><lightning-input name="state" label="State/Province" value={state} onchange={handleChange} required disabled={isExistingCandidate}></lightning-input></div>
+                        <div class="slds-col slds-size_1-of-3"><lightning-input name="zipCode" label="Zip/Postal Code" value={zipCode} onchange={handleChange} required disabled={isExistingCandidate}></lightning-input></div>
+                        <div class="slds-col slds-size_1-of-2"><lightning-input name="emergencyContactName" label="Emergency Contact Name" value={emergencyContactName} onchange={handleChange} required disabled={isExistingCandidate}></lightning-input></div>
+                        <div class="slds-col slds-size_1-of-2"><lightning-input type="tel" name="emergencyContactPhone" label="Emergency Contact Phone" value={emergencyContactPhone} onchange={handleChange} required disabled={isExistingCandidate}></lightning-input></div>
+                    </div>
+
+                    <div class="slds-m-top_medium slds-clearfix">
+                        <div class="slds-float_right">
+                            <lightning-button label="Previous" onclick={handlePreviousStep2}></lightning-button>
+                            <lightning-button variant="brand" label="Submit Details" title="Submit Details" onclick={handleDetailsSubmit} class="slds-m-left_x-small" disabled={isSubmitDisabled}>
+                            </lightning-button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Step 3: Upload Documents -->
+                <template if:true={isStep3}>
+                    <h3 class="slds-section-title--divider">Step 3: Upload Documents</h3>
+                    <p class="slds-m-bottom_medium">Please upload the required documents. You can upload multiple files.</p>
+                    <lightning-file-upload 
+                        label="Upload Documents" 
+                        name="fileUploader" 
+                        accept={acceptedFormats} 
+                        record-id={candidateId} 
+                        onuploadfinished={handleUploadFinished} 
+                        multiple>
+                    </lightning-file-upload>
+                    <div class="slds-m-top_medium slds-float_right">
+                        <lightning-button variant="brand" label="Finish" onclick={handleFinish}></lightning-button>
+                    </div>
+                </template>
+
+                <!-- Step 4: Confirmation -->
+                <template if:true={isStep4}>
+                    <div class="slds-box slds-theme_success">
+                        <h3 class="slds-text-heading_medium slds-m-bottom_medium">Thank You!</h3>
+                        <p>Your onboarding process has been initiated. You will receive an email with the next steps shortly.</p>
+                    </div>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>

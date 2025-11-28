@@ -1,0 +1,8 @@
+<template>
+    <div class="slds-box slds-m-bottom_small job-card">
+        <h3 class="slds-text-heading_medium slds-m-bottom_small">{jobTitle}</h3>
+        <p class="slds-m-bottom_x-small"><strong>Location:</strong> {jobLocation}</p>
+        <p class="slds-m-bottom_medium">{jobDescription}</p>
+        <lightning-button label="I'm Interested" variant="brand" onclick={handleSelect}></lightning-button>
+    </div>
+</template>

@@ -1,0 +1,24 @@
+<template>
+  <lightning-card title="Candidate Information">
+    <div class="slds-p-around_small">
+      <lightning-input label="Full name" value={name} onchange={handleName}></lightning-input>
+      <lightning-input label="Email" type="email" value={email} onchange={handleEmail}></lightning-input>
+      <lightning-input label="Phone" type="phone" value={phone} onchange={handlePhone}></lightning-input>
+
+      <lightning-combobox
+        label="Preferred language"
+        value={preferredLanguage}
+        options={languageOptions}
+        onchange={handleLanguage}>
+      </lightning-combobox>
+
+      <div class="slds-m-top_small">
+        <lightning-button variant="brand" label="Create Candidate" onclick={handleCreate} class="slds-m-right_small"></lightning-button>
+      </div>
+
+      <template if:true={candidateId}>
+        <p class="slds-m-top_small">Created Candidate Id: {candidateId}</p>
+      </template>
+    </div>
+  </lightning-card>
+</template>
