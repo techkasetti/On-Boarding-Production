@@ -45,13 +45,22 @@
                         </lightning-file-upload>
                     </div>
                 </template>
-                <!-- Resume Preview Panel (conditionally rendered) -->
+                <!-- Resume Preview Panel (conditionally rendered)
                 <template if:true={showPreview}>
                     <c-resume-preview-panel candidate-id={candidateId}
                                         onconfirmed={handleResumeConfirmed}
                                         oncancelled={handleResumeCancelled}>
                     </c-resume-preview-panel>
-                </template>
+                </template> -->
+                <!-- Resume Preview Panel (conditionally rendered) -->
+<template if:true={showPreview}>
+    <c-resume-preview-panel-v2
+        candidate-id={candidateId}
+        onconfirmed={handleResumeConfirmed}
+        oncancelled={handleResumeCancelled}>
+    </c-resume-preview-panel-v2>
+</template>
+
                 <!-- Chat input row -->
                 <div class="slds-m-top_medium slds-grid slds-grid_align-spread">
                     <div class="slds-col slds-size_3-of-4">

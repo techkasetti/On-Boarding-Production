@@ -1,41 +1,32 @@
-    trigger ContentDocumentLinkTrigger on ContentDocumentLink (after insert) {
-    
-        Map<Id, Id> contentVersionIdToCandidateId = new Map<Id, Id>();
-    
-        // 1. Filter for links related to the Candidate__c object
-        Set<Id> candidateIds = new Set<Id>();
-        Set<Id> contentDocIds = new Set<Id>();
-        for (ContentDocumentLink cdl : Trigger.new) {
-            // Get the type of object the file is linked to
-            String linkedEntityType = String.valueOf(cdl.LinkedEntityId.getSObjectType());
-    
-            if (linkedEntityType == 'Candidate__c') {
-                candidateIds.add(cdl.LinkedEntityId);
-                contentDocIds.add(cdl.ContentDocumentId);
-            }
-        }
-    
-        if (contentDocIds.isEmpty()) {
-            return;
-        }
-    
-        // 2. Get the latest ContentVersion ID for each ContentDocument
-        Map<Id, Id> docIdToLatestVersionId = new Map<Id, Id>();
-        for (ContentVersion cv : [SELECT Id, ContentDocumentId FROM ContentVersion WHERE ContentDocumentId IN :contentDocIds AND IsLatest = TRUE]) {
-            docIdToLatestVersionId.put(cv.ContentDocumentId, cv.Id);
-        }
-        
-        // 3. Map the ContentVersion ID to the corresponding Candidate ID
-        for (ContentDocumentLink cdl : Trigger.new) {
-            if(String.valueOf(cdl.LinkedEntityId.getSObjectType()) == 'Candidate__c' && docIdToLatestVersionId.containsKey(cdl.ContentDocumentId)){
-                Id latestVersionId = docIdToLatestVersionId.get(cdl.ContentDocumentId);
-                contentVersionIdToCandidateId.put(latestVersionId, cdl.LinkedEntityId);
-            }
-        }
-    
-        // 4. Call the future method if there's anything to process
-        if (!contentVersionIdToCandidateId.isEmpty()) {
-            S3Uploader.uploadToS3(contentVersionIdToCandidateId);
+
+trigger ContentDocumentLinkTrigger on ContentDocumentLink (after insert) {
+    Set<Id> candidateIdsToUpdate = new Set<Id>();
+
+    // 1. Collect the IDs of all Candidates who just had a file linked to them
+    for (ContentDocumentLink cdl : Trigger.new) {
+        // Check if the linked record is a Candidate__c object
+        if (String.valueOf(cdl.LinkedEntityId.getSObjectType()) == 'Candidate__c') {
+            candidateIdsToUpdate.add(cdl.LinkedEntityId);
         }
     }
-    
+
+    // 2. If we have candidates to update, prepare a list for a single DML operation
+    if (!candidateIdsToUpdate.isEmpty()) {
+        List<Candidate__c> candidates = new List<Candidate__c>();
+        for (Id candidateId : candidateIdsToUpdate) {
+            candidates.add(new Candidate__c(
+                Id = candidateId,
+                Resume_Status__c = true // Set the status to true
+            ));
+        }
+
+        // 3. Perform the update
+        try {
+            update candidates;
+            System.debug('Set Resume_Status__c to true for ' + candidates.size() + ' candidates.');
+        } catch (Exception e) {
+            System.debug('Error updating Candidate resume status: ' + e.getMessage());
+            // In a real application, you would add more robust error logging here.
+        }
+    }
+}
