@@ -1,0 +1,10 @@
+.jsonPre {
+  white-space: pre-wrap;
+  font-family: monospace;
+  background: #f6f8fa;
+  padding: 12px;
+  border-radius: 6px;
+  max-height: 260px;
+  overflow: auto;
+}
+.resultRow { border-bottom: 1px solid #eee; padding: 8px 0; }

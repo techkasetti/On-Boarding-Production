@@ -1,0 +1,9 @@
+.resultPre {
+  font-family: monospace;
+  font-size: 13px;
+  max-height: 320px;
+  overflow: auto;
+  background: #f4f6f9;
+  padding: 12px;
+  border-radius: 4px;
+}

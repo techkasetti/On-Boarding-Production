@@ -1,0 +1,52 @@
+<template>
+  <lightning-card title="Screening Rules — Admin Console" icon-name="custom:custom63">
+    <div class="slds-p-around_medium">
+      <template if:true={isLoading}>
+        <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+      </template>
+
+      <div class="slds-m-bottom_medium slds-grid slds-grid_align-spread">
+        <div class="slds-col">
+          <lightning-button variant="brand" label="Refresh" onclick={handleRefresh} class="slds-m-right_x-small"></lightning-button>
+          <lightning-button variant="neutral" label="Export JSON" onclick={handleExport} class="slds-m-left_x-small"></lightning-button>
+        </div>
+
+        <div class="slds-col">
+          <lightning-input
+            type="text"
+            label="Candidate Id (for test)"
+            value={testCandidateId}
+            onchange={onCandidateIdChange}
+            placeholder="003..."
+          ></lightning-input>
+          <lightning-button
+            variant="brand"
+            label="Run Ad-hoc Eval"
+            onclick={onRunAdhoc}
+            disabled={runDisabled}
+          ></lightning-button>
+        </div>
+      </div>
+
+      <lightning-datatable
+        key-field="ruleKey"
+        data={rules}
+        columns={columns}
+        hide-checkbox-column="true"
+        max-row-selection="1"
+        onrowaction={handleRowAction}
+      >
+      </lightning-datatable>
+
+      <template if:true={lastResult}>
+        <div class="slds-m-top_medium">
+          <lightning-card title="Last Ad-hoc Result">
+            <div class="slds-p-around_medium">
+              <pre class="resultPre" style="white-space:pre-wrap; word-break:break-word;">{lastResult}</pre>
+            </div>
+          </lightning-card>
+        </div>
+      </template>
+    </div>
+  </lightning-card>
+</template>

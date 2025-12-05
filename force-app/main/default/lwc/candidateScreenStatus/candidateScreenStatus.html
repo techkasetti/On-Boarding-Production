@@ -1,0 +1,62 @@
+<template>
+  <lightning-card title="Screening Status" icon-name="standard:user">
+    <div class="slds-p-around_medium">
+
+      <template if:true={isLoading}>
+        <lightning-spinner alternative-text="Loading candidate status" size="medium"></lightning-spinner>
+      </template>
+
+      <template if:false={isLoading}>
+        <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_small">
+          <div class="slds-col slds-size_1-of-1">
+            <h3 class="slds-text-heading_small">{candidateName}</h3>
+            <div class="slds-text-body_small">Status: <strong>{candidateStatus}</strong></div>
+            <div class="slds-m-top_x-small">
+              <lightning-button variant="brand" label="Re-run Screening" onclick={handleRerun} disabled={isRunning}></lightning-button>
+              <lightning-button variant="neutral" label="Refresh" onclick={handleRefresh} class="slds-m-left_small"></lightning-button>
+            </div>
+          </div>
+        </div>
+
+        <template if:true={parsedJson}>
+          <lightning-card title="Parsed Candidate Data" class="slds-m-top_small">
+            <div class="slds-p-around_medium">
+              <pre class="jsonPre" style="white-space:pre-wrap; word-break:break-word;">{parsedJson}</pre>
+            </div>
+          </lightning-card>
+        </template>
+
+        <template if:true={hasResults}>
+          <lightning-card title="Screening Results" class="slds-m-top_small">
+            <div class="slds-p-around_medium">
+              <template for:each={screeningResults} for:item="r">
+                <div key={r.ruleKey} class="resultRow slds-p-vertical_x-small slds-grid slds-grid_align-spread">
+                  <div class="slds-col slds-size_1-of-2">
+                    <div><strong>{r.ruleKey}</strong> — {r.outcome}</div>
+                    <div class="slds-text-body_small">Action: {r.action} • Score: {r.score}</div>
+                  </div>
+                  <div class="slds-col slds-size_1-of-2 slds-text-align_right">
+                    <lightning-button-icon icon-name="utility:preview" alternative-text="Details" title="Details"
+                      onclick={openDetails} data-payload={r.details}>
+                    </lightning-button-icon>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </lightning-card>
+        </template>
+
+        <template if:true={routingInfo}>
+          <lightning-card title="Routing Recommendation" class="slds-m-top_small">
+            <div class="slds-p-around_medium">
+              <div>Suggested Queue: <strong>{routingInfo.queue}</strong></div>
+              <div>Jurisdiction: <strong>{routingInfo.jurisdiction}</strong></div>
+              <div class="slds-m-top_small">{routingInfo.notes}</div>
+            </div>
+          </lightning-card>
+        </template>
+      </template>
+
+    </div>
+  </lightning-card>
+</template>
