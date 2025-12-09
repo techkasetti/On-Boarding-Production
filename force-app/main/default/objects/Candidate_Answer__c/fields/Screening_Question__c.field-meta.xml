@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Screening_Question__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>Screening Question</label>
+    <referenceTo>Screening_Question__c</referenceTo>
+    <relationshipLabel>Candidate Answers</relationshipLabel>
+    <relationshipName>Candidate_Answers</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

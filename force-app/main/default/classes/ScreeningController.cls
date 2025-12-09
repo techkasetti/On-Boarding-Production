@@ -33,6 +33,79 @@ public with sharing class ScreeningController {
         public CandidateStatusDto() {}
     }
 
+    // ---------------------------
+    // NEW: Structured DTOs + method
+    // ---------------------------
+    // These are added as inner classes but do NOT change any existing functionality.
+    public class StructuredEvalResult {
+        @AuraEnabled public String ruleKey;
+        @AuraEnabled public String action;
+        @AuraEnabled public String outcome;
+        @AuraEnabled public Double score;
+        @AuraEnabled public String details;
+        @AuraEnabled public String jurisdiction;
+        public StructuredEvalResult() {}
+    }
+
+    public class StructuredEvalResponse {
+        @AuraEnabled public Id candidateId;
+        @AuraEnabled public String correlationId;
+        @AuraEnabled public String status;
+        @AuraEnabled public List<StructuredEvalResult> results;
+        public StructuredEvalResponse() {
+            results = new List<StructuredEvalResult>();
+            status = 'OK';
+        }
+    }
+
+    /**
+     * New: Structured runner for UI clients.
+     * - Does NOT replace existing runEvaluation (keeps backwards compatibility).
+     * - Returns a typed object (no escaped JSON strings).
+     */
+    @AuraEnabled
+    public static StructuredEvalResponse runEvaluationStructured(Id candidateId, String ruleKey) {
+        StructuredEvalResponse out = new StructuredEvalResponse();
+        out.candidateId = candidateId;
+        out.correlationId = 'corr-' + String.valueOf(Datetime.now().getTime()) + '-' + Math.abs(Crypto.getRandomInteger());
+        out.status = 'OK';
+
+        if (candidateId == null) {
+            out.status = 'ERROR';
+            StructuredEvalResult err = new StructuredEvalResult();
+            err.ruleKey = 'INVALID_INPUT';
+            err.details = 'candidateId is required';
+            out.results.add(err);
+            return out;
+        }
+
+        try {
+            // Prefer the structured accessor in EvaluateScreeningRules (returns EvalResultDto list)
+            List<EvaluateScreeningRules.EvalResultDto> evals = EvaluateScreeningRules.getEvaluationResults(candidateId);
+
+            if (evals != null) {
+                for (EvaluateScreeningRules.EvalResultDto er : evals) {
+                    StructuredEvalResult r = new StructuredEvalResult();
+                    r.ruleKey = er.ruleKey;
+                    r.action = er.action;
+                    r.outcome = er.outcome;
+                    r.score = er.score;
+                    r.details = er.details;
+                    r.jurisdiction = er.jurisdiction;
+                    out.results.add(r);
+                }
+            }
+        } catch (Exception ex) {
+            out.status = 'ERROR';
+            StructuredEvalResult err = new StructuredEvalResult();
+            err.ruleKey = 'SYSTEM_ERROR';
+            err.details = 'Error evaluating: ' + ex.getMessage();
+            out.results.add(err);
+        }
+
+        return out;
+    }
+
     // -------------------------------------------------------------------------
     // getRules - called by screeningAdmin LWC (cacheable)
     // -------------------------------------------------------------------------

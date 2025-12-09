@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Block_Onboarding_For_Invalid_License</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(Merged__c = TRUE ,Has_Invalid_License__c = TRUE)</errorConditionFormula>
+    <errorMessage>This Candidate cannot be placed. They have a medical license that is expired, suspended, or could not be found. Please resolve the issue in their license verification record.</errorMessage>
+</ValidationRule>

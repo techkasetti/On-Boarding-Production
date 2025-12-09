@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Fail If No Medical Registration</label>
+    <protected>false</protected>
+    <values>
+        <field>Action__c</field>
+        <value xsi:type="xsd:string">AutoReject</value>
+    </values>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Condition_Expression__c</field>
+        <value xsi:type="xsd:string">parsed_json.licensesAndCertifications.value CONTAINS &apos;Medical Council Registration&apos; OR parsed_json.licensesAndCertifications.value CONTAINS &apos;Medical Council Registration (Active)&apos;</value>
+    </values>
+    <values>
+        <field>Jurisdiction__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Priority__c</field>
+        <value xsi:type="xsd:double">5.0</value>
+    </values>
+    <values>
+        <field>Rule_Key__c</field>
+        <value xsi:type="xsd:string">FAIL_IF_NO_MED_REG</value>
+    </values>
+    <values>
+        <field>Schema_Version__c</field>
+        <value xsi:type="xsd:string">v1</value>
+    </values>
+    <values>
+        <field>Severity__c</field>
+        <value xsi:type="xsd:string">High</value>
+    </values>
+</CustomMetadata>

@@ -1,16 +1,19 @@
-import { LightningElement, track } from 'lwc';
+import { LightningElement } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 import getRules from '@salesforce/apex/ScreeningController.getRules';
 import toggleRuleActive from '@salesforce/apex/ScreeningController.toggleRuleActive';
+// Prefer structured method if present
+import runEvaluationStructured from '@salesforce/apex/ScreeningController.runEvaluationStructured';
 import runEvaluation from '@salesforce/apex/ScreeningController.runEvaluation';
 
 export default class ScreeningAdmin extends LightningElement {
-  @track rules = [];
-  @track isLoading = false;
-  @track isRunning = false;
-  @track testCandidateId = '';
-  @track lastResult = null;
+  // reactive properties (no @track needed)
+  rules = [];
+  isLoading = false;
+  isRunning = false;
+  testCandidateId = '';
+  lastResult = null;
 
   columns = [
     { label: 'Rule Key', fieldName: 'ruleKey', type: 'text', sortable: true },
@@ -22,10 +25,12 @@ export default class ScreeningAdmin extends LightningElement {
     { label: 'Schema', fieldName: 'schemaVersion', type: 'text' },
     {
       type: 'action',
-      typeAttributes: { rowActions: [
-        { label: 'Toggle Active', name: 'toggleActive' },
-        { label: 'Run Rule (test)', name: 'runRule' }
-      ] }
+      typeAttributes: {
+        rowActions: [
+          { label: 'Toggle Active', name: 'toggleActive' },
+          { label: 'Run Rule (test)', name: 'runRule' }
+        ]
+      }
     }
   ];
 
@@ -70,6 +75,31 @@ export default class ScreeningAdmin extends LightningElement {
     this.testCandidateId = event.target.value;
   }
 
+  /**
+   * Callout wrapper:
+   * - Try structured endpoint first (returns object with .results array)
+   * - If that fails (method missing or error), fall back to legacy runEvaluation which returns serialized string
+   */
+  async _callRunEvaluation(candidateId, extraParams = {}) {
+    // prefer structured call
+    try {
+      // call structured method if available
+      const structuredResp = await runEvaluationStructured({ candidateId, ...extraParams });
+      // structuredResp expected to be an object: { candidateId, correlationId, status, results: [...] }
+      return { type: 'structured', payload: structuredResp };
+    } catch (errStructured) {
+      // fallback to legacy
+      try {
+        const legacyResp = await runEvaluation({ candidateId, ruleKey: extraParams.ruleKey || null });
+        // legacyResp is typically a JSON-stringified array/string; return as-is for normalization
+        return { type: 'legacy', payload: legacyResp };
+      } catch (errLegacy) {
+        // throw highest-level error
+        throw errLegacy || errStructured;
+      }
+    }
+  }
+
   async onRunAdhoc() {
     if (!this.testCandidateId) {
       this.showToast('Validation', 'Provide Candidate Id to run ad-hoc evaluation.', 'warning');
@@ -78,8 +108,8 @@ export default class ScreeningAdmin extends LightningElement {
     this.isRunning = true;
     this.lastResult = null;
     try {
-      const res = await runEvaluation({ candidateId: this.testCandidateId });
-      this.lastResult = this._normalizeAndPretty(res);
+      const callResp = await this._callRunEvaluation(this.testCandidateId);
+      this.lastResult = this._normalizeAndPretty(callResp);
       this.showToast('Success', 'Ad-hoc evaluation completed.', 'success');
     } catch (err) {
       this.showToast('Error', 'Ad-hoc evaluation failed: ' + this._extractError(err), 'error');
@@ -104,14 +134,14 @@ export default class ScreeningAdmin extends LightningElement {
       }
     } else if (actionName === 'runRule') {
       if (!this.testCandidateId) {
-        this.showToast('Validation','Set Candidate Id in the input to test this rule.','warning');
+        this.showToast('Validation', 'Set Candidate Id in the input to test this rule.', 'warning');
         return;
       }
       this.isRunning = true;
       this.lastResult = null;
       try {
-        const res = await runEvaluation({ candidateId: this.testCandidateId, ruleKey: row.ruleKey });
-        this.lastResult = this._normalizeAndPretty(res);
+        const callResp = await this._callRunEvaluation(this.testCandidateId, { ruleKey: row.ruleKey });
+        this.lastResult = this._normalizeAndPretty(callResp);
         this.showToast('Success', `Rule ${row.ruleKey} evaluated for candidate ${this.testCandidateId}`, 'success');
       } catch (err) {
         this.showToast('Error', 'Rule eval failed: ' + this._extractError(err), 'error');
@@ -131,42 +161,72 @@ export default class ScreeningAdmin extends LightningElement {
       a.download = 'screening_rules_export.json';
       a.click();
       URL.revokeObjectURL(url);
-      this.showToast('Success','Export initiated.','success');
+      this.showToast('Success', 'Export initiated.', 'success');
     } catch (err) {
-      this.showToast('Error','Export failed: ' + this._extractError(err),'error');
+      this.showToast('Error', 'Export failed: ' + this._extractError(err), 'error');
     }
   }
 
-  // Helper: normalize Apex responses (stringified JSON or native object), return pretty string
-  _normalizeAndPretty(res) {
+  /**
+   * Normalization helper
+   * Accept both forms:
+   *  - { type: 'structured', payload: { candidateId, correlationId, status, results: [...] } }
+   *  - { type: 'legacy', payload: '...[ escaped JSON ]...' }  (stringified)
+   *
+   * Returns pretty-printed JSON string for display.
+   */
+  _normalizeAndPretty(callResp) {
     try {
-      if (typeof res === 'string') {
-        try {
-          const parsed = JSON.parse(res);
-          return JSON.stringify(parsed, null, 2);
-        } catch (e) {
-          // not JSON - return raw string
-          return res;
-        }
-      } else {
-        return JSON.stringify(res, null, 2);
+      if (!callResp) return '';
+      if (callResp.type === 'structured') {
+        return JSON.stringify(callResp.payload, null, 2);
       }
+      // legacy - attempt to parse payload (it may be stringified JSON or array)
+      if (callResp.type === 'legacy') {
+        const payload = callResp.payload;
+        if (typeof payload === 'string') {
+          // it may be a JSON string (serialized array/object) or already pretty JSON string
+          try {
+            const parsed = JSON.parse(payload);
+            return JSON.stringify(parsed, null, 2);
+          } catch (e) {
+            // payload might be stringified nested JSON (e.g. '["{...}"]') - try another pass
+            try {
+              const doub = JSON.parse(payload);
+              return JSON.stringify(doub, null, 2);
+            } catch (ee) {
+              // fallback to raw string
+              return payload;
+            }
+          }
+        } else {
+          // not a string - pretty print directly
+          return JSON.stringify(payload, null, 2);
+        }
+      }
+      // fallback
+      return JSON.stringify(callResp, null, 2);
     } catch (e) {
-      return String(res);
+      return String(callResp);
     }
   }
 
   _extractError(err) {
     try {
+      if (!err) return 'Unknown error';
+      // If it's a network/Apex error object
       if (err && err.body && err.body.message) return err.body.message;
+      // If it's our wrapped error from callRunEvaluation
       if (err && err.message) return err.message;
+      // If it's an object with type/payload and payload contains error string
+      if (err && err.type && err.payload) return JSON.stringify(err.payload);
       return JSON.stringify(err);
     } catch (e) {
       return 'Unknown error';
     }
   }
 
-  showToast(title, msg, variant='info') {
+  showToast(title, msg, variant = 'info') {
     const evt = new ShowToastEvent({ title, message: msg, variant });
     this.dispatchEvent(evt);
   }
