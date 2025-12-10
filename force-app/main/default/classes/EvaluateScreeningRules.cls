@@ -244,7 +244,7 @@ public with sharing class EvaluateScreeningRules {
     }
 
     // -------------------------------------------------------------------------
-    // Flow-invocable entrypoint (unchanged logic except we keep resultsJson as string)
+    // Flow-invocable entrypoint (with SKIPPED logic)
     // -------------------------------------------------------------------------
     @InvocableMethod(label='Evaluate Screening Rules' description='Bulk-safe invocable to evaluate screening rules for a list of candidates')
     public static List<Response> run(List<Request> requests) {
@@ -286,6 +286,7 @@ public with sharing class EvaluateScreeningRules {
                     Map<String,Object> parsedJson = new Map<String,Object>();
 
                     // populate candidateMap and parsedJson from DB or request
+                    Boolean rawResumePresentInRecord = false;
                     if (candMap.containsKey(req.candidateId)) {
                         Candidate__c cRec = candMap.get(req.candidateId);
                         candidateMap.put('id', String.valueOf(cRec.Id));
@@ -296,21 +297,41 @@ public with sharing class EvaluateScreeningRules {
                         if (String.isNotBlank(cRec.Raw_Resume_Payload__c) && String.isBlank(req.parsedJson)) {
                             try {
                                 parsedJson = (Map<String,Object>) JSON.deserializeUntyped(cRec.Raw_Resume_Payload__c);
+                                rawResumePresentInRecord = true;
                             } catch (Exception ex) { parsedJson = new Map<String,Object>(); }
+                        } else if (String.isNotBlank(cRec.Raw_Resume_Payload__c)) {
+                            // record had raw resume but request contained parsedJson string - we will use request parsedJson below
+                            rawResumePresentInRecord = true;
                         }
                     }
 
+                    Boolean providedParsedJsonInRequest = false;
                     if (String.isNotBlank(req.parsedJson)) {
                         try {
                             parsedJson = (Map<String,Object>) JSON.deserializeUntyped(req.parsedJson);
+                            providedParsedJsonInRequest = true;
                         } catch (Exception ex) { parsedJson = new Map<String,Object>(); }
                     }
 
+                    Boolean providedCandidateFieldsInRequest = false;
                     if (String.isNotBlank(req.candidateFields)) {
                         try {
                             Map<String,Object> extra = (Map<String,Object>) JSON.deserializeUntyped(req.candidateFields);
                             for (String k : extra.keySet()) candidateMap.put(k, extra.get(k));
+                            providedCandidateFieldsInRequest = true;
                         } catch (Exception ex) {}
+                    }
+
+                    // --- SKIPPED logic:
+                    // If there is no parsed JSON available (neither in request nor in record) AND no candidateFields were provided,
+                    // then we skip evaluation for that request and return status = 'SKIPPED'.
+                    Boolean hasParsedJson = (parsedJson != null && !parsedJson.isEmpty());
+                    if (!hasParsedJson && !providedParsedJsonInRequest && !rawResumePresentInRecord && !providedCandidateFieldsInRequest) {
+                        resp.status = 'SKIPPED';
+                        resp.resultsJson = '[]';
+                        // Do not write results or audits; simply append response
+                        batchResponses.add(resp);
+                        continue;
                     }
 
                     // Normalize parsed JSON (defensive)

@@ -194,7 +194,6 @@ public with sharing class ParsedJsonNormalizer {
                 } else if (lic instanceof String) {
                     // maybe JSON-stringified
                     String s = (String) lic;
-                    // try parse
                     try {
                         Object parsed = JSON.deserializeUntyped(s);
                         if (parsed instanceof List<Object>) certs = (List<Object>) parsed;
@@ -284,7 +283,6 @@ public with sharing class ParsedJsonNormalizer {
             }
 
             // If there are multiple entries (list), try to sum their durations
-            // e.g., workExperience.value might be a List<Object>
             if (secMap.containsKey('value') && secMap.get('value') instanceof List<Object>) {
                 Integer total = 0;
                 for (Object it : (List<Object>) secMap.get('value')) {
@@ -335,7 +333,6 @@ public with sharing class ParsedJsonNormalizer {
             // months difference approximation
             Integer months = (endDate.year() - startDate.year()) * 12 + (endDate.month() - startDate.month());
             if (months < 0) months = 0;
-            // add 1 month minimum if same-month and >0 days? keep coarse
             return months;
         } catch (Exception ex) {
             return null;
