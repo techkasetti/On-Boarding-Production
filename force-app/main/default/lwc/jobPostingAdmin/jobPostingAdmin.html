@@ -1,0 +1,47 @@
+<template>
+    <lightning-card title="Job Posting Administration" icon-name="standard:post">
+        <div class="slds-m-around_medium">
+            <lightning-button label="New Job Posting" variant="brand" onclick={handleNew} class="slds-m-bottom_medium"></lightning-button>
+            <lightning-datatable
+                key-field="Id"
+                data={jobPostings}
+                columns={columns}
+                onsave={handleDatatableSave}
+                onrowaction={handleRowAction}
+                hide-checkbox-column>
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+
+    <template if:true={isModalOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-text-heading_medium slds-hyphenate">{modalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input label="Job Posting Name" value={currentJob.Name} onchange={handleChange} data-field="Name" required class="slds-m-bottom_small"></lightning-input>
+                    <lightning-textarea label="Description" value={currentJob.Description__c} onchange={handleChange} data-field="Description__c" class="slds-m-bottom_small"></lightning-textarea>
+                    <lightning-input label="Location" value={currentJob.Location__c} onchange={handleChange} data-field="Location__c" class="slds-m-bottom_small"></lightning-input>
+                    <lightning-combobox
+                        name="status"
+                        label="Status"
+                        value={currentJob.Status__c}
+                        placeholder="--Select Status--"
+                        options={statusOptions}
+                        onchange={handleChange}
+                        data-field="Status__c"
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+                    <lightning-input label="Specialization" value={currentJob.Specialization__c} onchange={handleChange} data-field="Specialization__c" class="slds-m-bottom_small"></lightning-input>
+                    <lightning-input label="Category" value={currentJob.Category__c} onchange={handleChange} data-field="Category__c"></lightning-input>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={closeModal}></lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSave} class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

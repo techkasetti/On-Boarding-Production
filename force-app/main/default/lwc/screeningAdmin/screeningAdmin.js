@@ -231,6 +231,8 @@
 //     this.dispatchEvent(evt);
 //   }
 // }
+// force-app/main/default/lwc/screeningAdmin/screeningAdmin.js
+// force-app/main/default/lwc/screeningAdmin/screeningAdmin.js
 import { LightningElement } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -313,26 +315,19 @@ export default class ScreeningAdmin extends LightningElement {
     this.lastResult = null;
     try {
       const res = await runEvaluation({ candidateId: this.testCandidateId });
-      // runEvaluation returns a serialized JSON string (List<Response>) - normalize
+      // runEvaluation returns JSON-stringified array of EvaluateScreeningRules.Response
       let parsed;
-      if (typeof res === 'string') {
-        try {
-          parsed = JSON.parse(res);
-        } catch (e) {
-          parsed = res;
-        }
-      } else {
+      try {
+        parsed = typeof res === 'string' ? JSON.parse(res) : res;
+      } catch (e) {
         parsed = res;
       }
-
-      // Expect array with single response object for single candidate
-      let first = Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : parsed;
-      if (first && first.status === 'SKIPPED') {
+      // If backend returned array of responses, check first entry status
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].status === 'SKIPPED') {
         this.lastResult = 'Evaluation skipped: no parsed resume data provided';
-        this.showToast('Info', 'Evaluation skipped (no parsed resume data).', 'warning');
+        this.showToast('Info', 'Evaluation skipped: no parsed resume data provided', 'info');
       } else {
-        // pretty stringify for UI
-        this.lastResult = typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
+        this.lastResult = this._normalizeAndPretty(parsed);
         this.showToast('Success', 'Ad-hoc evaluation completed.', 'success');
       }
     } catch (err) {
@@ -365,18 +360,12 @@ export default class ScreeningAdmin extends LightningElement {
       try {
         const res = await runEvaluation({ candidateId: this.testCandidateId, ruleKey: row.ruleKey });
         let parsed;
-        if (typeof res === 'string') {
-          try {
-            parsed = JSON.parse(res);
-          } catch (e) { parsed = res; }
-        } else parsed = res;
-
-        let first = Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : parsed;
-        if (first && first.status === 'SKIPPED') {
+        try { parsed = typeof res === 'string' ? JSON.parse(res) : res; } catch (e) { parsed = res; }
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].status === 'SKIPPED') {
           this.lastResult = 'Evaluation skipped: no parsed resume data provided';
-          this.showToast('Info', 'Evaluation skipped (no parsed resume data).', 'warning');
+          this.showToast('Info', 'Evaluation skipped: no parsed resume data provided', 'info');
         } else {
-          this.lastResult = typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
+          this.lastResult = this._normalizeAndPretty(parsed);
           this.showToast('Success', `Rule ${row.ruleKey} evaluated for candidate ${this.testCandidateId}`, 'success');
         }
       } catch (err) {
@@ -403,6 +392,23 @@ export default class ScreeningAdmin extends LightningElement {
     }
   }
 
+  _normalizeAndPretty(res) {
+    try {
+      if (typeof res === 'string') {
+        try {
+          const parsed = JSON.parse(res);
+          return JSON.stringify(parsed, null, 2);
+        } catch (e) {
+          return res;
+        }
+      } else {
+        return JSON.stringify(res, null, 2);
+      }
+    } catch (e) {
+      return String(res);
+    }
+  }
+
   _extractError(err) {
     try {
       if (err && err.body && err.body.message) return err.body.message;
@@ -413,7 +419,7 @@ export default class ScreeningAdmin extends LightningElement {
     }
   }
 
-  showToast(title, msg, variant = 'info') {
+  showToast(title, msg, variant='info') {
     const evt = new ShowToastEvent({ title, message: msg, variant });
     this.dispatchEvent(evt);
   }

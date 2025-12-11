@@ -391,9 +391,7 @@ public with sharing class ScreeningController {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Existing runEvaluation for LWC (keeps returning serialized responses to be backward-compatible)
-    // -------------------------------------------------------------------------
+    // Existing runEvaluation (keeps returning serialized responses to be backward-compatible)
     @AuraEnabled
     public static String runEvaluation(Id candidateId, String ruleKey) {
         if (candidateId == null) {
@@ -416,7 +414,7 @@ public with sharing class ScreeningController {
     }
 
     // -------------------------------------------------------------------------
-    // New: structured runEvaluation (returns typed result object) - for LWC clients
+    // Structured runEvaluation (returns typed result object) - for LWC clients
     // -------------------------------------------------------------------------
     public class StructuredEvalResult {
         @AuraEnabled public String ruleKey;
@@ -474,7 +472,19 @@ public with sharing class ScreeningController {
     }
 
     // -------------------------------------------------------------------------
-    // Candidate status for UI (dedupe latest per rule using CreatedDate)
+    // Comparator for sorting Screening_Result__c by CreatedDate desc
+    // -------------------------------------------------------------------------
+    private class ScreeningResultCreatedDateComparator implements System.Comparator<Screening_Result__c> {
+        public Integer compare(Screening_Result__c a, Screening_Result__c b) {
+            Datetime da = (a.CreatedDate == null) ? Datetime.newInstanceGmt(1970,1,1) : a.CreatedDate;
+            Datetime db = (b.CreatedDate == null) ? Datetime.newInstanceGmt(1970,1,1) : b.CreatedDate;
+            if (da == db) return 0;
+            return (da > db) ? -1 : 1; // descending
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // getCandidateStatus - returns an object consumed by candidateScreenStatus LWC
     // -------------------------------------------------------------------------
     @AuraEnabled(cacheable=true)
     public static CandidateStatusDto getCandidateStatus(Id candidateId) {
@@ -517,16 +527,12 @@ public with sharing class ScreeningController {
             Map<String, Screening_Result__c> latestByRule = new Map<String, Screening_Result__c>();
             for (Screening_Result__c sr : allResults) {
                 String rk = sr.Rule_Key__c == null ? '' : sr.Rule_Key__c;
-                if (!latestByRule.containsKey(rk)) {
-                    latestByRule.put(rk, sr); // first occurrence in descending order is the latest
-                }
+                if (!latestByRule.containsKey(rk)) latestByRule.put(rk, sr);
             }
 
-            // Convert deduped map to DTO list, preserving a stable order (sort by CreatedDate desc)
+            // Convert deduped map to list and sort by CreatedDate DESC
             List<Screening_Result__c> dedupedList = new List<Screening_Result__c>();
             for (Screening_Result__c sr : latestByRule.values()) dedupedList.add(sr);
-
-            // Sort dedupedList by CreatedDate DESC using a typed comparator inner class
             dedupedList.sort(new ScreeningResultCreatedDateComparator());
 
             for (Screening_Result__c r : dedupedList) {
@@ -561,17 +567,4 @@ public with sharing class ScreeningController {
         return out;
     }
 
-    // Comparator class for sorting Screening_Result__c by CreatedDate desc
-    private class ScreeningResultCreatedDateComparator implements System.Comparator<Screening_Result__c> {
-        public Integer compare(Screening_Result__c a, Screening_Result__c b) {
-            if (a == null && b == null) return 0;
-            if (a == null) return 1;
-            if (b == null) return -1;
-            Datetime da = (a.CreatedDate == null) ? Datetime.newInstanceGmt(1970,1,1) : a.CreatedDate;
-            Datetime db = (b.CreatedDate == null) ? Datetime.newInstanceGmt(1970,1,1) : b.CreatedDate;
-            if (da == db) return 0;
-            return (da > db) ? -1 : 1; // descending
-        }
-    }
 }
-

@@ -231,6 +231,8 @@
 //     this.dispatchEvent(evt);
 //   }
 // }
+// force-app/main/default/lwc/candidateScreenStatus/candidateScreenStatus.js
+// force-app/main/default/lwc/candidateScreenStatus/candidateScreenStatus.js
 import { LightningElement, api, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -296,40 +298,39 @@ export default class CandidateScreenStatus extends LightningElement {
     this.showToast('Info','Re-running screening (background)...','info');
     try {
       const res = await runEvaluation({ candidateId: this.recordId });
-      // runEvaluation returns a serialized JSON string (List<Response]); check for SKIPPED
-      let parsed;
-      if (typeof res === 'string') {
-        try {
-          parsed = JSON.parse(res);
-        } catch (e) { parsed = res; }
-      } else {
-        parsed = res;
-      }
+      let parsed = null;
+      try { parsed = typeof res === 'string' ? JSON.parse(res) : res; } catch (e) { parsed = res; }
 
-      let first = Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : parsed;
-      if (first && first.status === 'SKIPPED') {
-        this.showToast('Info', 'Evaluation skipped: no parsed resume data provided.', 'warning');
-        // do not update UI results (keep existing)
+      // runEvaluation returns an array (EvaluateScreeningRules.Response)
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].status === 'SKIPPED') {
+        this.showToast('Info','Evaluation skipped: no parsed resume data provided','info');
+        // optionally clear results if you want when skipped
       } else {
-        // parsed is the serialized Response array; but client expected data.results/routing - so parse the resultsJson field
-        let resultsForUI = [];
-        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].resultsJson) {
-          try {
-            resultsForUI = JSON.parse(parsed[0].resultsJson);
-          } catch (e) {
-            resultsForUI = [];
+        // If backend returns structured resp with results etc (legacy), try to use it:
+        // many places returned JSON.stringify(resp) where resp is array of Response.
+        // Find results inside parsed[0].resultsJson (string)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          let first = parsed[0];
+          if (first.resultsJson) {
+            try {
+              const r = JSON.parse(first.resultsJson);
+              // r is array of objects (EvalResultDto)
+              this.screeningResults = Array.isArray(r) ? r : [];
+            } catch (e) {
+              this.screeningResults = [];
+            }
+          } else if (first.results) {
+            this.screeningResults = Array.isArray(first.results) ? first.results : [];
           }
-        }
-        // Update the UI with structured results if available; else reload status
-        if (resultsForUI.length > 0) {
-          this.screeningResults = resultsForUI;
-          this.showToast('Success','Screening re-run completed.','success');
+        } else if (parsed && parsed.results) {
+          this.screeningResults = Array.isArray(parsed.results) ? parsed.results : [];
         } else {
-          // fallback - reload full status
-          await this.loadStatus();
-          this.showToast('Success','Screening re-run completed.','success');
+          this.screeningResults = [];
         }
+        this.showToast('Success','Screening re-run completed.','success');
       }
+      // After re-run, optionally refresh the cacheable getCandidateStatus data on page:
+      this.loadStatus();
     } catch (err) {
       this.showToast('Error','Re-run failed: ' + this._extractError(err),'error');
     } finally {
