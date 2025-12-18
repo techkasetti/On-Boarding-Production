@@ -1,426 +1,320 @@
-// import { LightningElement } from 'lwc';
-// import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-
-// import getRules from '@salesforce/apex/ScreeningController.getRules';
-// import toggleRuleActive from '@salesforce/apex/ScreeningController.toggleRuleActive';
-// // Prefer structured method if present
-// import runEvaluationStructured from '@salesforce/apex/ScreeningController.runEvaluationStructured';
-// import runEvaluation from '@salesforce/apex/ScreeningController.runEvaluation';
-
-// export default class ScreeningAdmin extends LightningElement {
-//   // reactive properties (no @track needed)
-//   rules = [];
-//   isLoading = false;
-//   isRunning = false;
-//   testCandidateId = '';
-//   lastResult = null;
-
-//   columns = [
-//     { label: 'Rule Key', fieldName: 'ruleKey', type: 'text', sortable: true },
-//     { label: 'Priority', fieldName: 'priority', type: 'number' },
-//     { label: 'Active', fieldName: 'active', type: 'boolean' },
-//     { label: 'Condition', fieldName: 'condition', type: 'text', cellAttributes: { wrapText: true } },
-//     { label: 'Action', fieldName: 'action', type: 'text' },
-//     { label: 'Jurisdiction', fieldName: 'jurisdiction', type: 'text' },
-//     { label: 'Schema', fieldName: 'schemaVersion', type: 'text' },
-//     {
-//       type: 'action',
-//       typeAttributes: {
-//         rowActions: [
-//           { label: 'Toggle Active', name: 'toggleActive' },
-//           { label: 'Run Rule (test)', name: 'runRule' }
-//         ]
-//       }
-//     }
-//   ];
-
-//   connectedCallback() {
-//     this.loadRules();
-//   }
-
-//   get runDisabled() {
-//     return this.isRunning || !this.testCandidateId;
-//   }
-
-//   async loadRules() {
-//     this.isLoading = true;
-//     try {
-//       const resp = await getRules();
-//       // Normalize response: array or JSON string
-//       if (Array.isArray(resp)) {
-//         this.rules = resp;
-//       } else if (typeof resp === 'string') {
-//         try {
-//           this.rules = JSON.parse(resp || '[]');
-//         } catch (e) {
-//           this.rules = [];
-//           this.showToast('Warning', 'Unexpected rules payload (not JSON).', 'warning');
-//         }
-//       } else {
-//         this.rules = [];
-//       }
-//     } catch (err) {
-//       this.showToast('Error', 'Failed to load rules: ' + this._extractError(err), 'error');
-//       this.rules = [];
-//     } finally {
-//       this.isLoading = false;
-//     }
-//   }
-
-//   handleRefresh() {
-//     this.loadRules();
-//   }
-
-//   onCandidateIdChange(event) {
-//     this.testCandidateId = event.target.value;
-//   }
-
-//   /**
-//    * Callout wrapper:
-//    * - Try structured endpoint first (returns object with .results array)
-//    * - If that fails (method missing or error), fall back to legacy runEvaluation which returns serialized string
-//    */
-//   async _callRunEvaluation(candidateId, extraParams = {}) {
-//     // prefer structured call
-//     try {
-//       // call structured method if available
-//       const structuredResp = await runEvaluationStructured({ candidateId, ...extraParams });
-//       // structuredResp expected to be an object: { candidateId, correlationId, status, results: [...] }
-//       return { type: 'structured', payload: structuredResp };
-//     } catch (errStructured) {
-//       // fallback to legacy
-//       try {
-//         const legacyResp = await runEvaluation({ candidateId, ruleKey: extraParams.ruleKey || null });
-//         // legacyResp is typically a JSON-stringified array/string; return as-is for normalization
-//         return { type: 'legacy', payload: legacyResp };
-//       } catch (errLegacy) {
-//         // throw highest-level error
-//         throw errLegacy || errStructured;
-//       }
-//     }
-//   }
-
-//   async onRunAdhoc() {
-//     if (!this.testCandidateId) {
-//       this.showToast('Validation', 'Provide Candidate Id to run ad-hoc evaluation.', 'warning');
-//       return;
-//     }
-//     this.isRunning = true;
-//     this.lastResult = null;
-//     try {
-//       const callResp = await this._callRunEvaluation(this.testCandidateId);
-//       this.lastResult = this._normalizeAndPretty(callResp);
-//       this.showToast('Success', 'Ad-hoc evaluation completed.', 'success');
-//     } catch (err) {
-//       this.showToast('Error', 'Ad-hoc evaluation failed: ' + this._extractError(err), 'error');
-//     } finally {
-//       this.isRunning = false;
-//     }
-//   }
-
-//   async handleRowAction(event) {
-//     const actionName = event.detail.action.name;
-//     const row = event.detail.row;
-
-//     if (actionName === 'toggleActive') {
-//       const newVal = !row.active;
-//       try {
-//         await toggleRuleActive({ ruleKey: row.ruleKey, active: newVal });
-//         this.showToast('Success', `${row.ruleKey} set to ${newVal ? 'Active' : 'Inactive'}`, 'success');
-//         // Refresh authoritative state from server
-//         await this.loadRules();
-//       } catch (err) {
-//         this.showToast('Error', 'Failed to toggle: ' + this._extractError(err), 'error');
-//       }
-//     } else if (actionName === 'runRule') {
-//       if (!this.testCandidateId) {
-//         this.showToast('Validation', 'Set Candidate Id in the input to test this rule.', 'warning');
-//         return;
-//       }
-//       this.isRunning = true;
-//       this.lastResult = null;
-//       try {
-//         const callResp = await this._callRunEvaluation(this.testCandidateId, { ruleKey: row.ruleKey });
-//         this.lastResult = this._normalizeAndPretty(callResp);
-//         this.showToast('Success', `Rule ${row.ruleKey} evaluated for candidate ${this.testCandidateId}`, 'success');
-//       } catch (err) {
-//         this.showToast('Error', 'Rule eval failed: ' + this._extractError(err), 'error');
-//       } finally {
-//         this.isRunning = false;
-//       }
-//     }
-//   }
-
-//   handleExport() {
-//     try {
-//       const dataStr = JSON.stringify(this.rules, null, 2);
-//       const blob = new Blob([dataStr], { type: 'application/json' });
-//       const url = URL.createObjectURL(blob);
-//       const a = document.createElement('a');
-//       a.href = url;
-//       a.download = 'screening_rules_export.json';
-//       a.click();
-//       URL.revokeObjectURL(url);
-//       this.showToast('Success', 'Export initiated.', 'success');
-//     } catch (err) {
-//       this.showToast('Error', 'Export failed: ' + this._extractError(err), 'error');
-//     }
-//   }
-
-//   /**
-//    * Normalization helper
-//    * Accept both forms:
-//    *  - { type: 'structured', payload: { candidateId, correlationId, status, results: [...] } }
-//    *  - { type: 'legacy', payload: '...[ escaped JSON ]...' }  (stringified)
-//    *
-//    * Returns pretty-printed JSON string for display.
-//    */
-//   _normalizeAndPretty(callResp) {
-//     try {
-//       if (!callResp) return '';
-//       if (callResp.type === 'structured') {
-//         return JSON.stringify(callResp.payload, null, 2);
-//       }
-//       // legacy - attempt to parse payload (it may be stringified JSON or array)
-//       if (callResp.type === 'legacy') {
-//         const payload = callResp.payload;
-//         if (typeof payload === 'string') {
-//           // it may be a JSON string (serialized array/object) or already pretty JSON string
-//           try {
-//             const parsed = JSON.parse(payload);
-//             return JSON.stringify(parsed, null, 2);
-//           } catch (e) {
-//             // payload might be stringified nested JSON (e.g. '["{...}"]') - try another pass
-//             try {
-//               const doub = JSON.parse(payload);
-//               return JSON.stringify(doub, null, 2);
-//             } catch (ee) {
-//               // fallback to raw string
-//               return payload;
-//             }
-//           }
-//         } else {
-//           // not a string - pretty print directly
-//           return JSON.stringify(payload, null, 2);
-//         }
-//       }
-//       // fallback
-//       return JSON.stringify(callResp, null, 2);
-//     } catch (e) {
-//       return String(callResp);
-//     }
-//   }
-
-//   _extractError(err) {
-//     try {
-//       if (!err) return 'Unknown error';
-//       // If it's a network/Apex error object
-//       if (err && err.body && err.body.message) return err.body.message;
-//       // If it's our wrapped error from callRunEvaluation
-//       if (err && err.message) return err.message;
-//       // If it's an object with type/payload and payload contains error string
-//       if (err && err.type && err.payload) return JSON.stringify(err.payload);
-//       return JSON.stringify(err);
-//     } catch (e) {
-//       return 'Unknown error';
-//     }
-//   }
-
-//   showToast(title, msg, variant = 'info') {
-//     const evt = new ShowToastEvent({ title, message: msg, variant });
-//     this.dispatchEvent(evt);
-//   }
-// }
-// force-app/main/default/lwc/screeningAdmin/screeningAdmin.js
-// force-app/main/default/lwc/screeningAdmin/screeningAdmin.js
-import { LightningElement } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-
+import { LightningElement, track, wire } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent'; // CORRECTED LINE
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
+import { getPicklistValues } from 'lightning/uiObjectInfoApi';
+import SCREENING_RULE_OBJECT from '@salesforce/schema/Screening_Rule__c';
+import ACTION_FIELD from '@salesforce/schema/Screening_Rule__c.Action__c';
+import OPERATOR_FIELD from '@salesforce/schema/Screening_Rule__c.Operator__c';
 import getRules from '@salesforce/apex/ScreeningController.getRules';
-import toggleRuleActive from '@salesforce/apex/ScreeningController.toggleRuleActive';
-import runEvaluation from '@salesforce/apex/ScreeningController.runEvaluation';
+import saveRules from '@salesforce/apex/ScreeningController.saveRules';
+import saveNewRule from '@salesforce/apex/ScreeningController.saveNewRule';
+import deleteRule from '@salesforce/apex/ScreeningController.deleteRule';
+import getJobPostings from '@salesforce/apex/ScreeningController.getJobPostings';
+import getFieldsForObject from '@salesforce/apex/ScreeningController.getFieldsForObject';
+import getAvailableObjects from '@salesforce/apex/ScreeningController.getAvailableObjects';
+import getCandidates from '@salesforce/apex/ScreeningController.getCandidates';
+
+const columns = [
+    { label: 'Rule Name', fieldName: 'Name', type: 'text', editable: true, wrapText: true },
+    { label: 'Applied to Job/Role', fieldName: 'appliedRoleName', type: 'text' },
+    { label: 'Priority', fieldName: 'priority', type: 'number', editable: true, cellAttributes: { alignment: 'left' } },
+    { label: 'Target Object', fieldName: 'targetObject', type: 'text' },
+    { label: 'Operator', fieldName: 'operator', type: 'text' },
+    { label: 'Expected Value', fieldName: 'expectedValue', type: 'text', editable: true },
+    {
+        type: 'action',
+        typeAttributes: {
+            rowActions: [
+                { label: 'Edit', name: 'edit' },
+                { label: 'Delete', name: 'delete' },
+            ],
+        },
+    },
+];
 
 export default class ScreeningAdmin extends LightningElement {
-  rules = [];
-  isLoading = false;
-  isRunning = false;
-  testCandidateId = '';
-  lastResult = null;
+    @track rules = [];
+    @track draftValues = [];
+    columns = columns;
+    isLoading = true;
 
-  columns = [
-    { label: 'Rule Key', fieldName: 'ruleKey', type: 'text', sortable: true },
-    { label: 'Priority', fieldName: 'priority', type: 'number' },
-    { label: 'Active', fieldName: 'active', type: 'boolean' },
-    { label: 'Condition', fieldName: 'condition', type: 'text', cellAttributes: { wrapText: true } },
-    { label: 'Action', fieldName: 'action', type: 'text' },
-    { label: 'Jurisdiction', fieldName: 'jurisdiction', type: 'text' },
-    { label: 'Schema', fieldName: 'schemaVersion', type: 'text' },
-    {
-      type: 'action',
-      typeAttributes: {
-        rowActions: [
-          { label: 'Toggle Active', name: 'toggleActive' },
-          { label: 'Run Rule (test)', name: 'runRule' }
-        ]
-      }
-    }
-  ];
+    // --- Modal Properties ---
+    @track isModalOpen = false;
+    @track newRule = {};
+    @track modalTitle = 'Add New Screening Rule';
+    @track isEditMode = false;
 
-  connectedCallback() {
-    this.loadRules();
-  }
+    // --- Data for Picklists in Modal ---
+    @track jobPostingOptions = [];
+    @track actionOptions = [];
+    @track operatorOptions = [];
 
-  get runDisabled() {
-    return this.isRunning || !this.testCandidateId;
-  }
+    // --- Dynamic Logic Properties ---
+    @track targetObjectOptions = [];
+    @track fieldApiNameOptions = [];
+    @track isFieldApiNameDisabled = true;
+    selectedTargetObject = '';
 
-  async loadRules() {
-    this.isLoading = true;
-    try {
-      const resp = await getRules();
-      if (Array.isArray(resp)) {
-        this.rules = resp;
-      } else if (typeof resp === 'string') {
-        try {
-          this.rules = JSON.parse(resp || '[]');
-        } catch (e) {
-          this.rules = [];
-          this.showToast('Warning', 'Unexpected rules payload (not JSON).', 'warning');
+    // --- NEW: Candidate Results Properties ---
+    @track isResultModalOpen = false;
+    @track selectedCandidateId = '';
+    @track candidateOptions = [];
+
+    // --- WIRE SERVICES ---
+    @wire(getObjectInfo, { objectApiName: SCREENING_RULE_OBJECT })
+    objectInfo;
+
+    @wire(getPicklistValues, { recordTypeId: '$objectInfo.data.defaultRecordTypeId', fieldApiName: ACTION_FIELD })
+    wiredActionPicklistValues({ error, data }) {
+        if (data) {
+            this.actionOptions = data.values;
+        } else if (error) {
+            console.error('Error loading Action picklist values', error);
         }
-      } else {
-        this.rules = [];
-      }
-    } catch (err) {
-      this.showToast('Error', 'Failed to load rules: ' + this._extractError(err), 'error');
-      this.rules = [];
-    } finally {
-      this.isLoading = false;
     }
-  }
 
-  handleRefresh() {
-    this.loadRules();
-  }
-
-  onCandidateIdChange(event) {
-    this.testCandidateId = event.target.value;
-  }
-
-  async onRunAdhoc() {
-    if (!this.testCandidateId) {
-      this.showToast('Validation', 'Provide Candidate Id to run ad-hoc evaluation.', 'warning');
-      return;
+    @wire(getPicklistValues, { recordTypeId: '$objectInfo.data.defaultRecordTypeId', fieldApiName: OPERATOR_FIELD })
+    wiredOperatorPicklistValues({ error, data }) {
+        if (data) {
+            this.operatorOptions = data.values;
+        } else if (error) {
+            console.error('Error loading Operator picklist values', error);
+        }
     }
-    this.isRunning = true;
-    this.lastResult = null;
-    try {
-      const res = await runEvaluation({ candidateId: this.testCandidateId });
-      // runEvaluation returns JSON-stringified array of EvaluateScreeningRules.Response
-      let parsed;
-      try {
-        parsed = typeof res === 'string' ? JSON.parse(res) : res;
-      } catch (e) {
-        parsed = res;
-      }
-      // If backend returned array of responses, check first entry status
-      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].status === 'SKIPPED') {
-        this.lastResult = 'Evaluation skipped: no parsed resume data provided';
-        this.showToast('Info', 'Evaluation skipped: no parsed resume data provided', 'info');
-      } else {
-        this.lastResult = this._normalizeAndPretty(parsed);
-        this.showToast('Success', 'Ad-hoc evaluation completed.', 'success');
-      }
-    } catch (err) {
-      this.showToast('Error', 'Ad-hoc evaluation failed: ' + this._extractError(err), 'error');
-    } finally {
-      this.isRunning = false;
+    
+    @wire(getCandidates)
+    wiredCandidates({ error, data }) {
+        if (data) {
+            this.candidateOptions = data.map(candidate => ({ label: candidate.Name, value: candidate.Id }));
+        } else if (error) {
+            this.showToast('Error', 'Could not load candidates.', 'error');
+        }
     }
-  }
 
-  async handleRowAction(event) {
-    const actionName = event.detail.action.name;
-    const row = event.detail.row;
+    connectedCallback() {
+        this.loadInitialData();
+    }
 
-    if (actionName === 'toggleActive') {
-      const newVal = !row.active;
-      try {
-        await toggleRuleActive({ ruleKey: row.ruleKey, active: newVal });
-        this.showToast('Success', `${row.ruleKey} set to ${newVal ? 'Active' : 'Inactive'}`, 'success');
-        await this.loadRules();
-      } catch (err) {
-        this.showToast('Error', 'Failed to toggle: ' + this._extractError(err), 'error');
-      }
-    } else if (actionName === 'runRule') {
-      if (!this.testCandidateId) {
-        this.showToast('Validation', 'Set Candidate Id in the input to test this rule.', 'warning');
-        return;
-      }
-      this.isRunning = true;
-      this.lastResult = null;
-      try {
-        const res = await runEvaluation({ candidateId: this.testCandidateId, ruleKey: row.ruleKey });
-        let parsed;
-        try { parsed = typeof res === 'string' ? JSON.parse(res) : res; } catch (e) { parsed = res; }
-        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].status === 'SKIPPED') {
-          this.lastResult = 'Evaluation skipped: no parsed resume data provided';
-          this.showToast('Info', 'Evaluation skipped: no parsed resume data provided', 'info');
+    // --- DATA LOADING ---
+    loadInitialData() {
+        this.isLoading = true;
+        Promise.all([
+            getRules(),
+            getJobPostings()
+        ]).then(([rulesData, jobsData]) => {
+            this.rules = rulesData.map(rule => ({ ...rule }));
+            this.jobPostingOptions = jobsData.map(job => ({ label: job.Name, value: job.Id }));
+            this.draftValues = [];
+        }).catch(error => {
+            this.showToast('Error Loading Data', this.getErrorMessage(error), 'error');
+        }).finally(() => {
+            this.isLoading = false;
+        });
+    }
+
+    loadRules() {
+        this.isLoading = true;
+        getRules().then(data => {
+            this.rules = data.map(rule => ({ ...rule }));
+            this.draftValues = [];
+        }).catch(error => {
+            this.showToast('Error Loading Rules', this.getErrorMessage(error), 'error');
+        }).finally(() => {
+            this.isLoading = false;
+        });
+    }
+
+    // --- UI EVENT HANDLERS ---
+    async handleSave(event) {
+        this.isLoading = true;
+        const updatedFields = event.detail.draftValues;
+        try {
+            await saveRules({ data: updatedFields });
+            this.showToast('Success', 'Rules updated successfully', 'success');
+            await this.loadRules();
+        } catch (error) {
+            this.showToast('Error saving rules', this.getErrorMessage(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    handleRowAction(event) {
+        const actionName = event.detail.action.name;
+        const row = event.detail.row;
+        switch (actionName) {
+            case 'edit':
+                this.handleEditRule(row);
+                break;
+            case 'delete':
+                // For direct delete from row, we need a confirmation.
+                // For simplicity, we'll just call the delete method directly.
+                // A better UX would be a confirmation modal here.
+                this.handleDeleteRuleById(row.Id);
+                break;
+            default:
+        }
+    }
+
+    // --- MODAL LOGIC (ADD/EDIT RULE) ---
+    handleAddRule() {
+        this.isEditMode = false;
+        this.modalTitle = 'Add New Screening Rule';
+        this.newRule = { Active__c: true };
+        this.selectedTargetObject = '';
+        this.isFieldApiNameDisabled = true;
+        this.targetObjectOptions = [];
+        this.fieldApiNameOptions = [];
+        this.isModalOpen = true;
+        this.loadTargetObjects();
+    }
+
+    handleEditRule(row) {
+        this.isEditMode = true;
+        this.modalTitle = 'Edit Screening Rule';
+        this.newRule = JSON.parse(JSON.stringify(row));
+        
+        // Map frontend-friendly names back to SObject field API names
+        this.newRule.Id = row.Id;
+        this.newRule.Name = row.Name;
+        this.newRule.Priority__c = row.priority;
+        this.newRule.Applied_Role__c = row.appliedRoleId;
+        this.newRule.Target_Object__c = row.targetObject;
+        this.newRule.Field_API_Name__c = row.fieldApiName;
+        this.newRule.Operator__c = row.operator;
+        this.newRule.Expected_Value__c = row.expectedValue;
+        this.newRule.Action__c = row.action;
+        this.newRule.Failure_Message__c = row.failureMessage;
+
+        this.selectedTargetObject = row.targetObject;
+        this.isModalOpen = true;
+
+        this.loadTargetObjects().then(() => {
+            if (this.selectedTargetObject) {
+                this.loadFieldsForObject(this.selectedTargetObject);
+            }
+        });
+    }
+
+    // Renamed from handleDeleteRule to avoid confusion
+    handleDeleteRuleFromModal() {
+        this.handleDeleteRuleById(this.newRule.Id);
+    }
+    
+    handleDeleteRuleById(ruleId) {
+        this.isLoading = true;
+        deleteRule({ ruleId: ruleId })
+            .then(() => {
+                this.showToast('Success', 'Rule deleted successfully', 'success');
+                if(this.isModalOpen) {
+                    this.isModalOpen = false;
+                }
+                this.loadRules();
+            })
+            .catch(error => {
+                this.showToast('Error deleting rule', this.getErrorMessage(error), 'error');
+            })
+            .finally(() => {
+                this.isLoading = false;
+            });
+    }
+
+    loadTargetObjects() {
+        this.isLoading = true;
+        return getAvailableObjects().then(result => {
+            this.targetObjectOptions = result;
+        }).catch(error => {
+            this.showToast('Error Loading Objects', this.getErrorMessage(error), 'error');
+        }).finally(() => {
+            this.isLoading = false;
+        });
+    }
+
+    loadFieldsForObject(objectApiName) {
+        this.isFieldApiNameDisabled = false;
+        this.isLoading = true;
+        getFieldsForObject({ objectApiName: objectApiName }).then(result => {
+            this.fieldApiNameOptions = result.map(opt => ({ label: `${opt.label} (${opt.value})`, value: opt.value }));
+        }).catch(error => {
+            this.showToast('Error Loading Fields', this.getErrorMessage(error), 'error');
+            this.isFieldApiNameDisabled = true;
+        }).finally(() => {
+            this.isLoading = false;
+        });
+    }
+
+    closeModal() {
+        this.isModalOpen = false;
+    }
+
+    handleNewRuleChange(event) {
+        const field = event.target.dataset.field;
+        const value = event.target.value;
+        this.newRule = { ...this.newRule, [field]: value };
+    }
+
+    handleTargetObjectChange(event) {
+        this.selectedTargetObject = event.detail.value;
+        this.newRule = { ...this.newRule, Target_Object__c: this.selectedTargetObject };
+        this.fieldApiNameOptions = [];
+        this.newRule = { ...this.newRule, Field_API_Name__c: null };
+
+        if (this.selectedTargetObject) {
+            this.loadFieldsForObject(this.selectedTargetObject);
         } else {
-          this.lastResult = this._normalizeAndPretty(parsed);
-          this.showToast('Success', `Rule ${row.ruleKey} evaluated for candidate ${this.testCandidateId}`, 'success');
+            this.isFieldApiNameDisabled = true;
         }
-      } catch (err) {
-        this.showToast('Error', 'Rule eval failed: ' + this._extractError(err), 'error');
-      } finally {
-        this.isRunning = false;
-      }
     }
-  }
 
-  handleExport() {
-    try {
-      const dataStr = JSON.stringify(this.rules, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'screening_rules_export.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      this.showToast('Success', 'Export initiated.', 'success');
-    } catch (err) {
-      this.showToast('Error', 'Export failed: ' + this._extractError(err), 'error');
-    }
-  }
-
-  _normalizeAndPretty(res) {
-    try {
-      if (typeof res === 'string') {
-        try {
-          const parsed = JSON.parse(res);
-          return JSON.stringify(parsed, null, 2);
-        } catch (e) {
-          return res;
+    handleSaveNewRule() {
+        if (!this.newRule.Name || !this.newRule.Priority__c || !this.newRule.Applied_Role__c) {
+            this.showToast('Error', 'Rule Name, Priority, and Job Posting are required.', 'error');
+            return;
         }
-      } else {
-        return JSON.stringify(res, null, 2);
-      }
-    } catch (e) {
-      return String(res);
+        this.isLoading = true;
+        saveNewRule({ newRule: this.newRule }).then(() => {
+            this.showToast('Success', `Rule ${this.isEditMode ? 'updated' : 'created'} successfully`, 'success');
+            this.isModalOpen = false;
+            this.loadRules();
+        }).catch(error => {
+            this.showToast('Error saving rule', this.getErrorMessage(error), 'error');
+        }).finally(() => {
+            this.isLoading = false;
+        });
     }
-  }
 
-  _extractError(err) {
-    try {
-      if (err && err.body && err.body.message) return err.body.message;
-      if (err && err.message) return err.message;
-      return JSON.stringify(err);
-    } catch (e) {
-      return 'Unknown error';
+    // --- NEW: CANDIDATE RESULTS MODAL LOGIC ---
+    handleCandidateChange(event) {
+        this.selectedCandidateId = event.detail.value;
     }
-  }
 
-  showToast(title, msg, variant='info') {
-    const evt = new ShowToastEvent({ title, message: msg, variant });
-    this.dispatchEvent(evt);
-  }
+    get isViewResultsDisabled() {
+        return !this.selectedCandidateId;
+    }
+
+    handleViewResults() {
+        if (this.selectedCandidateId) {
+            this.isResultModalOpen = true;
+        }
+    }
+
+    closeResultsModal() {
+        this.isResultModalOpen = false;
+    }
+
+    // --- UTILITY ---
+    showToast(title, message, variant) {
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+    }
+
+    getErrorMessage(error) {
+        if (error.body) {
+            if (Array.isArray(error.body)) {
+                return error.body.map(e => e.message).join(', ');
+            } else if (typeof error.body.message === 'string') {
+                return error.body.message;
+            }
+        }
+        return 'An unknown error occurred.';
+    }
 }

@@ -1,9 +1,80 @@
-.resultPre {
-  font-family: monospace;
-  font-size: 13px;
-  max-height: 320px;
-  overflow: auto;
-  background: #f4f6f9;
-  padding: 12px;
-  border-radius: 4px;
+/* --- Overall Page Theme --- */
+:host {
+    background-color: #f9fafb; /* A very light gray background for the whole component */
+}
+
+/* --- Main Card & Section Styling --- */
+/* Remove default padding from inner card body to allow for custom sections */
+.slds-card__body_inner {
+    padding: 0;
+}
+
+/* Container for each logical section (datatable, results panel) */
+.section-container {
+    padding: 1rem 1.5rem;
+}
+
+/* Header style for sections within the main card */
+.section-header {
+    font-size: 1.25rem; /* Larger font size for section titles */
+    font-weight: 300; /* Lighter font weight for a modern look */
+    color: #080707;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Add a container for the datatable to control its appearance */
+.datatable-container {
+    border: 1px solid #dddbda;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+
+/* --- Test & View Results Panel --- */
+/* Target the nested card to ensure it fits well */
+.slds-m-top_large {
+    padding: 0 1.5rem 1.5rem; /* Add padding around the nested card */
+}
+
+/* Custom styling for the nested card to remove its default border */
+.slds-m-top_large lightning-card {
+    border: 1px solid #dddbda;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Align the button vertically with the combobox */
+.slds-align-bottom {
+    display: flex;
+    align-items: flex-end;
+}
+
+
+/* --- Modal Styling --- */
+/* Make the modal header more prominent */
+.slds-modal__header {
+    background-color: #f3f4f6;
+    border-bottom: 1px solid #dddbda;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+}
+
+/* Ensure consistent spacing in the modal footer */
+.slds-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background-color: #f3f4f6;
+    border-top: 1px solid #dddbda;
+}
+
+
+/* --- General UX Enhancements --- */
+/* Subtle hover effect for all buttons */
+lightning-button:hover {
+    transform: translateY(-1px);
+    transition: transform 0.15s ease;
 }

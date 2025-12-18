@@ -1,52 +1,141 @@
 <template>
-  <lightning-card title="Screening Rules — Admin Console" icon-name="custom:custom63">
-    <div class="slds-p-around_medium">
-      <template if:true={isLoading}>
-        <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
-      </template>
+    <!-- Main Card Container -->
+    <lightning-card title="Screening Rule Administration" icon-name="standard:rules">
 
-      <div class="slds-m-bottom_medium slds-grid slds-grid_align-spread">
-        <div class="slds-col">
-          <lightning-button variant="brand" label="Refresh" onclick={handleRefresh} class="slds-m-right_x-small"></lightning-button>
-          <lightning-button variant="neutral" label="Export JSON" onclick={handleExport} class="slds-m-left_x-small"></lightning-button>
+        <!-- Action Button in Header -->
+        <div slot="actions">
+            <lightning-button label="Add Rule" onclick={handleAddRule}></lightning-button>
         </div>
 
-        <div class="slds-col">
-          <lightning-input
-            type="text"
-            label="Candidate Id (for test)"
-            value={testCandidateId}
-            onchange={onCandidateIdChange}
-            placeholder="003..."
-          ></lightning-input>
-          <lightning-button
-            variant="brand"
-            label="Run Ad-hoc Eval"
-            onclick={onRunAdhoc}
-            disabled={runDisabled}
-          ></lightning-button>
-        </div>
-      </div>
+        <!-- Main Content Area -->
+        <div class="slds-card__body slds-card__body_inner">
 
-      <lightning-datatable
-        key-field="ruleKey"
-        data={rules}
-        columns={columns}
-        hide-checkbox-column="true"
-        max-row-selection="1"
-        onrowaction={handleRowAction}
-      >
-      </lightning-datatable>
-
-      <template if:true={lastResult}>
-        <div class="slds-m-top_medium">
-          <lightning-card title="Last Ad-hoc Result">
-            <div class="slds-p-around_medium">
-              <pre class="resultPre" style="white-space:pre-wrap; word-break:break-word;">{lastResult}</pre>
+            <!-- Section 1: Rules Datatable -->
+            <div class="section-container">
+                <h2 class="section-header">Active Screening Rules</h2>
+                <template if:true={isLoading}>
+                    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                </template>
+                <div class="datatable-container">
+                    <lightning-datatable
+                        key-field="Id"
+                        data={rules}
+                        columns={columns}
+                        draft-values={draftValues}
+                        onsave={handleSave}
+                        onrowaction={handleRowAction}
+                        hide-checkbox-column>
+                    </lightning-datatable>
+                </div>
             </div>
-          </lightning-card>
+
+            <!-- Section 2: Test & View Results (Nested Card) -->
+            <div class="slds-m-top_large">
+                <lightning-card title="Test & View Screening Results" icon-name="standard:user">
+                    <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+                         <div class="slds-grid slds-gutters slds-m-top_small">
+                            <div class="slds-col slds-size_2-of-3">
+                                <lightning-combobox
+                                    name="candidate"
+                                    label="Select a Candidate to View Their Results"
+                                    placeholder="-- Search for a Candidate --"
+                                    value={selectedCandidateId}
+                                    options={candidateOptions}
+                                    onchange={handleCandidateChange}>
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3 slds-align-bottom">
+                                <lightning-button
+                                    label="View Results"
+                                    onclick={handleViewResults}
+                                    variant="brand"
+                                    disabled={isViewResultsDisabled}
+                                    class="slds-w-100">
+                                </lightning-button>
+                            </div>
+                        </div>
+                    </div>
+                </lightning-card>
+            </div>
         </div>
-      </template>
-    </div>
-  </lightning-card>
+    </lightning-card>
+
+    <!-- Modal for Adding or Editing a Rule -->
+    <template if:true={isModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal Header -->
+                <header class="slds-modal__header">
+                    <h2 class="slds-modal__title slds-hyphenate">{modalTitle}</h2>
+                </header>
+
+                <!-- Modal Body with Two-Column Layout -->
+                <div class="slds-modal__content slds-p-around_medium" style="max-height: 60vh; overflow-y: auto;">
+                    <div class="slds-grid slds-gutters_small slds-wrap">
+
+                        <div class="slds-col slds-size_1-of-1">
+                             <lightning-combobox name="jobPosting" label="Apply to Job Posting" value={newRule.Applied_Role__c} placeholder="-- Select a Job Posting --" options={jobPostingOptions} onchange={handleNewRuleChange} data-field="Applied_Role__c" required></lightning-combobox>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input label="Rule Name" data-field="Name" value={newRule.Name} required onchange={handleNewRuleChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                             <lightning-input label="Priority" data-field="Priority__c" type="number" value={newRule.Priority__c} required onchange={handleNewRuleChange}></lightning-input>
+                        </div>
+
+                         <div class="slds-col slds-size_1-of-2">
+                            <lightning-combobox label="Target Object" data-field="Target_Object__c" value={selectedTargetObject} placeholder="Select Target Object" options={targetObjectOptions} onchange={handleTargetObjectChange}></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-combobox label="Field API Name" data-field="Field_API_Name__c" value={newRule.Field_API_Name__c} placeholder="Select Field" options={fieldApiNameOptions} onchange={handleNewRuleChange} disabled={isFieldApiNameDisabled}></lightning-combobox>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-combobox label="Operator" data-field="Operator__c" value={newRule.Operator__c} placeholder="Select Operator" options={operatorOptions} onchange={handleNewRuleChange}></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                             <lightning-input label="Expected Value" data-field="Expected_Value__c" value={newRule.Expected_Value__c} onchange={handleNewRuleChange}></lightning-input>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <lightning-combobox label="Action" data-field="Action__c" value={newRule.Action__c} placeholder="Select Action" options={actionOptions} onchange={handleNewRuleChange}></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1">
+                             <lightning-textarea label="Failure Message" data-field="Failure_Message__c" value={newRule.Failure_Message__c} onchange={handleNewRuleChange}></lightning-textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <footer class="slds-modal__footer">
+                    <template if:true={isEditMode}>
+                        <lightning-button label="Delete" variant="destructive" onclick={handleDeleteRuleFromModal} class="slds-m-right_auto"></lightning-button>
+                    </template>
+                    <lightning-button label="Cancel" onclick={closeModal}></lightning-button>
+                    <lightning-button variant="brand" label="Save Rule" onclick={handleSaveNewRule}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Modal to display Candidate Screening Status Component -->
+    <template if:true={isResultModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeResultsModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">Screening Results</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <c-candidate-screen-status record-id={selectedCandidateId}></c-candidate-screen-status>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
 </template>

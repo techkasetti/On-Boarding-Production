@@ -3,7 +3,7 @@ public with sharing class OnboardingOrchestratorV2 {
     // Hardcoded URL for the webhook endpoint.
     // A Remote Site Setting is required for this to work.
     private static final String WEBHOOK_URL =
-        'https://webhook.site/e34d32c9-8ee6-40fe-837b-43d470b340f2';
+        'https://webhook.site/6bd10e3a-f12b-4c40-aeab-208c74835102';
 
     /**
      * @description Fetches the new resume JSON format by making an HTTP GET callout

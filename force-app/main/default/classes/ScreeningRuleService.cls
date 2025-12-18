@@ -1,147 +1,96 @@
 public with sharing class ScreeningRuleService {
 
-    public class Rule {
-        public String ruleKey;
-        public Integer priority;
-        public Boolean active;
-        public String condition;
-        public String action;
-        public String jurisdiction;
-        public String schemaVersion;
-        public String severity;
+    // Inner class to hold the result of a single rule evaluation
+    public class EvalResult {
+        public Screening_Rule__c rule;
+        public String outcome; // 'Pass', 'Fail', 'Review'
+        public String details;
 
-        public Rule(String rk, Integer pr, Boolean ac, String cond, String act, String jur, String sv, String sev) {
-            ruleKey = rk;
-            priority = pr;
-            active = ac;
-            condition = cond;
-            action = act;
-            jurisdiction = jur;
-            schemaVersion = sv;
-            severity = sev;
+        public EvalResult(Screening_Rule__c r, String out, String det) {
+            this.rule = r;
+            this.outcome = out;
+            this.details = det;
         }
     }
 
-    // Main method to get all active rules sorted by priority
-    public static List<Rule> getActiveRules() {
-        List<Rule> rules = new List<Rule>();
+    // Main evaluation method
+    public static List<EvalResult> evaluateRules(List<Screening_Rule__c> rules, Candidate__c candidate) {
+        List<EvalResult> results = new List<EvalResult>();
+        Map<String, SObject> relatedRecordMap = buildRelatedRecordMap(candidate);
+
+        for (Screening_Rule__c rule : rules) {
+            SObject targetRecord = candidate; // Default to the Candidate object itself
+
+            // If the rule targets a related object, get it from the map
+            if (String.isNotBlank(rule.Target_Object__c) && !rule.Target_Object__c.equalsIgnoreCase('Candidate__c')) {
+                targetRecord = relatedRecordMap.get(rule.Target_Object__c);
+            }
+
+            // Evaluate the rule against the target record
+            results.add(evaluateSingleRule(rule, targetRecord));
+        }
+        return results;
+    }
+
+    // Helper to evaluate one rule
+    private static EvalResult evaluateSingleRule(Screening_Rule__c rule, SObject record) {
+        if (record == null) {
+            return new EvalResult(rule, 'Review', 'Rule could not be evaluated because the related record (' + rule.Target_Object__c + ') does not exist for this candidate.');
+        }
 
         try {
-            List<Screening_Rule__mdt> mdts = [
-                SELECT MasterLabel, Rule_Key__c, Priority__c, Active__c, Condition_Expression__c,
-                       Action__c, Jurisdiction__c, Schema_Version__c, Severity__c
-                FROM Screening_Rule__mdt
-            ];
+            Object actualValue = record.get(rule.Field_API_Name__c);
+            boolean isMet = compare(actualValue, rule.Operator__c, rule.Expected_Value__c);
+            
+            String outcome = isMet ? 'Pass' : 'Fail';
+            String details = 'Evaluation of rule: ' + rule.Name;
 
-            for (Screening_Rule__mdt m : mdts) {
-                Boolean ac = (m.Active__c == null) ? false : m.Active__c;
-                Integer pr = (m.Priority__c == null) ? 1000 : Integer.valueOf(m.Priority__c);
-
-                rules.add(new Rule(
-                    m.Rule_Key__c,
-                    pr,
-                    ac,
-                    m.Condition_Expression__c,
-                    m.Action__c,
-                    m.Jurisdiction__c,
-                    m.Schema_Version__c,
-                    m.Severity__c
-                ));
+            // Invert logic for certain actions e.g. "Flag for Review" should fail if condition is met
+            if (rule.Action__c == 'FlagForReview' || rule.Action__c == 'RouteToJurisdiction') {
+                outcome = isMet ? 'Review' : 'Pass';
             }
-        } catch (Exception ex) {
-            // during test context or no metadata
-        }
 
-        if (rules.isEmpty() && Test.isRunningTest()) {
-            // fallback sample rules
-            rules.add(new Rule('SAMPLE_RULE_FAIL_IF_EXP_LT_2', 10, true,
-                'parsed_json.experience_years < 2', 'AutoReject', null, 'v1', 'Low'));
-
-            rules.add(new Rule('SAMPLE_RULE_ROUTE_IN_IF_AADHAAR', 20, true,
-                'candidate.locale == \'IN\' AND parsed_json.has_aadhaar == true', 'RouteToJurisdiction', 'IN', 'v1', 'Medium'));
-        }
-
-        // Keep only active
-        List<Rule> activeRules = new List<Rule>();
-        for (Rule r : rules) {
-            if (r.active) activeRules.add(r);
-        }
-
-        // Sort using comparator
-        activeRules.sort(new RulePriorityComparator());
-
-        return activeRules;
-    }
-
-    // Comparator (cannot be static inside Apex outer class)
-    private class RulePriorityComparator implements System.Comparator<ScreeningRuleService.Rule> {
-
-        public Integer compare(ScreeningRuleService.Rule a, ScreeningRuleService.Rule b) {
-            if (a == null && b == null) return 0;
-            if (a == null) return 1;
-            if (b == null) return -1;
-
-            Integer pa = a.priority;
-            Integer pb = b.priority;
-
-            if (pa == pb) return 0;
-            if (pa == null) return 1;
-            if (pb == null) return -1;
-
-            return (pa > pb) ? 1 : -1;
+            return new EvalResult(rule, outcome, details);
+        } catch (Exception e) {
+            return new EvalResult(rule, 'Review', 'Error evaluating rule: ' + e.getMessage());
         }
     }
 
-    // Evaluation results model
-    public class EvalResult {
-        public String ruleKey;
-        public String action;
-        public Decimal score;
-        public String outcome;
-        public String details;
-        public String jurisdiction;
+    // Comparison logic
+    private static boolean compare(Object actual, String operator, String expected) {
+        if (actual == null) return false;
 
-        public EvalResult(String rk, String a, Decimal s, String out, String d, String jur) {
-            ruleKey = rk;
-            action = a;
-            score = s;
-            outcome = out;
-            details = d;
-            jurisdiction = jur;
-        }
-    }
+        // Simplified comparison logic for demonstration
+        String actualStr = String.valueOf(actual).toLowerCase();
+        String expectedStr = expected.toLowerCase();
 
-    public static List<EvalResult> evaluateAll(
-        String candidateId,
-        Map<String,Object> candidateMap,
-        Map<String,Object> parsedJson
-    ) {
-        List<EvalResult> results = new List<EvalResult>();
-        List<Rule> rules = getActiveRules();
-
-        for (Rule r : rules) {
-            try {
-                Boolean pass = RuleExpressionEvaluator.evaluate(r.condition, candidateMap, parsedJson);
-                results.add(new EvalResult(
-                    r.ruleKey,
-                    r.action,
-                    pass ? 1.0 : 0.0,
-                    pass ? 'Pass' : 'Fail',
-                    'Evaluated expression: ' + r.condition,
-                    r.jurisdiction
-                ));
-            } catch (Exception ex) {
-                results.add(new EvalResult(
-                    r.ruleKey,
-                    r.action,
-                    0,
-                    'Error',
-                    'Evaluator error: ' + ex.getMessage(),
-                    r.jurisdiction
-                ));
+        switch on operator {
+            when 'Equals' { return actualStr.equals(expectedStr); }
+            when 'Contains' { return actualStr.contains(expectedStr); }
+            when 'Greater Than' {
+                try {
+                    return Decimal.valueOf(actualStr) > Decimal.valueOf(expectedStr);
+                } catch (Exception e) { return false; }
             }
+            when 'Less Than' {
+                 try {
+                    return Decimal.valueOf(actualStr) < Decimal.valueOf(expectedStr);
+                } catch (Exception e) { return false; }
+            }
+            when else { return false; }
         }
-
-        return results;
+    }
+    
+    // Pre-fetches the FIRST related record for each relationship type for simplicity
+    private static Map<String, SObject> buildRelatedRecordMap(Candidate__c cand) {
+        Map<String, SObject> recordMap = new Map<String, SObject>();
+        if (cand.License_Certifications__r != null && !cand.License_Certifications__r.isEmpty()) {
+            recordMap.put('License_Certification__c', cand.License_Certifications__r[0]);
+        }
+        if (cand.Work_Experiences__r != null && !cand.Work_Experiences__r.isEmpty()) {
+            recordMap.put('Work_Experience__c', cand.Work_Experiences__r[0]);
+        }
+        // Add other related objects here as needed
+        return recordMap;
     }
 }
