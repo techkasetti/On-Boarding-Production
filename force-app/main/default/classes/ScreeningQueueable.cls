@@ -13,15 +13,13 @@ public with sharing class ScreeningQueueable implements Queueable {
         Set<Id> candidateIds = candidateToJobMap.keySet();
         Set<Id> jobPostingIds = new Set<Id>(candidateToJobMap.values());
 
-        // CRITICAL FIX: This SOQL query now ONLY fetches rules where the Applied_Role__c
-        // lookup matches the Job Posting IDs of the candidates in this batch.
         List<Screening_Rule__c> relevantRules = [
-            SELECT Name, Applied_Role__c, Target_Object__c, Field_API_Name__c, Operator__c, Expected_Value__c, Action__c, Failure_Message__c
+            SELECT Name, Applied_Role__c, Target_Object__c, Field_API_Name__c, 
+                   Operator__c, Expected_Value__c, Action__c, Failure_Message__c
             FROM Screening_Rule__c
             WHERE Active__c = true AND Applied_Role__c IN :jobPostingIds
         ];
 
-        // Group the fetched rules by their associated Job ID for efficient processing.
         Map<Id, List<Screening_Rule__c>> rulesByJobId = new Map<Id, List<Screening_Rule__c>>();
         for (Screening_Rule__c rule : relevantRules) {
             if (!rulesByJobId.containsKey(rule.Applied_Role__c)) {
@@ -30,7 +28,6 @@ public with sharing class ScreeningQueueable implements Queueable {
             rulesByJobId.get(rule.Applied_Role__c).add(rule);
         }
 
-        // Fetch candidate data
         List<Candidate__c> candidates = [
             SELECT Id, Name, Years_of_Experience__c, Location__c,
                    (SELECT Id, Name, Type__c FROM License_Certifications__r),
@@ -39,20 +36,21 @@ public with sharing class ScreeningQueueable implements Queueable {
         ];
 
         List<Screening_Result__c> resultsToInsert = new List<Screening_Result__c>();
+        // CORRECTED: Use your Platform Event's API name
+        List<Screening_Run_Completed__e> eventsToPublish = new List<Screening_Run_Completed__e>();
+        
         String correlationId = 'RUN-' + Datetime.now().getTime();
 
-        // Process each candidate
         for (Candidate__c candidate : candidates) {
             Id jobPostingId = candidateToJobMap.get(candidate.Id);
             List<Screening_Rule__c> rulesForThisJob = rulesByJobId.get(jobPostingId);
 
-            // If no rules exist for this specific job, skip evaluation for this candidate.
             if (rulesForThisJob == null | rulesForThisJob.isEmpty()) {
                 continue;
             }
 
-            // Evaluate ONLY the correct, job-specific rules
             List<ScreeningRuleService.EvalResult> evaluationResults = ScreeningRuleService.evaluateRules(rulesForThisJob, candidate);
+            boolean hasFailures = false;
 
             for (ScreeningRuleService.EvalResult eval : evaluationResults) {
                 Screening_Result__c result = new Screening_Result__c();
@@ -63,11 +61,29 @@ public with sharing class ScreeningQueueable implements Queueable {
                 result.Action__c = eval.rule.Action__c;
                 result.Correlation_Id__c = correlationId;
                 resultsToInsert.add(result);
+
+                if (eval.outcome == 'Fail' | eval.outcome == 'Review') {
+                    hasFailures = true;
+                }
             }
+            
+            String finalStatus = hasFailures ? 'Action Required' : 'Passed';
+            
+            // CORRECTED: Create an instance of your event and use your field API names
+            eventsToPublish.add(new Screening_Run_Completed__e(
+                Candidate_ID__c = candidate.Id,
+                Final_Status__c = finalStatus,
+                Correlation_ID__c = correlationId
+            ));
         }
 
         if (!resultsToInsert.isEmpty()) {
             insert resultsToInsert;
+        }
+
+        if (!eventsToPublish.isEmpty()) {
+            // This will now work because the list is of the correct type
+            EventBus.publish(eventsToPublish);
         }
     }
 }
