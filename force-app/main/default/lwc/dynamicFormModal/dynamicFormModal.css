@@ -1,0 +1,147 @@
+/* dynamicFormModal.css */
+
+/* ========== Modal Animations ========== */
+.slds-modal {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+.slds-modal__container {
+    animation: modalSlideUp 0.4s ease-out;
+}
+
+.slds-backdrop {
+    animation: backdropFadeIn 0.3s ease-out;
+}
+
+/* ========== Modal Header Styles ========== */
+.slds-modal__header {
+    position: relative;
+    overflow: hidden;
+}
+
+.slds-modal__header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.6), rgba(255,255,255,0.3));
+}
+
+/* ========== Form Container ========== */
+.form-container {
+    animation: formFadeIn 0.5s ease-out;
+}
+
+.slds-form__item {
+    transition: all 0.3s ease;
+}
+
+.slds-form__item:hover {
+    transform: translateX(2px);
+}
+
+/* ========== Input Field Enhancements ========== */
+lightning-input,
+lightning-textarea {
+    --slds-c-input-shadow-focus: 0 0 0 2px rgba(102, 126, 234, 0.3);
+}
+
+/* ========== Loading State ========== */
+.slds-align_absolute-center {
+    animation: fadeIn 0.3s ease-in;
+}
+
+/* ========== Error Alert in Modal ========== */
+.slds-notify.slds-theme_error {
+    animation: slideInDown 0.4s ease-out;
+    border-left: 4px solid #c23934;
+}
+
+/* ========== Footer Styles ========== */
+.slds-modal__footer {
+    background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+    border-top: 1px solid #e0e5ee;
+}
+
+.slds-modal__footer lightning-button {
+    transition: all 0.2s ease;
+}
+
+.slds-modal__footer lightning-button:hover {
+    transform: translateY(-1px);
+}
+
+/* ========== Custom Animations ========== */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes backdropFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes formFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ========== Responsive Modal ========== */
+@media (max-width: 768px) {
+    .slds-modal__container {
+        max-width: 95% !important;
+        margin: 1rem;
+    }
+    
+    .slds-modal__content {
+        padding: 1rem !important;
+    }
+}

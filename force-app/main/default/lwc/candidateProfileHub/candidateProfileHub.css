@@ -1,0 +1,371 @@
+/* candidateProfileHub.css */
+
+/* ========== Global Styles ========== */
+.profile-hub-container {
+    font-family: 'Salesforce Sans', Arial, sans-serif;
+}
+
+/* ========== Input View Styles ========== */
+.input-view {
+    animation: fadeIn 0.5s ease-in;
+}
+
+.icon-wrapper {
+    animation: bounceIn 0.8s ease-out;
+}
+
+.input-container {
+    animation: slideUp 0.6s ease-out;
+}
+
+.custom-input {
+    transition: all 0.3s ease;
+}
+
+.load-button {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.load-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ========== Loading Container ========== */
+.loading-container {
+    animation: fadeIn 0.3s ease-in;
+}
+
+/* ========== Error Alert ========== */
+.error-alert {
+    animation: shakeX 0.5s ease-in-out;
+}
+
+/* ========== Profile Header Styles ========== */
+.profile-header {
+    padding: 0;
+    border-radius: 8px;
+    overflow: visible !important; /* Changed from hidden to visible */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.profile-banner {
+    height: 120px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+}
+
+.profile-banner::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+}
+
+.profile-info {
+    margin-top: -40px;
+    overflow: visible !important; /* Ensure profile info is fully visible */
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    background: white;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    z-index: 10; /* Ensure avatar stays on top */
+}
+
+.profile-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.profile-details {
+    margin-top: 50px;
+}
+
+.profile-name {
+    color: #080707;
+    font-weight: 600;
+    animation: slideInLeft 0.5s ease-out;
+}
+
+.contact-info {
+    animation: slideInLeft 0.6s ease-out;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ========== Completeness Card ========== */
+.completeness-card {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    animation: fadeInUp 0.7s ease-out;
+}
+
+.custom-progress-bar {
+    height: 12px;
+    background-color: #e0e5ee;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-value {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    border-radius: 24px;
+    transition: width 0.8s ease-in-out;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.5);
+    animation: progressAnimation 1.5s ease-in-out;
+}
+
+.completeness-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    animation: scaleIn 0.5s ease-out;
+}
+
+/* ========== Section Animations ========== */
+.animated-section {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* ========== Item Cards ========== */
+.item-title {
+    color: #080707;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.item-title:hover {
+    color: #667eea;
+}
+
+.item-subtitle {
+    color: #3e3e3c;
+    font-weight: 500;
+}
+
+.item-meta {
+    font-style: italic;
+}
+
+.item-description {
+    line-height: 1.6;
+    color: #444;
+}
+
+/* ========== License Cards ========== */
+.license-card {
+    height: 100%;
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid #e0e5ee;
+}
+
+.license-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.edit-icon-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.6;
+    z-index: 5;
+}
+
+.edit-icon-badge:hover {
+    transform: scale(1.2);
+    opacity: 1;
+}
+
+/* ========== Skills Badges ========== */
+.skills-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.skill-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.clinical-skill {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border: 1px solid #c3cfe2;
+}
+
+.clinical-skill:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.technical-skill {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    border: 1px solid #a8edea;
+}
+
+.technical-skill:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.skill-type {
+    opacity: 0.8;
+    font-size: 0.8rem;
+}
+
+/* ========== Ensure Full Visibility ========== */
+.slds-box {
+    overflow: visible !important;
+}
+
+.slds-media {
+    overflow: visible !important;
+}
+
+/* ========== Animations ========== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes shakeX {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-10px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(10px);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+    }
+    to {
+        transform: scale(1);
+    }
+}
+
+@keyframes progressAnimation {
+    0% {
+        width: 0;
+    }
+}
+
+/* ========== Responsive Styles ========== */
+@media (max-width: 768px) {
+    .profile-avatar {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .profile-details {
+        margin-top: 30px;
+    }
+    
+    .profile-name {
+        font-size: 1.5rem;
+    }
+    
+    .contact-item {
+        font-size: 0.875rem;
+    }
+    
+    .completeness-badge {
+        font-size: 0.875rem;
+        padding: 0.4rem 0.8rem;
+    }
+}

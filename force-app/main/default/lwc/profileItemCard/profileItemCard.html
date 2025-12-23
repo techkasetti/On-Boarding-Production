@@ -1,0 +1,26 @@
+<template>
+    <div class="slds-m-bottom_medium slds-p-bottom_medium" style="border-bottom: 1px solid #e5e5e5;">
+        <div class="slds-grid">
+            <!-- Icon -->
+            <div class="slds-col slds-no-flex slds-m-right_medium">
+                <lightning-icon icon-name={iconName} size="medium"></lightning-icon>
+            </div>
+
+            <!-- Content -->
+            <div class="slds-col slds-grow">
+                <slot name="content"></slot>
+            </div>
+
+            <!-- Edit Button -->
+            <div class="slds-col slds-no-flex">
+                <lightning-button-icon
+                    icon-name="utility:edit"
+                    alternative-text="Edit"
+                    title="Edit"
+                    variant="border-filled"
+                    onclick={handleEdit}
+                ></lightning-button-icon>
+            </div>
+        </div>
+    </div>
+</template>

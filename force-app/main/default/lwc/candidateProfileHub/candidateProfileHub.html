@@ -1,0 +1,300 @@
+<!-- candidateProfileHub.html -->
+<template>
+    <div class="profile-hub-container">
+        <lightning-card title="Candidate Profile" icon-name="standard:user">
+            <div class="slds-p-around_medium">
+                <!-- VIEW 1: Get Candidate ID -->
+                <template if:false={showProfile}>
+                    <div class="input-view slds-text-align_center slds-m-vertical_xx-large">
+                        <div class="icon-wrapper slds-m-bottom_medium">
+                            <lightning-icon icon-name="standard:user" size="large"></lightning-icon>
+                        </div>
+                        <h2 class="slds-text-heading_medium slds-m-bottom_small">View Candidate Profile</h2>
+                        <p class="slds-text-color_weak slds-m-bottom_large">Enter a Candidate ID to load their professional profile</p>
+
+                        <div class="input-container slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-m-horizontal_auto">
+                            <lightning-input
+                                label="Candidate ID"
+                                placeholder="Enter 18-digit Candidate ID..."
+                                value={candidateIdInput}
+                                onchange={handleIdChange}
+                                required
+                                class="custom-input"
+                            ></lightning-input>
+
+                            <lightning-button
+                                label="Load Profile"
+                                variant="brand"
+                                onclick={handleLoadProfile}
+                                disabled={isLoading}
+                                class="slds-m-top_medium load-button"
+                                style="width: 100%;"
+                            ></lightning-button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Loading Spinner -->
+                <template if:true={isLoading}>
+                    <div class="loading-container slds-align_absolute-center slds-m-vertical_xx-large">
+                        <lightning-spinner alternative-text="Loading..." variant="brand" size="medium"></lightning-spinner>
+                        <p class="slds-m-top_medium slds-text-color_weak">Loading profile...</p>
+                    </div>
+                </template>
+
+                <!-- Error Message -->
+                <template if:true={error}>
+                    <div class="slds-m-top_medium">
+                        <div class="error-alert slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                            <span class="slds-assistive-text">error</span>
+                            <lightning-icon icon-name="utility:error" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+                            <h2>{errorText}</h2>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- VIEW 2: Profile Display -->
+                <template if:true={showProfile}>
+                    <!-- Header Card with Banner -->
+                    <div class="profile-header slds-box slds-m-bottom_medium">
+                        <div class="profile-banner"></div>
+                        
+                        <div class="profile-info slds-p-around_medium">
+                            <div class="slds-grid slds-wrap">
+                                <div class="slds-col slds-size_1-of-1">
+                                    <div class="slds-media">
+                                        <div class="slds-media__figure">
+                                            <div class="profile-avatar">
+                                                <lightning-icon icon-name="standard:user" size="large"></lightning-icon>
+                                            </div>
+                                        </div>
+                                        <div class="slds-media__body slds-p-left_medium profile-details">
+                                            <h1 class="slds-text-heading_large slds-m-bottom_xx-small profile-name">{profileData.candidate.Name}</h1>
+                                            <div class="contact-info">
+                                                <template if:true={profileData.candidate.Email__c}>
+                                                    <p class="slds-text-body_regular slds-text-color_weak slds-m-bottom_x-small contact-item">
+                                                        <lightning-icon icon-name="utility:email" size="xx-small"></lightning-icon>
+                                                        <span>{profileData.candidate.Email__c}</span>
+                                                    </p>
+                                                </template>
+                                                <p class="slds-text-body_regular slds-text-color_weak contact-item">
+                                                    <template if:true={profileData.candidate.Location__c}>
+                                                        <lightning-icon icon-name="utility:location" size="xx-small"></lightning-icon>
+                                                        <span>{profileData.candidate.Location__c}</span>
+                                                    </template>
+                                                    <template if:true={profileData.candidate.Phone__c}>
+                                                        <span class="slds-m-left_small">
+                                                            <lightning-icon icon-name="utility:phone_portrait" size="xx-small"></lightning-icon>
+                                                            <span>{profileData.candidate.Phone__c}</span>
+                                                        </span>
+                                                    </template>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="slds-grid slds-grid_align-end slds-m-top_medium">
+                                <lightning-button
+                                    label="Load Different Profile"
+                                    onclick={handleReset}
+                                    icon-name="utility:refresh"
+                                ></lightning-button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Completeness -->
+                    <div class="completeness-card slds-box slds-m-bottom_medium">
+                        <div class="slds-grid slds-grid_vertical-align-center">
+                            <div class="slds-col slds-grow">
+                                <h3 class="slds-text-heading_small slds-m-bottom_x-small">
+                                    <lightning-icon icon-name="utility:chart" size="x-small" class="slds-m-right_xx-small"></lightning-icon>
+                                    Profile Strength
+                                </h3>
+                                <div class="custom-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={completenessPercentage}>
+                                    <div class="progress-value" style={completenessStyle}>
+                                        <span class="slds-assistive-text">Progress: {completenessPercentage}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-no-flex slds-m-left_medium">
+                                <span class="completeness-badge">
+                                    {completenessPercentage}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Work Experience Section -->
+                    <c-profile-section
+                        icon-name="standard:work_order"
+                        add-button-label="Add Experience"
+                        empty-state-message="No work experience added yet. Add your first role!"
+                        items={profileData.workExperiences}
+                        onaddnew={handleAddWorkExperience}
+                        class="animated-section"
+                    >
+                        <span slot="title">Experience</span>
+                        <div slot="items">
+                            <template for:each={profileData.workExperiences} for:item="work">
+                                <c-profile-item-card
+                                    key={work.Id}
+                                    icon-name="standard:work_order_item"
+                                    record-id={work.Id}
+                                    onedit={handleEditWorkExperience}
+                                >
+                                    <div slot="content">
+                                        <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{work.Role__c}</h3>
+                                        <p class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle">{work.Organization__c}</p>
+                                        <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{work.Duration_Text__c}</p>
+                                        <template if:true={work.Responsibilities__c}>
+                                            <p class="slds-text-body_regular item-description">{work.Responsibilities__c}</p>
+                                        </template>
+                                    </div>
+                                </c-profile-item-card>
+                            </template>
+                        </div>
+                    </c-profile-section>
+
+                    <!-- Education Section -->
+                    <c-profile-section
+                        icon-name="standard:education"
+                        add-button-label="Add Education"
+                        empty-state-message="No education added yet. Add your academic background!"
+                        items={profileData.educations}
+                        onaddnew={handleAddEducation}
+                        class="animated-section"
+                    >
+                        <span slot="title">Education</span>
+                        <div slot="items">
+                            <template for:each={profileData.educations} for:item="edu">
+                                <c-profile-item-card
+                                    key={edu.Id}
+                                    icon-name="standard:education"
+                                    record-id={edu.Id}
+                                    onedit={handleEditEducation}
+                                >
+                                    <div slot="content">
+                                        <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{edu.Institution__c}</h3>
+                                        <p class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle">{edu.Degree__c}</p>
+                                        <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{edu.Duration_Text__c}</p>
+                                        <template if:true={edu.Details__c}>
+                                            <p class="slds-text-body_regular item-description">{edu.Details__c}</p>
+                                        </template>
+                                    </div>
+                                </c-profile-item-card>
+                            </template>
+                        </div>
+                    </c-profile-section>
+
+                    <!-- Licenses Section -->
+                    <c-profile-section
+                        icon-name="standard:certificate"
+                        add-button-label="Add Certification"
+                        empty-state-message="No licenses or certifications added yet"
+                        items={profileData.licenses}
+                        onaddnew={handleAddLicense}
+                        class="animated-section"
+                    >
+                        <span slot="title">Licenses & Certifications</span>
+                        <div slot="items">
+                            <div class="slds-grid slds-wrap slds-grid_pull-padded">
+                                <template for:each={profileData.licenses} for:item="license">
+                                    <div key={license.Id} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small">
+                                        <div class="license-card slds-box slds-box_x-small">
+                                            <lightning-button-icon
+                                                icon-name="utility:edit"
+                                                alternative-text="Edit"
+                                                title="Edit"
+                                                variant="bare"
+                                                onclick={handleEditLicense}
+                                                data-id={license.Id}
+                                                class="edit-icon-badge"
+                                            ></lightning-button-icon>
+                                            <div class="slds-media slds-media_center">
+                                                <div class="slds-media__figure">
+                                                    <lightning-icon icon-name="standard:endorsement" size="small"></lightning-icon>
+                                                </div>
+                                                <div class="slds-media__body">
+                                                    <h3 class="slds-text-body_regular slds-truncate" title={license.Name}>{license.Name}</h3>
+                                                    <p class="slds-text-body_small slds-text-color_weak">{license.Type__c}</p>
+                                                    <template if:true={license.Notes__c}>
+                                                        <p class="slds-text-body_small slds-m-top_xx-small">{license.Notes__c}</p>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </c-profile-section>
+
+                    <!-- Clinical Skills Section -->
+                    <template if:true={hasClinicalSkills}>
+                        <c-profile-section
+                            icon-name="standard:skill"
+                            add-button-label="Add Clinical Skill"
+                            empty-state-message="No clinical skills added yet"
+                            items={profileData.clinicalSkills}
+                            onaddnew={handleAddClinicalSkill}
+                            class="animated-section"
+                        >
+                            <span slot="title">Clinical Skills</span>
+                            <div slot="items">
+                                <div class="skills-container slds-grid slds-wrap slds-grid_pull-padded">
+                                    <template for:each={profileData.clinicalSkills} for:item="skill">
+                                        <div key={skill.Id} class="slds-col slds-p-horizontal_small slds-m-bottom_small">
+                                            <span class="skill-badge clinical-skill" onclick={handleEditClinicalSkill} data-id={skill.Id}>
+                                                {skill.Name}
+                                                <template if:true={skill.Skill_Type__c}>
+                                                    <span class="skill-type"> • {skill.Skill_Type__c}</span>
+                                                </template>
+                                            </span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </c-profile-section>
+                    </template>
+
+                    <!-- Technical Skills Section -->
+                    <template if:true={hasTechnicalSkills}>
+                        <c-profile-section
+                            icon-name="standard:apex"
+                            add-button-label="Add Technical Skill"
+                            empty-state-message="No technical skills added yet"
+                            items={profileData.technicalSkills}
+                            onaddnew={handleAddTechnicalSkill}
+                            class="animated-section"
+                        >
+                            <span slot="title">Technical Skills</span>
+                            <div slot="items">
+                                <div class="skills-container slds-grid slds-wrap slds-grid_pull-padded">
+                                    <template for:each={profileData.technicalSkills} for:item="skill">
+                                        <div key={skill.Id} class="slds-col slds-p-horizontal_small slds-m-bottom_small">
+                                            <span class="skill-badge technical-skill" onclick={handleEditTechnicalSkill} data-id={skill.Id}>
+                                                {skill.Name}
+                                                <template if:true={skill.Category__c}>
+                                                    <span class="skill-type"> • {skill.Category__c}</span>
+                                                </template>
+                                            </span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </c-profile-section>
+                    </template>
+                </template>
+            </div>
+        </lightning-card>
+
+        <!-- Dynamic Form Modal -->
+        <c-dynamic-form-modal
+            candidate-id={candidateIdInput}
+            onsave={handleModalSave}
+        ></c-dynamic-form-modal>
+    </div>
+</template>

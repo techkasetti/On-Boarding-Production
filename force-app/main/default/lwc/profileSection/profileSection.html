@@ -1,0 +1,42 @@
+<template>
+    <div class="slds-box slds-m-bottom_medium">
+        <!-- Section Header with Title and Add Button -->
+        <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_medium">
+            <div class="slds-col slds-grow">
+                <h2 class="slds-text-heading_medium">
+                    <template if:true={iconName}>
+                        <lightning-icon icon-name={iconName} size="small" class="slds-m-right_x-small"></lightning-icon>
+                    </template>
+                    <slot name="title"></slot>
+                </h2>
+            </div>
+            <div class="slds-col slds-no-flex">
+                <lightning-button
+                    label={addButtonLabel}
+                    variant="brand"
+                    icon-name="utility:add"
+                    onclick={handleAddNew}
+                ></lightning-button>
+            </div>
+        </div>
+
+        <!-- Items List -->
+        <template if:true={hasItems}>
+            <slot name="items"></slot>
+        </template>
+
+        <!-- Empty State -->
+        <template if:false={hasItems}>
+            <div class="slds-text-align_center slds-p-vertical_large">
+                <lightning-icon icon-name="utility:info" size="small" class="slds-m-bottom_small"></lightning-icon>
+                <p class="slds-text-color_weak">{emptyStateMessage}</p>
+                <lightning-button
+                    label={addButtonLabel}
+                    variant="brand"
+                    onclick={handleAddNew}
+                    class="slds-m-top_small"
+                ></lightning-button>
+            </div>
+        </template>
+    </div>
+</template>
