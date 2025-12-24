@@ -4,18 +4,31 @@
         <div class="header-section">
             <lightning-card>
                 <div class="slds-p-around_medium">
-                    <h1 class="slds-text-heading_large slds-m-bottom_medium">Job Search</h1>
+                    <div class="header-content">
+                        <div class="header-title-section">
+                            <lightning-icon icon-name="standard:work_order" size="medium" class="header-icon"></lightning-icon>
+                            <div class="header-text">
+                                <h1 class="page-title">Job Search</h1>
+                                <p class="page-subtitle">Find your next opportunity</p>
+                            </div>
+                        </div>
+                        <div class="job-count-badge">
+                            <span class="count-number">{jobCount}</span>
+                            <span class="count-label">Jobs Available</span>
+                        </div>
+                    </div>
                     
                     <!-- Search Bar -->
-                    <div class="slds-grid slds-wrap slds-gutters">
+                    <div class="slds-grid slds-wrap slds-gutters slds-m-top_medium">
                         <div class="slds-col slds-size_1-of-1 slds-medium-size_5-of-12">
                             <lightning-input
                                 type="search"
                                 label="Search Jobs"
-                                placeholder="Search by job title, keyword, or company"
+                                placeholder="Job title or keyword"
                                 value={keyword}
                                 onchange={handleKeywordChange}
-                                variant="label-hidden">
+                                variant="label-hidden"
+                                class="search-input">
                             </lightning-input>
                         </div>
                         
@@ -23,10 +36,11 @@
                             <lightning-input
                                 type="search"
                                 label="Location"
-                                placeholder="Location"
+                                placeholder="City, state, or zip code"
                                 value={location}
                                 onchange={handleLocationChange}
-                                variant="label-hidden">
+                                variant="label-hidden"
+                                class="search-input">
                             </lightning-input>
                         </div>
                         
@@ -35,14 +49,14 @@
                                 label="Filters"
                                 icon-name="utility:filterList"
                                 onclick={toggleFilters}
-                                class="slds-m-left_x-small filter-button">
+                                class="filter-button">
                             </lightning-button>
                         </div>
                     </div>
 
                     <!-- Advanced Filters -->
                     <template if:true={showFilters}>
-                        <div class="slds-box slds-m-top_medium slds-theme_shade">
+                        <div class="slds-box slds-m-top_medium slds-theme_shade filters-box">
                             <div class="slds-grid slds-gutters slds-wrap">
                                 <div class="slds-col slds-size_1-of-1">
                                     <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
@@ -95,7 +109,7 @@
         <!-- Results Section -->
         <div class="results-section slds-m-top_medium">
             <div class="slds-m-bottom_small slds-text-body_regular slds-text-color_weak">
-                {jobCount} {jobCount} job(s) found
+                {jobCount} job(s) found
             </div>
 
             <!-- Loading Spinner -->
@@ -139,7 +153,7 @@
                                 <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
                                     <div class="slds-col">
                                         <h3 class="slds-text-heading_medium slds-m-bottom_x-small">
-                                            <a href={job.Id} class="job-title">{job.Name}</a>
+                                            <a href="#" class="job-title" data-id={job.Id} onclick={handleJobClick}>{job.Name}</a>
                                         </h3>
                                         <p class="slds-text-body_regular slds-text-color_weak">{job.Category__c}</p>
                                     </div>
@@ -162,10 +176,10 @@
                                     </template>
                                 </div>
 
-                                <!-- Job Description -->
+                                <!-- Job Preview Description -->
                                 <template if:true={job.Description__c}>
-                                    <div class="slds-m-bottom_medium">
-                                        <lightning-formatted-rich-text value={job.Description__c} class="job-description"></lightning-formatted-rich-text>
+                                    <div class="job-preview-description slds-m-bottom_small">
+                                        <p class="slds-text-body_small slds-text-color_weak">{job.descriptionPreview}</p>
                                     </div>
                                 </template>
 
@@ -179,14 +193,6 @@
                                             onclick={handleApply}>
                                         </lightning-button>
                                     </div>
-                                    <div class="slds-col">
-                                        <lightning-button
-                                            variant="neutral"
-                                            label="Save"
-                                            data-id={job.Id}
-                                            onclick={handleSave}>
-                                        </lightning-button>
-                                    </div>
                                 </div>
                             </div>
                         </lightning-card>
@@ -194,5 +200,92 @@
                 </div>
             </template>
         </div>
+
+        <!-- Job Detail Modal -->
+        <template if:true={showJobModal}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                <div class="slds-modal__container">
+                    <!-- Modal Header -->
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                                title="Close" 
+                                onclick={handleCloseModal}>
+                            <lightning-icon icon-name="utility:close" size="small" alternative-text="Close"></lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 class="slds-modal__title slds-hyphenate">{selectedJob.Name}</h2>
+                    </header>
+
+                    <!-- Modal Body -->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content">
+                        <!-- Top Section - Job Info and About Role Side by Side -->
+                        <div class="modal-top-section">
+                            <!-- Left Side - Basic Job Info -->
+                            <div class="modal-basic-info">
+                                <p class="modal-category-title">{selectedJob.Category__c}</p>
+                                
+                                <div class="modal-info-item">
+                                    <lightning-icon icon-name="utility:location" size="x-small" class="info-icon"></lightning-icon>
+                                    <span class="info-text">{selectedJob.Location__c}</span>
+                                </div>
+                                
+                                <template if:true={selectedJob.Experience_Level__c}>
+                                    <div class="modal-info-item">
+                                        <lightning-icon icon-name="utility:layers" size="x-small" class="info-icon"></lightning-icon>
+                                        <span class="info-text">{selectedJob.Experience_Level__c}</span>
+                                    </div>
+                                </template>
+                                
+                                <div class="modal-info-item">
+                                    <lightning-icon icon-name="utility:clock" size="x-small" class="info-icon"></lightning-icon>
+                                    <span class="info-text-secondary">Posted {selectedJob.timeAgo}</span>
+                                </div>
+                            </div>
+
+                            <!-- Right Side - About Role Card -->
+                            <div class="modal-about-card">
+                                <lightning-card title="About this role">
+                                    <div class="slds-p-horizontal_medium slds-p-vertical_small">
+                                        <template if:true={selectedJob.CreatedBy}>
+                                            <div class="slds-m-bottom_small">
+                                                <p class="slds-text-body_small slds-text-color_weak">Posted by</p>
+                                                <p class="slds-text-body_regular">{selectedJob.CreatedBy.Name}</p>
+                                            </div>
+                                        </template>
+                                        <div>
+                                            <p class="slds-text-body_small slds-text-color_weak">Job ID</p>
+                                            <p class="slds-text-body_regular slds-truncate">{selectedJob.Id}</p>
+                                        </div>
+                                    </div>
+                                </lightning-card>
+                            </div>
+                        </div>
+
+                        <!-- Job Description - Full Width Below -->
+                        <template if:true={selectedJob.Description__c}>
+                            <div class="slds-m-top_large">
+                                <h3 class="slds-text-heading_small slds-m-bottom_small">Job Description</h3>
+                                <div class="job-description-full" lwc:dom="manual"></div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <footer class="slds-modal__footer">
+                        <lightning-button 
+                            variant="neutral" 
+                            label="Close" 
+                            onclick={handleCloseModal}>
+                        </lightning-button>
+                        <lightning-button 
+                            variant="brand" 
+                            label="Apply Now" 
+                            onclick={handleApplyFromModal}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
     </div>
 </template>

@@ -8,9 +8,9 @@ public with sharing class JobPostingController {
         String experienceLevel
     ) {
         try {
-            String query = 'SELECT Id, Name, Category__c, Location__c, Description__c, Experience_Level__c, CreatedDate, CreatedBy.Name, LastModifiedDate ' +
+            String query = 'SELECT Id, Name, Category__c, Location__c, Description__c, Experience_Level__c, Status__c, CreatedDate, CreatedBy.Name, LastModifiedDate ' +
                           'FROM Job_Posting__c ' +
-                          'WHERE Id != null';
+                          'WHERE Status__c IN (\'Active\', \'Open\')';
             
             Map<String, Object> bindVars = new Map<String, Object>();
             

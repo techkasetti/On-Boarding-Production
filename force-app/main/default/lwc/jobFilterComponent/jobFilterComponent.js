@@ -1,8 +1,10 @@
 import { LightningElement, track, wire } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getJobPostings from '@salesforce/apex/JobPostingController.getJobPostings';
 import { refreshApex } from '@salesforce/apex';
 
-export default class JobFilterComponent extends LightningElement {
+export default class JobFilterComponent extends NavigationMixin(LightningElement) {
     @track keyword = '';
     @track location = '';
     @track datePosted = 'all';
@@ -11,6 +13,8 @@ export default class JobFilterComponent extends LightningElement {
     @track jobs = [];
     @track isLoading = false;
     @track error;
+    @track selectedJob = null;
+    @track showJobModal = false;
 
     wiredJobsResult;
 
@@ -40,9 +44,16 @@ export default class JobFilterComponent extends LightningElement {
         this.wiredJobsResult = result;
         this.isLoading = true;
         if (result.data) {
-            this.jobs = result.data.map(job => ({
+            // Filter only Active/Open status jobs
+            const openJobs = result.data.filter(job => 
+                job.Status__c === 'Active' || job.Status__c === 'Open'
+            );
+            
+            this.jobs = openJobs.map(job => ({
                 ...job,
-                timeAgo: this.calculateTimeAgo(job.CreatedDate)
+                timeAgo: this.calculateTimeAgo(job.CreatedDate),
+                Description__c: this.formatDescription(job.Description__c),
+                descriptionPreview: this.getDescriptionPreview(job.Description__c)
             }));
             this.error = undefined;
             this.isLoading = false;
@@ -51,6 +62,86 @@ export default class JobFilterComponent extends LightningElement {
             this.jobs = [];
             this.isLoading = false;
         }
+    }
+
+    formatDescription(description) {
+        if (!description) return '';
+        
+        // Replace multiple spaces with single space
+        let formatted = description.replace(/\s+/g, ' ').trim();
+        
+        // Handle section headers with asterisks
+        formatted = formatted.replace(/\*\s*Education:/gi, '||SECTION||📚 Education:||');
+        formatted = formatted.replace(/\*\s*Responsibilities:/gi, '||SECTION||💼 Responsibilities:||');
+        formatted = formatted.replace(/\*\s*Skills:/gi, '||SECTION||⚡ Skills:||');
+        formatted = formatted.replace(/\*\s*Requirements:/gi, '||SECTION||✓ Requirements:||');
+        formatted = formatted.replace(/\*\s*Qualifications:/gi, '||SECTION||🎓 Qualifications:||');
+        formatted = formatted.replace(/\*\s*Benefits:/gi, '||SECTION||🎁 Benefits:||');
+        formatted = formatted.replace(/\*\s*About:/gi, '||SECTION||ℹ️ About:||');
+        
+        // Handle existing emoji format
+        formatted = formatted.replace(/📚 Education:/gi, '||SECTION||📚 Education:||');
+        formatted = formatted.replace(/💼 Responsibilities:/gi, '||SECTION||💼 Responsibilities:||');
+        formatted = formatted.replace(/⚡ Skills:/gi, '||SECTION||⚡ Skills:||');
+        formatted = formatted.replace(/✓ Requirements:/gi, '||SECTION||✓ Requirements:||');
+        formatted = formatted.replace(/🎓 Qualifications:/gi, '||SECTION||🎓 Qualifications:||');
+        formatted = formatted.replace(/🎁 Benefits:/gi, '||SECTION||🎁 Benefits:||');
+        formatted = formatted.replace(/ℹ️ About:/gi, '||SECTION||ℹ️ About:||');
+        
+        // Handle dash format
+        formatted = formatted.replace(/- Education:/gi, '||SECTION||📚 Education:||');
+        formatted = formatted.replace(/- Responsibilities:/gi, '||SECTION||💼 Responsibilities:||');
+        formatted = formatted.replace(/- Skills:/gi, '||SECTION||⚡ Skills:||');
+        formatted = formatted.replace(/- Requirements:/gi, '||SECTION||✓ Requirements:||');
+        formatted = formatted.replace(/- Qualifications:/gi, '||SECTION||🎓 Qualifications:||');
+        formatted = formatted.replace(/- Benefits:/gi, '||SECTION||🎁 Benefits:||');
+        formatted = formatted.replace(/- About:/gi, '||SECTION||ℹ️ About:||');
+        
+        // Split by sections
+        const sections = formatted.split('||SECTION||').filter(s => s.trim());
+        
+        let result = '';
+        sections.forEach(section => {
+            if (section.includes('||')) {
+                // This is a section header
+                const header = section.replace(/\|\|/g, '');
+                const parts = header.split(':');
+                if (parts.length >= 2) {
+                    const headerText = parts[0] + ':';
+                    const content = parts.slice(1).join(':').trim();
+                    
+                    result += `<div class="section-header">${headerText}</div>`;
+                    
+                    if (content) {
+                        // Split content by comma or semicolon
+                        const items = content.split(/[,;]/).map(item => item.trim()).filter(item => item);
+                        items.forEach(item => {
+                            result += `<div class="bullet-item">${item}</div>`;
+                        });
+                    }
+                }
+            }
+        });
+        
+        return result;
+    }
+
+    getDescriptionPreview(description) {
+        if (!description) return '';
+        
+        // Remove HTML tags and special characters for preview
+        let preview = description.replace(/\s+/g, ' ').trim();
+        preview = preview.replace(/📚|💼|⚡|✓|🎓|🎁|ℹ️/g, '');
+        preview = preview.replace(/- Education:|Education:|Responsibilities:|Skills:|Requirements:|Qualifications:|Benefits:|About:/gi, '');
+        preview = preview.replace(/;\s+/g, ', ');
+        preview = preview.replace(/\s+-\s+/g, ', ');
+        
+        // Truncate to ~150 characters
+        if (preview.length > 150) {
+            preview = preview.substring(0, 150).trim() + '...';
+        }
+        
+        return preview;
     }
 
     get jobCount() {
@@ -108,18 +199,72 @@ export default class JobFilterComponent extends LightningElement {
         });
     }
 
-    handleApply(event) {
+    handleJobClick(event) {
+        event.preventDefault();
         const jobId = event.currentTarget.dataset.id;
-        // Add your apply logic here
-        console.log('Apply to job:', jobId);
-        // You can navigate to a record page or open a modal
+        const job = this.jobs.find(j => j.Id === jobId);
+        
+        if (job) {
+            this.selectedJob = job;
+            this.showJobModal = true;
+            
+            // Use setTimeout to ensure DOM is ready
+            setTimeout(() => {
+                this.renderJobDescription();
+            }, 0);
+        }
     }
 
-    handleSave(event) {
+    renderJobDescription() {
+        const descContainer = this.template.querySelector('.job-description-full');
+        if (descContainer && this.selectedJob && this.selectedJob.Description__c) {
+            descContainer.innerHTML = this.selectedJob.Description__c;
+        }
+    }
+
+    handleCloseModal() {
+        this.showJobModal = false;
+        this.selectedJob = null;
+    }
+
+    handleApply(event) {
         const jobId = event.currentTarget.dataset.id;
-        // Add your save logic here
-        console.log('Save job:', jobId);
-        // You can create a saved job record or add to favorites
+        const jobName = this.jobs.find(job => job.Id === jobId)?.Name;
+        
+        // Close modal if open
+        this.handleCloseModal();
+        
+        // Show a toast message
+        const toastEvent = new ShowToastEvent({
+            title: 'Application Started',
+            message: `You are applying for ${jobName}`,
+            variant: 'info',
+            mode: 'dismissable'
+        });
+        this.dispatchEvent(toastEvent);
+        
+        // Navigate to the job posting record page
+        this[NavigationMixin.Navigate]({
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: jobId,
+                objectApiName: 'Job_Posting__c',
+                actionName: 'view'
+            }
+        });
+    }
+
+    handleApplyFromModal() {
+        if (this.selectedJob) {
+            const event = {
+                currentTarget: {
+                    dataset: {
+                        id: this.selectedJob.Id
+                    }
+                }
+            };
+            this.handleApply(event);
+        }
     }
 
     calculateTimeAgo(createdDate) {

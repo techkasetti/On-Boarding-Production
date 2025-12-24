@@ -7,49 +7,100 @@ import deleteJobPosting from '@salesforce/apex/JobPostingAdminController.deleteJ
 import getPicklistValues from '@salesforce/apex/JobPostingAdminController.getPicklistValues';
 
 const actions = [
-    { label: 'Edit', name: 'edit' },
-    { label: 'Delete', name: 'delete' }
+    { label: 'Edit', name: 'edit', iconName: 'utility:edit' },
+    { label: 'Delete', name: 'delete', iconName: 'utility:delete' }
 ];
 
 export default class JobPostingAdmin extends LightningElement {
     @track jobPostings = [];
+    @track filteredJobPostings = [];
     @track columns = [];
     @track currentJob = {};
     @track statusOptions = [];
+    @track categoryOptions = [];
+    @track experienceOptions = [];
+    @track specializationOptions = [];
 
     isModalOpen = false;
+    isDeleteModalOpen = false;
     modalTitle = '';
+    searchKey = '';
+    isLoading = false;
+    jobToDelete = null;
+
+    get totalJobs() {
+        return this.filteredJobPostings.length;
+    }
+
+    get hasJobs() {
+        return this.filteredJobPostings.length > 0;
+    }
 
     connectedCallback() {
         this.loadData();
     }
 
-    /* ----------------------------------------------------
-       Load Picklist + Columns + Job Records (in order)
-    -----------------------------------------------------*/
     async loadData() {
+        this.isLoading = true;
         try {
-            // 1️⃣ Get picklist values first
-            const picklistData = await getPicklistValues();
-            this.statusOptions = picklistData;
+            // Load all picklist values
+            const [statusData, categoryData, experienceData, specializationData] = await Promise.all([
+                getPicklistValues({ fieldName: 'Status__c' }),
+                getPicklistValues({ fieldName: 'Category__c' }),
+                getPicklistValues({ fieldName: 'Experience_Level__c' }),
+                getPicklistValues({ fieldName: 'Specialization__c' })
+            ]);
 
-            // 2️⃣ Construct columns AFTER picklist values load
+            this.statusOptions = statusData;
+            this.categoryOptions = categoryData;
+            this.experienceOptions = experienceData;
+            this.specializationOptions = specializationData;
+
+            // Define columns
             this.columns = [
-                { label: 'Job Posting Name', fieldName: 'Name', type: 'text', wrapText: true },
-                { label: 'Location', fieldName: 'Location__c', type: 'text' },
-
-                // Read-only current status
-                { label: 'Status', fieldName: 'Status__c', type: 'text' },
-                
-                { type: 'action', typeAttributes: { rowActions: actions } }
+                { 
+                    label: 'Job Title', 
+                    fieldName: 'Name', 
+                    type: 'text', 
+                    wrapText: true,
+                    cellAttributes: { class: 'slds-text-title_bold' }
+                },
+                { 
+                    label: 'Category', 
+                    fieldName: 'Category__c', 
+                    type: 'text'
+                },
+                { 
+                    label: 'Location', 
+                    fieldName: 'Location__c', 
+                    type: 'text'
+                },
+                { 
+                    label: 'Experience', 
+                    fieldName: 'Experience_Level__c', 
+                    type: 'text'
+                },
+                { 
+                    label: 'Status', 
+                    fieldName: 'Status__c', 
+                    type: 'text',
+                    cellAttributes: { 
+                        class: { fieldName: 'statusClass' }
+                    }
+                },
+                { 
+                    type: 'action', 
+                    typeAttributes: { rowActions: actions }
+                }
             ];
 
-            // 3️⃣ Now load job records and inject EditStatus__c
+            // Load job records
             const jobData = await getJobPostings();
             this.jobPostings = jobData.map(record => ({
                 ...record,
-                EditStatus__c: record.Status__c       // default value for editing
+                statusClass: this.getStatusClass(record.Status__c)
             }));
+            this.filteredJobPostings = [...this.jobPostings];
 
         } catch (error) {
             this.showToast(
@@ -57,56 +108,44 @@ export default class JobPostingAdmin extends LightningElement {
                 error.body ? error.body.message : error.message,
                 'error'
             );
+        } finally {
+            this.isLoading = false;
         }
     }
 
-    /* ----------------------------------------------------
-       Datatable Inline Save
-    -----------------------------------------------------*/
-    async handleDatatableSave(event) {
-        const draftValues = event.detail.draftValues;
+    getStatusClass(status) {
+        const statusMap = {
+            'Active': 'status-active',
+            'Inactive': 'status-inactive',
+            'Draft': 'status-draft',
+            'Closed': 'status-closed'
+        };
+        return statusMap[status] || '';
+    }
 
-        const recordsToSave = draftValues.map(draft => {
-            const rec = { Id: draft.Id };
-
-            // Map temporary edit field back to real API field
-            if (draft.EditStatus__c !== undefined) {
-                rec.Status__c = draft.EditStatus__c;
-            }
-
-            return rec;
-        });
-
-        // Only save records that actually changed
-        const filteredRecords = recordsToSave.filter(r => Object.keys(r).length > 1);
-
-        if (filteredRecords.length === 0) {
-            this.template.querySelector('lightning-datatable').draftValues = [];
+    handleSearch(event) {
+        this.searchKey = event.target.value.toLowerCase();
+        
+        if (!this.searchKey) {
+            this.filteredJobPostings = [...this.jobPostings];
             return;
         }
 
-        try {
-            await saveJobPostings({ jobPostings: filteredRecords });
-            this.showToast('Success', 'Job Postings updated successfully.', 'success');
-
-            this.template.querySelector('lightning-datatable').draftValues = [];
-            await this.loadData(); // refresh all data
-
-        } catch (error) {
-            this.showToast(
-                'Error Updating',
-                error.body ? error.body.message : error.message,
-                'error'
+        this.filteredJobPostings = this.jobPostings.filter(job => {
+            return (
+                (job.Name && job.Name.toLowerCase().includes(this.searchKey)) ||
+                (job.Category__c && job.Category__c.toLowerCase().includes(this.searchKey)) ||
+                (job.Location__c && job.Location__c.toLowerCase().includes(this.searchKey)) ||
+                (job.Status__c && job.Status__c.toLowerCase().includes(this.searchKey))
             );
-        }
+        });
     }
 
-    /* ----------------------------------------------------
-       Modal: New / Edit
-    -----------------------------------------------------*/
     handleNew() {
-        this.modalTitle = 'New Job Posting';
-        this.currentJob = {};
+        this.modalTitle = 'Create New Job Posting';
+        this.currentJob = {
+            Status__c: 'Draft'
+        };
         this.isModalOpen = true;
     }
 
@@ -119,7 +158,8 @@ export default class JobPostingAdmin extends LightningElement {
             this.currentJob = { ...row };
             this.isModalOpen = true;
         } else if (actionName === 'delete') {
-            this.handleDelete(row.Id);
+            this.jobToDelete = row;
+            this.isDeleteModalOpen = true;
         }
     }
 
@@ -129,14 +169,20 @@ export default class JobPostingAdmin extends LightningElement {
     }
 
     async handleSave() {
+        // Validation
         if (!this.currentJob.Name) {
             this.showToast('Validation Error', 'Job Posting Name is required.', 'error');
             return;
         }
 
+        this.isLoading = true;
         try {
             await saveJobPostings({ jobPostings: [this.currentJob] });
-            this.showToast('Success', 'Job Posting saved successfully.', 'success');
+            this.showToast(
+                'Success', 
+                this.currentJob.Id ? 'Job Posting updated successfully.' : 'Job Posting created successfully.', 
+                'success'
+            );
 
             this.closeModal();
             await this.loadData();
@@ -147,16 +193,19 @@ export default class JobPostingAdmin extends LightningElement {
                 error.body ? error.body.message : error.message,
                 'error'
             );
+        } finally {
+            this.isLoading = false;
         }
     }
 
-    /* ----------------------------------------------------
-       Delete Record
-    -----------------------------------------------------*/
-    async handleDelete(jobId) {
+    async confirmDelete() {
+        if (!this.jobToDelete) return;
+
+        this.isLoading = true;
         try {
-            await deleteJobPosting({ jobPostingId: jobId });
+            await deleteJobPosting({ jobPostingId: this.jobToDelete.Id });
             this.showToast('Success', 'Job Posting deleted successfully.', 'success');
+            this.closeDeleteModal();
             await this.loadData();
         } catch (error) {
             this.showToast(
@@ -164,14 +213,19 @@ export default class JobPostingAdmin extends LightningElement {
                 error.body ? error.body.message : error.message,
                 'error'
             );
+        } finally {
+            this.isLoading = false;
         }
     }
 
-    /* ----------------------------------------------------
-       Helpers
-    -----------------------------------------------------*/
     closeModal() {
         this.isModalOpen = false;
+        this.currentJob = {};
+    }
+
+    closeDeleteModal() {
+        this.isDeleteModalOpen = false;
+        this.jobToDelete = null;
     }
 
     showToast(title, message, variant) {

@@ -101,7 +101,7 @@
                                             onchange={handleFieldChange}
                                             data-field="Degree__c"
                                             required
-                                            placeholder="e.g., Bachelor of Science in Computer Science"
+                                            placeholder="e.g., MBBS, Bachelor of Science"
                                             field-level-help="Your degree or qualification earned"
                                         ></lightning-input>
                                     </div>
@@ -141,20 +141,21 @@
                                             onchange={handleFieldChange}
                                             data-field="Name"
                                             required
-                                            placeholder="e.g., AWS Certified Solutions Architect"
+                                            placeholder="e.g., Basic Life Support (BLS)"
                                             field-level-help="Name of the license or certification"
                                         ></lightning-input>
                                     </div>
 
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
-                                        <lightning-input
-                                            label="Type / Category"
+                                        <lightning-combobox
+                                            label="Type"
                                             value={formData.Type__c}
-                                            onchange={handleFieldChange}
+                                            placeholder="Select Type"
+                                            options={licenseTypeOptions}
+                                            onchange={handlePicklistChange}
                                             data-field="Type__c"
-                                            placeholder="e.g., Professional License, Certification"
-                                            field-level-help="Type or category of certification"
-                                        ></lightning-input>
+                                            field-level-help="Type of certification or license"
+                                        ></lightning-combobox>
                                     </div>
 
                                     <div class="slds-form__item" role="listitem">
@@ -187,14 +188,15 @@
                                     </div>
 
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
-                                        <lightning-input
+                                        <lightning-combobox
                                             label="Skill Type"
                                             value={formData.Skill_Type__c}
-                                            onchange={handleFieldChange}
+                                            placeholder="Select Skill Type"
+                                            options={clinicalSkillTypeOptions}
+                                            onchange={handlePicklistChange}
                                             data-field="Skill_Type__c"
-                                            placeholder="e.g., Diagnostic, Therapeutic"
-                                            field-level-help="Category or type of skill"
-                                        ></lightning-input>
+                                            field-level-help="Category of clinical skill"
+                                        ></lightning-combobox>
                                     </div>
 
                                     <div class="slds-form__item" role="listitem">
@@ -221,20 +223,21 @@
                                             onchange={handleFieldChange}
                                             data-field="Name"
                                             required
-                                            placeholder="e.g., JavaScript, Python"
+                                            placeholder="e.g., EMR/EHR Systems"
                                             field-level-help="Name of the technical skill"
                                         ></lightning-input>
                                     </div>
 
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
-                                        <lightning-input
+                                        <lightning-combobox
                                             label="Category"
                                             value={formData.Category__c}
-                                            onchange={handleFieldChange}
+                                            placeholder="Select Category"
+                                            options={technicalSkillCategoryOptions}
+                                            onchange={handlePicklistChange}
                                             data-field="Category__c"
-                                            placeholder="e.g., Programming Language, Framework"
                                             field-level-help="Category of the technical skill"
-                                        ></lightning-input>
+                                        ></lightning-combobox>
                                     </div>
 
                                     <div class="slds-form__item" role="listitem">
@@ -247,6 +250,155 @@
                                             placeholder="Describe your proficiency and projects..."
                                             field-level-help="Details about your skill level and experience"
                                         ></lightning-textarea>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Procedure Fields -->
+                            <template if:true={isProcedure}>
+                                <div class="slds-form" role="list">
+                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
+                                        <lightning-input
+                                            label="Procedure Name"
+                                            value={formData.Name}
+                                            onchange={handleFieldChange}
+                                            data-field="Name"
+                                            required
+                                            placeholder="e.g., IV Cannulation"
+                                            field-level-help="Name of the procedure"
+                                        ></lightning-input>
+                                    </div>
+
+                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
+                                        <lightning-combobox
+                                            label="Category"
+                                            value={formData.Category__c}
+                                            placeholder="Select Category"
+                                            options={procedureCategoryOptions}
+                                            onchange={handlePicklistChange}
+                                            data-field="Category__c"
+                                            field-level-help="Type of procedure"
+                                        ></lightning-combobox>
+                                    </div>
+
+                                    <div class="slds-form__item" role="listitem">
+                                        <lightning-textarea
+                                            label="Notes"
+                                            value={formData.Notes__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Notes__c"
+                                            rows="3"
+                                            placeholder="Additional details about the procedure..."
+                                            field-level-help="Any relevant notes"
+                                        ></lightning-textarea>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Internship Fields -->
+                            <template if:true={isInternship}>
+                                <div class="slds-form" role="list">
+                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
+                                        <lightning-input
+                                            label="Organization"
+                                            value={formData.Organization__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Organization__c"
+                                            required
+                                            placeholder="e.g., City General Hospital"
+                                            field-level-help="Name of the organization"
+                                        ></lightning-input>
+                                    </div>
+
+                                    <div class="slds-form__item" role="listitem">
+                                        <lightning-input
+                                            label="Duration"
+                                            value={formData.Duration_Text__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Duration_Text__c"
+                                            placeholder="e.g., Mar 2020 - Feb 2021"
+                                            field-level-help="Period of internship"
+                                        ></lightning-input>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Research/Publication Fields -->
+                            <template if:true={isResearch}>
+                                <div class="slds-form" role="list">
+                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
+                                        <lightning-input
+                                            label="Title"
+                                            value={formData.Title__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Title__c"
+                                            required
+                                            placeholder="e.g., Impact of Lifestyle Modification"
+                                            field-level-help="Title of research or publication"
+                                        ></lightning-input>
+                                    </div>
+
+                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
+                                        <lightning-combobox
+                                            label="Type"
+                                            value={formData.Type__c}
+                                            placeholder="Select Type"
+                                            options={researchTypeOptions}
+                                            onchange={handlePicklistChange}
+                                            data-field="Type__c"
+                                            field-level-help="Type of research or publication"
+                                        ></lightning-combobox>
+                                    </div>
+
+                                    <div class="slds-form__item" role="listitem">
+                                        <lightning-textarea
+                                            label="Description"
+                                            value={formData.Description__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Description__c"
+                                            rows="4"
+                                            placeholder="Full description of the research..."
+                                            field-level-help="Details about the research or publication"
+                                        ></lightning-textarea>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Membership Fields -->
+                            <template if:true={isMembership}>
+                                <div class="slds-form" role="list">
+                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
+                                        <lightning-input
+                                            label="Organization Name"
+                                            value={formData.Organization_Name__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Organization_Name__c"
+                                            required
+                                            placeholder="e.g., Indian Medical Association"
+                                            field-level-help="Name of the professional organization"
+                                        ></lightning-input>
+                                    </div>
+
+                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
+                                        <lightning-input
+                                            label="Membership Type"
+                                            value={formData.Membership_Type__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Membership_Type__c"
+                                            placeholder="e.g., Professional Association"
+                                            field-level-help="Type of membership"
+                                        ></lightning-input>
+                                    </div>
+
+                                    <div class="slds-form__item" role="listitem">
+                                        <lightning-input
+                                            label="Member ID"
+                                            value={formData.Member_Id__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Member_Id__c"
+                                            placeholder="e.g., IMA12345"
+                                            field-level-help="Your membership identification number"
+                                        ></lightning-input>
                                     </div>
                                 </div>
                             </template>

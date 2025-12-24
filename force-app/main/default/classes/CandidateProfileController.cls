@@ -8,11 +8,14 @@ public with sharing class CandidateProfileController {
         @AuraEnabled public List<License_Certification__c> licenses;
         @AuraEnabled public List<Clinical_Skill__c> clinicalSkills;
         @AuraEnabled public List<Technical_Skill__c> technicalSkills;
+        @AuraEnabled public List<Procedure__c> procedures;
+        @AuraEnabled public List<Internship__c> internships;
+        @AuraEnabled public List<Research_Publication__c> researchPublications;
+        @AuraEnabled public List<Membership__c> memberships;
     }
 
     /**
-     * TASK 1: Retrieves all profile data for a candidate
-     * REMOVED cacheable=true to ensure fresh data on every call
+     * Retrieves all profile data for a candidate
      */
     @AuraEnabled
     public static ProfileDataDto getProfileData(Id candidateId) {
@@ -72,136 +75,36 @@ public with sharing class CandidateProfileController {
             ORDER BY Name ASC
         ];
 
+        result.procedures = [
+            SELECT Id, Name, Category__c, Notes__c
+            FROM Procedure__c
+            WHERE Candidate__c = :candidateId
+            ORDER BY Name ASC
+        ];
+
+        result.internships = [
+            SELECT Id, Organization__c, Duration_Text__c
+            FROM Internship__c
+            WHERE Candidate__c = :candidateId
+            ORDER BY CreatedDate DESC
+        ];
+
+        result.researchPublications = [
+            SELECT Id, Title__c, Type__c, Description__c
+            FROM Research_Publication__c
+            WHERE Candidate__c = :candidateId
+            ORDER BY CreatedDate DESC
+        ];
+
+        result.memberships = [
+            SELECT Id, Organization_Name__c, Membership_Type__c, Member_Id__c
+            FROM Membership__c
+            WHERE Candidate__c = :candidateId
+            ORDER BY Organization_Name__c ASC
+        ];
+
         return result;
     }
-
-    // =================================================================
-    // TASK 5: Specific Save Methods for Each Record Type
-    // =================================================================
-
-    /**
-     * Save or update Work Experience record
-     */
-    @AuraEnabled
-    public static Id saveWorkHistory(Work_Experience__c workExp, Id candidateId) {
-        if (candidateId == null) {
-            throw new AuraHandledException('Candidate ID is required.');
-        }
-        
-        try {
-            workExp.Candidate__c = candidateId;
-            
-            if (String.isBlank(workExp.Role__c) || String.isBlank(workExp.Organization__c)) {
-                throw new AuraHandledException('Role and Organization are required fields.');
-            }
-            
-            upsert workExp;
-            return workExp.Id;
-            
-        } catch (DmlException e) {
-            throw new AuraHandledException('Error saving work history: ' + e.getMessage());
-        }
-    }
-
-    /**
-     * Save or update Education record
-     */
-    @AuraEnabled
-    public static Id saveEducation(Education__c education, Id candidateId) {
-        if (candidateId == null) {
-            throw new AuraHandledException('Candidate ID is required.');
-        }
-        
-        try {
-            education.Candidate__c = candidateId;
-            
-            if (String.isBlank(education.Institution__c) || String.isBlank(education.Degree__c)) {
-                throw new AuraHandledException('Institution and Degree are required fields.');
-            }
-            
-            upsert education;
-            return education.Id;
-            
-        } catch (DmlException e) {
-            throw new AuraHandledException('Error saving education: ' + e.getMessage());
-        }
-    }
-
-    /**
-     * Save or update License/Certification record
-     */
-    @AuraEnabled
-    public static Id saveLicense(License_Certification__c license, Id candidateId) {
-        if (candidateId == null) {
-            throw new AuraHandledException('Candidate ID is required.');
-        }
-        
-        try {
-            license.Candidate__c = candidateId;
-            
-            if (String.isBlank(license.Name)) {
-                throw new AuraHandledException('Certification Name is required.');
-            }
-            
-            upsert license;
-            return license.Id;
-            
-        } catch (DmlException e) {
-            throw new AuraHandledException('Error saving license: ' + e.getMessage());
-        }
-    }
-
-    /**
-     * Save or update Clinical Skill record
-     */
-    @AuraEnabled
-    public static Id saveClinicalSkill(Clinical_Skill__c skill, Id candidateId) {
-        if (candidateId == null) {
-            throw new AuraHandledException('Candidate ID is required.');
-        }
-        
-        try {
-            skill.Candidate__c = candidateId;
-            
-            if (String.isBlank(skill.Name)) {
-                throw new AuraHandledException('Skill Name is required.');
-            }
-            
-            upsert skill;
-            return skill.Id;
-            
-        } catch (DmlException e) {
-            throw new AuraHandledException('Error saving clinical skill: ' + e.getMessage());
-        }
-    }
-
-    /**
-     * Save or update Technical Skill record
-     */
-    @AuraEnabled
-    public static Id saveTechnicalSkill(Technical_Skill__c skill, Id candidateId) {
-        if (candidateId == null) {
-            throw new AuraHandledException('Candidate ID is required.');
-        }
-        
-        try {
-            skill.Candidate__c = candidateId;
-            
-            if (String.isBlank(skill.Name)) {
-                throw new AuraHandledException('Skill Name is required.');
-            }
-            
-            upsert skill;
-            return skill.Id;
-            
-        } catch (DmlException e) {
-            throw new AuraHandledException('Error saving technical skill: ' + e.getMessage());
-        }
-    }
-
-    // =================================================================
-    // Generic Save Method (Used by Modal Component)
-    // =================================================================
 
     /**
      * Generic method to save or update a record
@@ -231,6 +134,18 @@ public with sharing class CandidateProfileController {
                 }
                 when 'technicalSkill' {
                     recordToSave = mapToTechnicalSkill(dataMap);
+                }
+                when 'procedure' {
+                    recordToSave = mapToProcedure(dataMap);
+                }
+                when 'internship' {
+                    recordToSave = mapToInternship(dataMap);
+                }
+                when 'research' {
+                    recordToSave = mapToResearchPublication(dataMap);
+                }
+                when 'membership' {
+                    recordToSave = mapToMembership(dataMap);
                 }
                 when else {
                     throw new AuraHandledException('Invalid record type: ' + recordType);
@@ -272,6 +187,18 @@ public with sharing class CandidateProfileController {
                 }
                 when 'technicalSkill' {
                     recordToDelete = new Technical_Skill__c(Id = recordId);
+                }
+                when 'procedure' {
+                    recordToDelete = new Procedure__c(Id = recordId);
+                }
+                when 'internship' {
+                    recordToDelete = new Internship__c(Id = recordId);
+                }
+                when 'research' {
+                    recordToDelete = new Research_Publication__c(Id = recordId);
+                }
+                when 'membership' {
+                    recordToDelete = new Membership__c(Id = recordId);
                 }
                 when else {
                     throw new AuraHandledException('Invalid record type: ' + recordType);
@@ -362,6 +289,65 @@ public with sharing class CandidateProfileController {
         record.Name = (String) dataMap.get('Name');
         record.Category__c = (String) dataMap.get('Category__c');
         record.Description__c = (String) dataMap.get('Description__c');
+        
+        return record;
+    }
+
+    private static Procedure__c mapToProcedure(Map<String, Object> dataMap) {
+        Procedure__c record = new Procedure__c();
+        
+        if (dataMap.containsKey('Id') && dataMap.get('Id') != null) {
+            record.Id = (Id) dataMap.get('Id');
+        }
+        
+        record.Candidate__c = (Id) dataMap.get('Candidate__c');
+        record.Name = (String) dataMap.get('Name');
+        record.Category__c = (String) dataMap.get('Category__c');
+        record.Notes__c = (String) dataMap.get('Notes__c');
+        
+        return record;
+    }
+
+    private static Internship__c mapToInternship(Map<String, Object> dataMap) {
+        Internship__c record = new Internship__c();
+        
+        if (dataMap.containsKey('Id') && dataMap.get('Id') != null) {
+            record.Id = (Id) dataMap.get('Id');
+        }
+        
+        record.Candidate__c = (Id) dataMap.get('Candidate__c');
+        record.Organization__c = (String) dataMap.get('Organization__c');
+        record.Duration_Text__c = (String) dataMap.get('Duration_Text__c');
+        
+        return record;
+    }
+
+    private static Research_Publication__c mapToResearchPublication(Map<String, Object> dataMap) {
+        Research_Publication__c record = new Research_Publication__c();
+        
+        if (dataMap.containsKey('Id') && dataMap.get('Id') != null) {
+            record.Id = (Id) dataMap.get('Id');
+        }
+        
+        record.Candidate__c = (Id) dataMap.get('Candidate__c');
+        record.Title__c = (String) dataMap.get('Title__c');
+        record.Type__c = (String) dataMap.get('Type__c');
+        record.Description__c = (String) dataMap.get('Description__c');
+        
+        return record;
+    }
+
+    private static Membership__c mapToMembership(Map<String, Object> dataMap) {
+        Membership__c record = new Membership__c();
+        
+        if (dataMap.containsKey('Id') && dataMap.get('Id') != null) {
+            record.Id = (Id) dataMap.get('Id');
+        }
+        
+        record.Candidate__c = (Id) dataMap.get('Candidate__c');
+        record.Organization_Name__c = (String) dataMap.get('Organization_Name__c');
+        record.Membership_Type__c = (String) dataMap.get('Membership_Type__c');
+        record.Member_Id__c = (String) dataMap.get('Member_Id__c');
         
         return record;
     }
