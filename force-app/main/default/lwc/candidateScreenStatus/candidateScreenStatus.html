@@ -1,6 +1,6 @@
-<template>
+<!-- <template>
     <lightning-card title="Candidate Screening Status" icon-name="standard:assessment">
-        <!-- Actions: ONLY Rerun Screening button -->
+        // Actions: ONLY Rerun Screening button
         <div slot="actions">
             <lightning-button
                 label="Rerun Screening"
@@ -11,23 +11,23 @@
         </div>
 
         <div class="slds-p-horizontal_small">
-            <!-- Loading Spinner -->
+            // Loading Spinner 
             <template if:false={data}>
                 <div class="slds-is-relative slds-p-vertical_large">
                     <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
                 </div>
             </template>
 
-            <!-- Error Panel -->
+            // Error Panel 
             <template if:true={error}>
                 <div class="slds-p-around_medium">
                     An error occurred: {error.body.message}
                 </div>
             </template>
 
-            <!-- Main Content -->
+            // Main Content 
             <template if:true={data}>
-                <!-- Header Status -->
+                // Header Status 
                 <div class="slds-grid slds-gutters slds-m-bottom_medium">
                     <div class="slds-col">
                         <p class="slds-text-title">Candidate Name</p>
@@ -39,7 +39,7 @@
                     </div>
                 </div>
 
-                <!-- Routing Recommendation Box -->
+                // Routing Recommendation Box
                 <template if:true={data.routingInfo}>
                     <div class="slds-box slds-theme_shade slds-theme_alert-texture slds-m-bottom_medium">
                         <div class="slds-media">
@@ -59,7 +59,7 @@
                     </div>
                 </template>
 
-                <!-- Results Table -->
+                // Results Table 
                 <h3 class="slds-text-heading_medium slds-m-bottom_small">Screening Results</h3>
 
                 <template if:true={hasResults}>
@@ -95,11 +95,208 @@
                     </table>
                 </template>
 
-                <!-- No Results Message -->
+                // No Results Message 
                 <template if:false={hasResults}>
                     <div class="slds-align_absolute-center slds-p-vertical_medium">
                         No screening results found.
                     </div>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template> -->
+<template>
+    <lightning-card title="Candidate Screening Status" icon-name="standard:assessment">
+        <!-- Action Button -->
+        <div slot="actions">
+            <lightning-button
+                label="Rerun Screening"
+                onclick={handleRerun}
+                disabled={isRunning}
+                icon-name="utility:loop">
+            </lightning-button>
+        </div>
+
+        <div class="slds-p-horizontal_small">
+            <!-- Loading -->
+            <template if:false={data}>
+                <div class="slds-is-relative slds-p-vertical_large">
+                    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <!-- Error -->
+            <template if:true={error}>
+                <div class="slds-p-around_medium slds-text-color_error">
+                    An error occurred: {error.body.message}
+                </div>
+            </template>
+
+            <!-- Main Content -->
+            <template if:true={data}>
+                <!-- Header Status -->
+                <div class="slds-grid slds-gutters slds-m-bottom_medium slds-m-top_small">
+                    <div class="slds-col slds-size_1-of-3">
+                        <p class="slds-text-title">Candidate Name</p>
+                        <p class="slds-text-heading_small">{data.name}</p>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <p class="slds-text-title">Overall Status</p>
+                        <p class="slds-text-heading_small">
+                            <span class={statusBadgeClass}>{data.status}</span>
+                        </p>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <p class="slds-text-title">Last Screened</p>
+                        <p class="slds-text-body_regular">
+                            <lightning-formatted-date-time value={data.lastScreeningDate}></lightning-formatted-date-time>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Summary Statistics -->
+                <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="stat-card">
+                            <div class="stat-number">{data.totalRules}</div>
+                            <div class="stat-label">Total Rules</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="stat-card stat-card-success">
+                            <div class="stat-number">{data.rulesPassed}</div>
+                            <div class="stat-label">Passed</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="stat-card stat-card-error">
+                            <div class="stat-number">{data.rulesFailed}</div>
+                            <div class="stat-label">Failed</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="stat-card stat-card-warning">
+                            <div class="stat-number">{data.rulesReview}</div>
+                            <div class="stat-label">Review</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Routing Recommendation -->
+                <template if:true={data.routingInfo}>
+                    <div class="slds-box slds-theme_warning slds-m-bottom_medium">
+                        <div class="slds-media">
+                            <div class="slds-media__figure">
+                                <lightning-icon
+                                    icon-name="utility:routing_offline"
+                                    variant="warning"
+                                    size="small">
+                                </lightning-icon>
+                            </div>
+                            <div class="slds-media__body">
+                                <h3 class="slds-text-heading_small slds-m-bottom_xx-small">Routing Recommendation</h3>
+                                <p><strong>Journey Path:</strong> {data.routingInfo.journeyPath}</p>
+                                <p><strong>Queue:</strong> {data.routingInfo.queue}</p>
+                                <p><strong>Escalation Level:</strong> {data.routingInfo.escalationLevel}</p>
+                                <p><strong>Reason:</strong> {data.routingInfo.reason}</p>
+                                <template if:true={data.routingInfo.actions}>
+                                    <p><strong>Required Actions:</strong></p>
+                                    <p class="slds-m-left_medium">{data.routingInfo.actions}</p>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Results Table -->
+                <h3 class="slds-text-heading_medium slds-m-bottom_small">Detailed Results</h3>
+
+                <template if:true={hasResults}>
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Rule Name">Rule Name</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Category">Category</div>
+                                </th>
+                                <th scope="col" style="width: 12%;">
+                                    <div class="slds-truncate" title="Outcome">Outcome</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Details">Details</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Action">Action</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={data.results} for:item="result">
+                                <tr key={result.ruleName} class={result.rowClass}>
+                                    <td data-label="Rule Name">
+                                        <div class="slds-truncate" title={result.ruleName}>
+                                            {result.ruleName}
+                                            <template if:true={result.overrideApplied}>
+                                                <lightning-icon icon-name="utility:info" size="xx-small" title="Manual override applied"></lightning-icon>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td data-label="Category">
+                                        <div class="slds-truncate">{result.ruleCategory}</div>
+                                    </td>
+                                    <td data-label="Outcome">
+                                        <span class={result.outcomeClass}>{result.outcome}</span>
+                                    </td>
+                                    <td data-label="Details">
+                                        <div class="slds-truncate" title={result.details}>{result.details}</div>
+                                    </td>
+                                    <td data-label="Action">
+                                        <div class="slds-truncate">{result.action}</div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </template>
+
+                <template if:false={hasResults}>
+                    <div class="slds-align_absolute-center slds-p-vertical_medium">
+                        <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                        <p class="slds-m-left_small">No screening results found.</p>
+                    </div>
+                </template>
+
+                <!-- Overrides Section -->
+                <template if:true={hasOverrides}>
+                    <h3 class="slds-text-heading_medium slds-m-top_large slds-m-bottom_small">Manual Overrides</h3>
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                        <thead>
+                            <tr>
+                                <th>Rule Name</th>
+                                <th>Original</th>
+                                <th>New Outcome</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Override By</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={data.overrides} for:item="override">
+                                <tr key={override.ruleName}>
+                                    <td>{override.ruleName}</td>
+                                    <td>{override.originalOutcome}</td>
+                                    <td>{override.newOutcome}</td>
+                                    <td>{override.reason}</td>
+                                    <td><span class="slds-badge">{override.approvalStatus}</span></td>
+                                    <td>{override.overrideBy}</td>
+                                    <td><lightning-formatted-date-time value={override.overrideDate}></lightning-formatted-date-time></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </template>
             </template>
         </div>

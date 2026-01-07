@@ -5,15 +5,12 @@ import getProfileData from '@salesforce/apex/CandidateProfileController.getProfi
 
 export default class CandidateProfileHub extends LightningElement {
     @track candidateIdInput = '';
-    @track profileData;
     @track error;
     @track isLoading = false;
     @track showProfile = false;
-
-    // ========================================================
-    // TASK 2: Initial Load Handlers
-    // ========================================================
     
+    profileData;
+
     handleIdChange(event) {
         this.candidateIdInput = event.target.value;
         this.error = undefined;
@@ -36,14 +33,6 @@ export default class CandidateProfileHub extends LightningElement {
         this.isLoading = false;
     }
 
-    // ========================================================
-    // TASK 2 & 6: Data Loading and Refresh
-    // ========================================================
-
-    /**
-     * Load profile data from Apex
-     * Used for initial load and refresh after saves
-     */
     async loadProfileData() {
         this.isLoading = true;
         this.error = undefined;
@@ -51,17 +40,18 @@ export default class CandidateProfileHub extends LightningElement {
 
         try {
             const data = await getProfileData({ candidateId: this.candidateIdInput });
-            this.profileData = data;
+            
+            // Format the data for display
+            this.profileData = this.formatProfileData(data);
             this.showProfile = true;
             
-            console.log('Profile data loaded successfully');
+            console.log('Profile data loaded successfully', this.profileData);
             
         } catch (error) {
             this.error = error;
             this.showProfile = false;
             console.error('Profile Load Error:', JSON.parse(JSON.stringify(error)));
             
-            // Show error toast
             this.showToast(
                 'Error Loading Profile',
                 error.body?.message || 'Failed to load profile data',
@@ -73,28 +63,24 @@ export default class CandidateProfileHub extends LightningElement {
         }
     }
 
-    /**
-     * TASK 6: Refresh profile data without full page reload
-     * Called after successful save operations
-     */
     async refreshProfileData() {
         console.log('Refreshing profile data...');
         
         this.isLoading = true;
         
         try {
-            // Re-fetch data from server
             const data = await getProfileData({ candidateId: this.candidateIdInput });
-            
-            // Update local data reactively
-            this.profileData = data;
+            this.profileData = this.formatProfileData(data);
             
             console.log('Profile data refreshed successfully');
+            
+            this.showProfile = false;
+            await new Promise(resolve => setTimeout(resolve, 0));
+            this.showProfile = true;
             
         } catch (error) {
             console.error('Refresh Error:', JSON.parse(JSON.stringify(error)));
             
-            // Show error but don't change view
             this.showToast(
                 'Refresh Error',
                 'Failed to refresh profile data',
@@ -106,10 +92,174 @@ export default class CandidateProfileHub extends LightningElement {
         }
     }
 
-    // ========================================================
-    // TASK 4: Add New Record Handlers
-    // ========================================================
+    /**
+     * Format profile data with calculated duration strings
+     */
+    formatProfileData(data) {
+        const formatted = JSON.parse(JSON.stringify(data));
 
+        // Format work experiences with duration
+        if (formatted.workExperiences) {
+            formatted.workExperiences = formatted.workExperiences.map(work => ({
+                ...work,
+                durationDisplay: this.formatWorkDuration(work)
+            }));
+        }
+
+        // Format educations with year range
+        if (formatted.educations) {
+            formatted.educations = formatted.educations.map(edu => ({
+                ...edu,
+                durationDisplay: this.formatEducationDuration(edu)
+            }));
+        }
+
+        // Format licenses with dates
+        if (formatted.licenses) {
+            formatted.licenses = formatted.licenses.map(license => ({
+                ...license,
+                dateDisplay: this.formatLicenseDates(license)
+            }));
+        }
+
+        // Format internships with duration
+        if (formatted.internships) {
+            formatted.internships = formatted.internships.map(intern => ({
+                ...intern,
+                durationDisplay: this.formatInternshipDuration(intern)
+            }));
+        }
+
+        // Format research with publication date
+        if (formatted.researchPublications) {
+            formatted.researchPublications = formatted.researchPublications.map(research => ({
+                ...research,
+                dateDisplay: this.formatPublicationDate(research)
+            }));
+        }
+
+        // Format memberships with member since date
+        if (formatted.memberships) {
+            formatted.memberships = formatted.memberships.map(member => ({
+                ...member,
+                dateDisplay: this.formatMemberSinceDate(member)
+            }));
+        }
+
+        return formatted;
+    }
+
+    /**
+     * Format work experience duration
+     */
+    formatWorkDuration(work) {
+        if (!work.Start_Date__c) {
+            return '';
+        }
+
+        const startDate = new Date(work.Start_Date__c);
+        const startStr = this.formatDate(startDate);
+
+        if (work.Is_Current__c) {
+            return `${startStr} - Present`;
+        }
+
+        if (work.End_Date__c) {
+            const endDate = new Date(work.End_Date__c);
+            const endStr = this.formatDate(endDate);
+            return `${startStr} - ${endStr}`;
+        }
+
+        return startStr;
+    }
+
+    /**
+     * Format education duration from years
+     */
+    formatEducationDuration(edu) {
+        if (!edu.Start_Year__c) {
+            return '';
+        }
+
+        if (edu.End_Year__c) {
+            return `${edu.Start_Year__c} - ${edu.End_Year__c}`;
+        }
+
+        return String(edu.Start_Year__c);
+    }
+
+    /**
+     * Format license dates
+     */
+    formatLicenseDates(license) {
+        const parts = [];
+
+        if (license.Issue_Date__c) {
+            const issueDate = new Date(license.Issue_Date__c);
+            parts.push(`Issued: ${this.formatDate(issueDate)}`);
+        }
+
+        if (license.Expiry_Date__c) {
+            const expiryDate = new Date(license.Expiry_Date__c);
+            parts.push(`Expires: ${this.formatDate(expiryDate)}`);
+        }
+
+        return parts.join(' | ');
+    }
+
+    /**
+     * Format internship duration
+     */
+    formatInternshipDuration(intern) {
+        if (!intern.Start_Date__c) {
+            return '';
+        }
+
+        const startDate = new Date(intern.Start_Date__c);
+        const startStr = this.formatDate(startDate);
+
+        if (intern.End_Date__c) {
+            const endDate = new Date(intern.End_Date__c);
+            const endStr = this.formatDate(endDate);
+            return `${startStr} - ${endStr}`;
+        }
+
+        return startStr;
+    }
+
+    /**
+     * Format publication date
+     */
+    formatPublicationDate(research) {
+        if (!research.Publication_Date__c) {
+            return '';
+        }
+
+        const pubDate = new Date(research.Publication_Date__c);
+        return `Published: ${this.formatDate(pubDate)}`;
+    }
+
+    /**
+     * Format member since date
+     */
+    formatMemberSinceDate(member) {
+        if (!member.Member_Since__c) {
+            return '';
+        }
+
+        const sinceDate = new Date(member.Member_Since__c);
+        return `Member since: ${this.formatDate(sinceDate)}`;
+    }
+
+    /**
+     * Format date to readable string
+     */
+    formatDate(date) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return date.toLocaleDateString('en-US', options);
+    }
+
+    // Add New Handlers
     handleAddWorkExperience() {
         this.openModal('workExperience');
     }
@@ -130,10 +280,23 @@ export default class CandidateProfileHub extends LightningElement {
         this.openModal('technicalSkill');
     }
 
-    // ========================================================
-    // TASK 4: Edit Record Handlers
-    // ========================================================
+    handleAddProcedure() {
+        this.openModal('procedure');
+    }
 
+    handleAddInternship() {
+        this.openModal('internship');
+    }
+
+    handleAddResearch() {
+        this.openModal('research');
+    }
+
+    handleAddMembership() {
+        this.openModal('membership');
+    }
+
+    // Edit Handlers
     handleEditWorkExperience(event) {
         const recordId = event.detail.recordId;
         const record = this.profileData.workExperiences.find(w => w.Id === recordId);
@@ -164,13 +327,30 @@ export default class CandidateProfileHub extends LightningElement {
         this.openModal('technicalSkill', recordId, record);
     }
 
-    // ========================================================
-    // TASK 4: Modal Management
-    // ========================================================
+    handleEditProcedure(event) {
+        const recordId = event.currentTarget.dataset.id;
+        const record = this.profileData.procedures.find(p => p.Id === recordId);
+        this.openModal('procedure', recordId, record);
+    }
 
-    /**
-     * Open the dynamic modal with record type and data
-     */
+    handleEditInternship(event) {
+        const recordId = event.detail.recordId;
+        const record = this.profileData.internships.find(i => i.Id === recordId);
+        this.openModal('internship', recordId, record);
+    }
+
+    handleEditResearch(event) {
+        const recordId = event.detail.recordId;
+        const record = this.profileData.researchPublications.find(r => r.Id === recordId);
+        this.openModal('research', recordId, record);
+    }
+
+    handleEditMembership(event) {
+        const recordId = event.currentTarget.dataset.id;
+        const record = this.profileData.memberships.find(m => m.Id === recordId);
+        this.openModal('membership', recordId, record);
+    }
+
     openModal(type, recordId = null, recordData = null) {
         const modal = this.template.querySelector('c-dynamic-form-modal');
         if (modal) {
@@ -178,28 +358,11 @@ export default class CandidateProfileHub extends LightningElement {
         }
     }
 
-    // ========================================================
-    // TASK 6: Event-Driven Communication
-    // ========================================================
-
-    /**
-     * TASK 6: Handle save event from modal
-     * This is the key event handler that enables refresh without page reload
-     * 
-     * Event flow:
-     * 1. User clicks Save in modal
-     * 2. Modal calls Apex to save data
-     * 3. Modal fires 'save' event with details
-     * 4. This handler catches the event
-     * 5. Refreshes profile data from server
-     * 6. UI updates automatically (reactive)
-     */
     async handleModalSave(event) {
         console.log('Save event received:', event.detail);
         
         const { recordType, recordId, action } = event.detail;
         
-        // Show notification
         const actionText = action === 'create' ? 'added' : 'updated';
         const typeText = this.getRecordTypeLabel(recordType);
         
@@ -209,33 +372,26 @@ export default class CandidateProfileHub extends LightningElement {
             'success'
         );
         
-        // TASK 6: Refresh data without page reload
         await this.refreshProfileData();
         
         console.log('Profile refreshed after save');
     }
 
-    /**
-     * Get human-readable label for record type
-     */
     getRecordTypeLabel(recordType) {
         const typeMap = {
             'workExperience': 'Work Experience',
             'education': 'Education',
             'license': 'License/Certification',
             'clinicalSkill': 'Clinical Skill',
-            'technicalSkill': 'Technical Skill'
+            'technicalSkill': 'Technical Skill',
+            'procedure': 'Procedure',
+            'internship': 'Internship',
+            'research': 'Research/Publication',
+            'membership': 'Professional Membership'
         };
         return typeMap[recordType] || 'Record';
     }
 
-    // ========================================================
-    // TASK 2: Computed Properties
-    // ========================================================
-
-    /**
-     * Calculate profile completeness percentage
-     */
     get completenessPercentage() {
         if (!this.profileData) return 0;
         
@@ -282,13 +438,22 @@ export default class CandidateProfileHub extends LightningElement {
         return this.profileData?.technicalSkills?.length > 0;
     }
 
-    // ========================================================
-    // Utility Methods
-    // ========================================================
+    get hasProcedures() {
+        return this.profileData?.procedures?.length > 0;
+    }
 
-    /**
-     * Show toast notification
-     */
+    get hasInternships() {
+        return this.profileData?.internships?.length > 0;
+    }
+
+    get hasResearchPublications() {
+        return this.profileData?.researchPublications?.length > 0;
+    }
+
+    get hasMemberships() {
+        return this.profileData?.memberships?.length > 0;
+    }
+
     showToast(title, message, variant) {
         this.dispatchEvent(
             new ShowToastEvent({

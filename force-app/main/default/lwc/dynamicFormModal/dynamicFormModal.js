@@ -69,8 +69,28 @@ export default class DynamicFormModal extends LightningElement {
         
         if (this.isEditMode && recordData) {
             this.formData = { ...recordData };
+            // Convert dates if needed
+            this.formatDatesForEdit(recordData);
         } else {
             this.formData = this.getEmptyFormData(type);
+        }
+    }
+
+    formatDatesForEdit(recordData) {
+        // Ensure date fields are in YYYY-MM-DD format for lightning-input type="date"
+        const dateFields = ['Start_Date__c', 'End_Date__c', 'Issue_Date__c', 'Expiry_Date__c', 'Publication_Date__c', 'Member_Since__c'];
+        dateFields.forEach(field => {
+            if (recordData[field]) {
+                this.formData[field] = recordData[field];
+            }
+        });
+
+        // Convert year fields to plain numbers (no formatting)
+        if (recordData.Start_Year__c) {
+            this.formData.Start_Year__c = String(Math.floor(recordData.Start_Year__c));
+        }
+        if (recordData.End_Year__c) {
+            this.formData.End_Year__c = String(Math.floor(recordData.End_Year__c));
         }
     }
 
@@ -83,7 +103,9 @@ export default class DynamicFormModal extends LightningElement {
                     ...baseData, 
                     Role__c: '', 
                     Organization__c: '', 
-                    Duration_Text__c: '', 
+                    Start_Date__c: '',
+                    End_Date__c: '',
+                    Is_Current__c: false,
                     Responsibilities__c: '' 
                 };
             case 'education':
@@ -91,14 +113,17 @@ export default class DynamicFormModal extends LightningElement {
                     ...baseData, 
                     Institution__c: '', 
                     Degree__c: '', 
-                    Duration_Text__c: '', 
+                    Start_Year__c: '',
+                    End_Year__c: '',
                     Details__c: '' 
                 };
             case 'license':
                 return { 
                     ...baseData, 
                     Name: '', 
-                    Type__c: '', 
+                    Type__c: '',
+                    Issue_Date__c: '',
+                    Expiry_Date__c: '',
                     Notes__c: '' 
                 };
             case 'clinicalSkill':
@@ -126,13 +151,15 @@ export default class DynamicFormModal extends LightningElement {
                 return {
                     ...baseData,
                     Organization__c: '',
-                    Duration_Text__c: ''
+                    Start_Date__c: '',
+                    End_Date__c: ''
                 };
             case 'research':
                 return {
                     ...baseData,
                     Title__c: '',
                     Type__c: '',
+                    Publication_Date__c: '',
                     Description__c: ''
                 };
             case 'membership':
@@ -140,7 +167,8 @@ export default class DynamicFormModal extends LightningElement {
                     ...baseData,
                     Organization_Name__c: '',
                     Membership_Type__c: '',
-                    Member_Id__c: ''
+                    Member_Id__c: '',
+                    Member_Since__c: ''
                 };
             default:
                 return baseData;
@@ -194,7 +222,62 @@ export default class DynamicFormModal extends LightningElement {
 
     handleFieldChange(event) {
         const field = event.target.dataset.field;
-        this.formData[field] = event.target.value;
+        let value = event.target.value;
+
+        this.formData[field] = value;
+        
+        // Clear end date if "Currently Working Here" is checked
+        if (field === 'Is_Current__c' && value === true) {
+            this.formData.End_Date__c = '';
+        }
+        
+        if (this.errorMessage) {
+            this.errorMessage = '';
+        }
+    }
+
+    handleYearChange(event) {
+        const field = event.target.dataset.field;
+        let value = event.target.value;
+
+        // Remove any non-digit characters
+        value = value.replace(/\D/g, '');
+
+        // Limit to 4 digits
+        if (value.length > 4) {
+            value = value.substring(0, 4);
+        }
+
+        // Convert to number for validation
+        const yearNum = value ? parseInt(value, 10) : null;
+
+        // Validate year range
+        if (yearNum !== null && (yearNum < 1950 || yearNum > 2099)) {
+            event.target.setCustomValidity('Year must be between 1950 and 2099');
+            event.target.reportValidity();
+        } else {
+            event.target.setCustomValidity('');
+        }
+
+        // Store as number
+        this.formData[field] = yearNum;
+
+        // Update input value to clean version
+        event.target.value = value;
+        
+        if (this.errorMessage) {
+            this.errorMessage = '';
+        }
+    }
+
+    handleCheckboxChange(event) {
+        const field = event.target.dataset.field;
+        this.formData[field] = event.target.checked;
+        
+        // Clear end date if currently working
+        if (field === 'Is_Current__c' && event.target.checked) {
+            this.formData.End_Date__c = '';
+        }
         
         if (this.errorMessage) {
             this.errorMessage = '';
@@ -224,6 +307,11 @@ export default class DynamicFormModal extends LightningElement {
 
     async handleSave() {
         if (!this.validateForm()) {
+            return;
+        }
+
+        // Additional custom validations
+        if (!this.validateCustomRules()) {
             return;
         }
 
@@ -295,5 +383,41 @@ export default class DynamicFormModal extends LightningElement {
         }
 
         return isValid;
+    }
+
+    validateCustomRules() {
+        // Validate date ranges for Work Experience
+        if (this.recordType === 'workExperience' && this.formData.Start_Date__c && this.formData.End_Date__c) {
+            if (new Date(this.formData.Start_Date__c) > new Date(this.formData.End_Date__c)) {
+                this.errorMessage = 'End Date cannot be before Start Date';
+                return false;
+            }
+        }
+
+        // Validate year ranges for Education
+        if (this.recordType === 'education' && this.formData.Start_Year__c && this.formData.End_Year__c) {
+            if (this.formData.Start_Year__c > this.formData.End_Year__c) {
+                this.errorMessage = 'End Year cannot be before Start Year';
+                return false;
+            }
+        }
+
+        // Validate date ranges for Internship
+        if (this.recordType === 'internship' && this.formData.Start_Date__c && this.formData.End_Date__c) {
+            if (new Date(this.formData.Start_Date__c) > new Date(this.formData.End_Date__c)) {
+                this.errorMessage = 'End Date cannot be before Start Date';
+                return false;
+            }
+        }
+
+        // Validate expiry date for licenses
+        if (this.recordType === 'license' && this.formData.Issue_Date__c && this.formData.Expiry_Date__c) {
+            if (new Date(this.formData.Issue_Date__c) > new Date(this.formData.Expiry_Date__c)) {
+                this.errorMessage = 'Expiry Date cannot be before Issue Date';
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -29,17 +29,60 @@
     background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.6), rgba(255,255,255,0.3));
 }
 
+/* ========== Fix Combobox Dropdown Positioning ========== */
+.slds-form-element {
+    position: relative;
+    margin-bottom: 1rem;
+    z-index: 1;
+}
+
+/* Ensure combobox dropdown appears above other elements */
+.slds-form-element lightning-combobox {
+    position: relative;
+    z-index: 10;
+}
+
+/* Fix dropdown listbox positioning */
+.slds-combobox {
+    position: relative !important;
+}
+
+.slds-dropdown {
+    z-index: 9999 !important;
+    position: absolute !important;
+    background: white;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
+    margin-top: 0.125rem;
+}
+
+.slds-listbox {
+    max-height: 15rem;
+    overflow-y: auto;
+}
+
+/* Ensure form elements don't overlap dropdown */
+.slds-form-element:focus-within {
+    z-index: 100;
+}
+
 /* ========== Form Container ========== */
 .form-container {
     animation: formFadeIn 0.5s ease-out;
+    position: relative;
 }
 
 .slds-form__item {
     transition: all 0.3s ease;
+    position: relative;
+    margin-bottom: 0 !important; /* Remove default margin, use slds-form-element margin */
 }
 
-.slds-form__item:hover {
-    transform: translateX(2px);
+/* ========== Modal Content Scrolling ========== */
+.slds-modal__content {
+    position: relative;
+    overflow-y: visible !important; /* Changed from auto to visible */
 }
 
 /* ========== Input Field Enhancements ========== */
@@ -71,6 +114,33 @@ lightning-textarea {
 
 .slds-modal__footer lightning-button:hover {
     transform: translateY(-1px);
+}
+
+/* ========== Custom Form Element Help Text ========== */
+.slds-form-element__help {
+    font-size: 0.75rem;
+    color: #706e6b;
+    margin-top: 0.25rem;
+    line-height: 1.5;
+}
+
+/* ========== Custom Label Styling ========== */
+.slds-form-element__label {
+    display: block;
+    color: #3e3e3c;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    margin-bottom: 0.125rem;
+}
+
+.slds-form-element__label span {
+    font-weight: 600;
+}
+
+/* ========== Combobox Control ========== */
+.slds-form-element__control {
+    position: relative;
+    clear: left;
 }
 
 /* ========== Custom Animations ========== */
@@ -144,4 +214,20 @@ lightning-textarea {
     .slds-modal__content {
         padding: 1rem !important;
     }
+}
+
+/* ========== Force proper stacking context ========== */
+.slds-modal__container {
+    position: relative;
+    z-index: 9000;
+}
+
+/* Dropdown should be on top of everything in modal */
+lightning-combobox .slds-combobox__form-element {
+    position: relative;
+}
+
+lightning-combobox .slds-combobox_container {
+    position: relative;
+    z-index: 9999;
 }

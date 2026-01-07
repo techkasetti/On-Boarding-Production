@@ -20,7 +20,7 @@
                 </header>
 
                 <!-- Modal Body -->
-                <div class="slds-modal__content slds-p-around_medium" style="min-height: 300px;">
+                <div class="slds-modal__content slds-p-around_medium" style="min-height: 300px; max-height: 70vh; overflow-y: auto; overflow-x: visible;">
                     <template if:true={isLoading}>
                         <div class="slds-align_absolute-center slds-p-vertical_xx-large">
                             <lightning-spinner alternative-text="Saving..." size="medium" variant="brand"></lightning-spinner>
@@ -55,14 +55,37 @@
                                         ></lightning-input>
                                     </div>
 
-                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
+                                    <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                                        <div class="slds-col">
+                                            <lightning-input
+                                                type="date"
+                                                label="Start Date"
+                                                value={formData.Start_Date__c}
+                                                onchange={handleFieldChange}
+                                                data-field="Start_Date__c"
+                                                required
+                                                field-level-help="When did you start this role?"
+                                            ></lightning-input>
+                                        </div>
+                                        <div class="slds-col">
+                                            <lightning-input
+                                                type="date"
+                                                label="End Date"
+                                                value={formData.End_Date__c}
+                                                onchange={handleFieldChange}
+                                                data-field="End_Date__c"
+                                                field-level-help="Leave blank if currently employed"
+                                            ></lightning-input>
+                                        </div>
+                                    </div>
+
+                                    <div class="slds-form__item slds-m-bottom_small">
                                         <lightning-input
-                                            label="Duration"
-                                            value={formData.Duration_Text__c}
-                                            onchange={handleFieldChange}
-                                            data-field="Duration_Text__c"
-                                            placeholder="e.g., Jan 2020 - Present"
-                                            field-level-help="Time period of employment"
+                                            type="checkbox"
+                                            label="Currently Working Here"
+                                            checked={formData.Is_Current__c}
+                                            onchange={handleCheckboxChange}
+                                            data-field="Is_Current__c"
                                         ></lightning-input>
                                     </div>
 
@@ -106,15 +129,36 @@
                                         ></lightning-input>
                                     </div>
 
-                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
-                                        <lightning-input
-                                            label="Duration"
-                                            value={formData.Duration_Text__c}
-                                            onchange={handleFieldChange}
-                                            data-field="Duration_Text__c"
-                                            placeholder="e.g., 2016 - 2020"
-                                            field-level-help="Years of study"
-                                        ></lightning-input>
+                                    <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                                        <div class="slds-col">
+                                            <lightning-input
+                                                type="text"
+                                                label="Start Year"
+                                                value={formData.Start_Year__c}
+                                                onchange={handleYearChange}
+                                                data-field="Start_Year__c"
+                                                pattern="[0-9]{4}"
+                                                message-when-pattern-mismatch="Please enter a 4-digit year"
+                                                maxlength="4"
+                                                placeholder="2015"
+                                                required
+                                                field-level-help="Year you started (e.g., 2015)"
+                                            ></lightning-input>
+                                        </div>
+                                        <div class="slds-col">
+                                            <lightning-input
+                                                type="text"
+                                                label="End Year"
+                                                value={formData.End_Year__c}
+                                                onchange={handleYearChange}
+                                                data-field="End_Year__c"
+                                                pattern="[0-9]{4}"
+                                                message-when-pattern-mismatch="Please enter a 4-digit year"
+                                                maxlength="4"
+                                                placeholder="2020"
+                                                field-level-help="Year you completed (e.g., 2020)"
+                                            ></lightning-input>
+                                        </div>
                                     </div>
 
                                     <div class="slds-form__item" role="listitem">
@@ -147,15 +191,47 @@
                                     </div>
 
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
-                                        <lightning-combobox
-                                            label="Type"
-                                            value={formData.Type__c}
-                                            placeholder="Select Type"
-                                            options={licenseTypeOptions}
-                                            onchange={handlePicklistChange}
-                                            data-field="Type__c"
-                                            field-level-help="Type of certification or license"
-                                        ></lightning-combobox>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="license-type">
+                                                <span>Type</span>
+                                            </label>
+                                            <div class="slds-form-element__control">
+                                                <lightning-combobox
+                                                    name="licenseType"
+                                                    value={formData.Type__c}
+                                                    placeholder="Select Type"
+                                                    options={licenseTypeOptions}
+                                                    onchange={handlePicklistChange}
+                                                    data-field="Type__c"
+                                                    variant="label-hidden"
+                                                    dropdown-alignment="auto"
+                                                ></lightning-combobox>
+                                            </div>
+                                            <div class="slds-form-element__help" id="license-type-help">Type of certification or license</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                                        <div class="slds-col">
+                                            <lightning-input
+                                                type="date"
+                                                label="Issue Date"
+                                                value={formData.Issue_Date__c}
+                                                onchange={handleFieldChange}
+                                                data-field="Issue_Date__c"
+                                                field-level-help="When was this issued?"
+                                            ></lightning-input>
+                                        </div>
+                                        <div class="slds-col">
+                                            <lightning-input
+                                                type="date"
+                                                label="Expiry Date"
+                                                value={formData.Expiry_Date__c}
+                                                onchange={handleFieldChange}
+                                                data-field="Expiry_Date__c"
+                                                field-level-help="When does this expire?"
+                                            ></lightning-input>
+                                        </div>
                                     </div>
 
                                     <div class="slds-form__item" role="listitem">
@@ -165,7 +241,7 @@
                                             onchange={handleFieldChange}
                                             data-field="Notes__c"
                                             rows="3"
-                                            placeholder="Expiry date, issuing organization, credential ID..."
+                                            placeholder="Issuing organization, credential ID, etc..."
                                             field-level-help="Additional information about the certification"
                                         ></lightning-textarea>
                                     </div>
@@ -188,15 +264,24 @@
                                     </div>
 
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
-                                        <lightning-combobox
-                                            label="Skill Type"
-                                            value={formData.Skill_Type__c}
-                                            placeholder="Select Skill Type"
-                                            options={clinicalSkillTypeOptions}
-                                            onchange={handlePicklistChange}
-                                            data-field="Skill_Type__c"
-                                            field-level-help="Category of clinical skill"
-                                        ></lightning-combobox>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label">
+                                                <span>Skill Type</span>
+                                            </label>
+                                            <div class="slds-form-element__control">
+                                                <lightning-combobox
+                                                    name="skillType"
+                                                    value={formData.Skill_Type__c}
+                                                    placeholder="Select Skill Type"
+                                                    options={clinicalSkillTypeOptions}
+                                                    onchange={handlePicklistChange}
+                                                    data-field="Skill_Type__c"
+                                                    variant="label-hidden"
+                                                    dropdown-alignment="auto"
+                                                ></lightning-combobox>
+                                            </div>
+                                            <div class="slds-form-element__help">Category of clinical skill</div>
+                                        </div>
                                     </div>
 
                                     <div class="slds-form__item" role="listitem">
@@ -229,15 +314,24 @@
                                     </div>
 
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
-                                        <lightning-combobox
-                                            label="Category"
-                                            value={formData.Category__c}
-                                            placeholder="Select Category"
-                                            options={technicalSkillCategoryOptions}
-                                            onchange={handlePicklistChange}
-                                            data-field="Category__c"
-                                            field-level-help="Category of the technical skill"
-                                        ></lightning-combobox>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label">
+                                                <span>Category</span>
+                                            </label>
+                                            <div class="slds-form-element__control">
+                                                <lightning-combobox
+                                                    name="techCategory"
+                                                    value={formData.Category__c}
+                                                    placeholder="Select Category"
+                                                    options={technicalSkillCategoryOptions}
+                                                    onchange={handlePicklistChange}
+                                                    data-field="Category__c"
+                                                    variant="label-hidden"
+                                                    dropdown-alignment="auto"
+                                                ></lightning-combobox>
+                                            </div>
+                                            <div class="slds-form-element__help">Category of the technical skill</div>
+                                        </div>
                                     </div>
 
                                     <div class="slds-form__item" role="listitem">
@@ -270,15 +364,24 @@
                                     </div>
 
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
-                                        <lightning-combobox
-                                            label="Category"
-                                            value={formData.Category__c}
-                                            placeholder="Select Category"
-                                            options={procedureCategoryOptions}
-                                            onchange={handlePicklistChange}
-                                            data-field="Category__c"
-                                            field-level-help="Type of procedure"
-                                        ></lightning-combobox>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label">
+                                                <span>Category</span>
+                                            </label>
+                                            <div class="slds-form-element__control">
+                                                <lightning-combobox
+                                                    name="procedureCategory"
+                                                    value={formData.Category__c}
+                                                    placeholder="Select Category"
+                                                    options={procedureCategoryOptions}
+                                                    onchange={handlePicklistChange}
+                                                    data-field="Category__c"
+                                                    variant="label-hidden"
+                                                    dropdown-alignment="auto"
+                                                ></lightning-combobox>
+                                            </div>
+                                            <div class="slds-form-element__help">Type of procedure</div>
+                                        </div>
                                     </div>
 
                                     <div class="slds-form__item" role="listitem">
@@ -310,15 +413,29 @@
                                         ></lightning-input>
                                     </div>
 
-                                    <div class="slds-form__item" role="listitem">
-                                        <lightning-input
-                                            label="Duration"
-                                            value={formData.Duration_Text__c}
-                                            onchange={handleFieldChange}
-                                            data-field="Duration_Text__c"
-                                            placeholder="e.g., Mar 2020 - Feb 2021"
-                                            field-level-help="Period of internship"
-                                        ></lightning-input>
+                                    <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                                        <div class="slds-col">
+                                            <lightning-input
+                                                type="date"
+                                                label="Start Date"
+                                                value={formData.Start_Date__c}
+                                                onchange={handleFieldChange}
+                                                data-field="Start_Date__c"
+                                                required
+                                                field-level-help="Internship start date"
+                                            ></lightning-input>
+                                        </div>
+                                        <div class="slds-col">
+                                            <lightning-input
+                                                type="date"
+                                                label="End Date"
+                                                value={formData.End_Date__c}
+                                                onchange={handleFieldChange}
+                                                data-field="End_Date__c"
+                                                required
+                                                field-level-help="Internship end date"
+                                            ></lightning-input>
+                                        </div>
                                     </div>
                                 </div>
                             </template>
@@ -339,15 +456,35 @@
                                     </div>
 
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
-                                        <lightning-combobox
-                                            label="Type"
-                                            value={formData.Type__c}
-                                            placeholder="Select Type"
-                                            options={researchTypeOptions}
-                                            onchange={handlePicklistChange}
-                                            data-field="Type__c"
-                                            field-level-help="Type of research or publication"
-                                        ></lightning-combobox>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label">
+                                                <span>Type</span>
+                                            </label>
+                                            <div class="slds-form-element__control">
+                                                <lightning-combobox
+                                                    name="researchType"
+                                                    value={formData.Type__c}
+                                                    placeholder="Select Type"
+                                                    options={researchTypeOptions}
+                                                    onchange={handlePicklistChange}
+                                                    data-field="Type__c"
+                                                    variant="label-hidden"
+                                                    dropdown-alignment="auto"
+                                                ></lightning-combobox>
+                                            </div>
+                                            <div class="slds-form-element__help">Type of research or publication</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
+                                        <lightning-input
+                                            type="date"
+                                            label="Publication Date"
+                                            value={formData.Publication_Date__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Publication_Date__c"
+                                            field-level-help="When was this published or presented?"
+                                        ></lightning-input>
                                     </div>
 
                                     <div class="slds-form__item" role="listitem">
@@ -390,7 +527,7 @@
                                         ></lightning-input>
                                     </div>
 
-                                    <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form__item slds-m-bottom_medium" role="listitem">
                                         <lightning-input
                                             label="Member ID"
                                             value={formData.Member_Id__c}
@@ -398,6 +535,17 @@
                                             data-field="Member_Id__c"
                                             placeholder="e.g., IMA12345"
                                             field-level-help="Your membership identification number"
+                                        ></lightning-input>
+                                    </div>
+
+                                    <div class="slds-form__item" role="listitem">
+                                        <lightning-input
+                                            type="date"
+                                            label="Member Since"
+                                            value={formData.Member_Since__c}
+                                            onchange={handleFieldChange}
+                                            data-field="Member_Since__c"
+                                            field-level-help="When did you join?"
                                         ></lightning-input>
                                     </div>
                                 </div>

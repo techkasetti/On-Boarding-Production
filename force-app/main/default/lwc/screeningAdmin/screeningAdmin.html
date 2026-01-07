@@ -1,16 +1,16 @@
-<template>
-    <!-- Main Card Container -->
+<!-- <template>
+    // Main Card Container
     <lightning-card title="Screening Rule Administration" icon-name="standard:rules">
 
-        <!-- Action Button in Header -->
+        // Action Button in Header
         <div slot="actions">
             <lightning-button label="Add Rule" onclick={handleAddRule}></lightning-button>
         </div>
 
-        <!-- Main Content Area -->
+      // Main Content Area 
         <div class="slds-card__body slds-card__body_inner">
 
-            <!-- Section 1: Rules Datatable -->
+          // Section 1: Rules Datatable
             <div class="section-container">
                 <h2 class="section-header">Active Screening Rules</h2>
                 <template if:true={isLoading}>
@@ -29,7 +29,7 @@
                 </div>
             </div>
 
-            <!-- Section 2: Test & View Results (Nested Card) -->
+            // Section 2: Test & View Results (Nested Card) 
             <div class="slds-m-top_large">
                 <lightning-card title="Test & View Screening Results" icon-name="standard:user">
                     <div class="slds-p-horizontal_medium slds-p-bottom_medium">
@@ -60,16 +60,16 @@
         </div>
     </lightning-card>
 
-    <!-- Modal for Adding or Editing a Rule -->
+   // Modal for Adding or Editing a Rule
     <template if:true={isModalOpen}>
         <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">
-                <!-- Modal Header -->
+                // Modal Header 
                 <header class="slds-modal__header">
                     <h2 class="slds-modal__title slds-hyphenate">{modalTitle}</h2>
                 </header>
 
-                <!-- Modal Body with Two-Column Layout -->
+                // Modal Body with Two-Column Layout 
                 <div class="slds-modal__content slds-p-around_medium" style="max-height: 60vh; overflow-y: auto;">
                     <div class="slds-grid slds-gutters_small slds-wrap">
 
@@ -107,7 +107,7 @@
                     </div>
                 </div>
 
-                <!-- Modal Footer -->
+              //Modal Footer 
                 <footer class="slds-modal__footer">
                     <template if:true={isEditMode}>
                         <lightning-button label="Delete" variant="destructive" onclick={handleDeleteRuleFromModal} class="slds-m-right_auto"></lightning-button>
@@ -120,12 +120,647 @@
         <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 
-    <!-- Modal to display Candidate Screening Status Component -->
+    // Modal to display Candidate Screening Status Component
     <template if:true={isResultModalOpen}>
         <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
                     <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeResultsModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">Screening Results</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <c-candidate-screen-status record-id={selectedCandidateId}></c-candidate-screen-status>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template> -->
+<!-- ========================================== -->
+<!-- screeningAdmin.html - Main Admin Interface -->
+<!-- ========================================== -->
+
+<template>
+    <!-- Main Card Container -->
+    <lightning-card title="Screening Rule Administration" icon-name="standard:rules">
+
+        <!-- Action Buttons in Header -->
+        <div slot="actions">
+            <lightning-button-group>
+                <lightning-button label="Add Rule" variant="brand" onclick={handleAddRule} icon-name="utility:add"></lightning-button>
+                <lightning-button label="Import Rules" onclick={handleImportRules} icon-name="utility:download"></lightning-button>
+                <lightning-button label="Export Rules" onclick={handleExportRules} icon-name="utility:upload"></lightning-button>
+            </lightning-button-group>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="slds-card__body slds-card__body_inner">
+
+            <!-- Filter Section -->
+            <div class="slds-grid slds-gutters slds-m-bottom_medium slds-p-horizontal_medium slds-m-top_medium">
+                <div class="slds-col slds-size_1-of-4">
+                    <lightning-combobox
+                        name="filterJob"
+                        label="Filter by Job Posting"
+                        value={filterJobPosting}
+                        placeholder="All Job Postings"
+                        options={jobPostingOptions}
+                        onchange={handleFilterChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-4">
+                    <lightning-combobox
+                        name="filterPath"
+                        label="Filter by Journey Path"
+                        value={filterJourneyPath}
+                        placeholder="All Paths"
+                        options={journeyPathOptions}
+                        onchange={handleFilterChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-4">
+                    <lightning-combobox
+                        name="filterCategory"
+                        label="Filter by Category"
+                        value={filterCategory}
+                        placeholder="All Categories"
+                        options={categoryOptions}
+                        onchange={handleFilterChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-4 slds-align-bottom">
+                    <lightning-button label="Clear Filters" onclick={handleClearFilters} icon-name="utility:clear"></lightning-button>
+                </div>
+            </div>
+
+            <!-- Rules Datatable -->
+            <div class="section-container">
+                <h2 class="section-header">
+                    Active Screening Rules
+                    <span class="slds-badge slds-badge_lightest slds-m-left_small">{filteredRulesCount}</span>
+                </h2>
+                
+                <template if:true={isLoading}>
+                    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                </template>
+                
+                <div class="datatable-container">
+                    <lightning-datatable
+                        key-field="Id"
+                        data={filteredRules}
+                        columns={columns}
+                        draft-values={draftValues}
+                        onsave={handleSave}
+                        onrowaction={handleRowAction}
+                        hide-checkbox-column>
+                    </lightning-datatable>
+                </div>
+            </div>
+
+            <!-- Test & View Results Section -->
+            <div class="slds-m-top_large">
+                <lightning-card title="Test & View Screening Results" icon-name="standard:user">
+                    <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+                         <div class="slds-grid slds-gutters slds-m-top_small">
+                            <div class="slds-col slds-size_2-of-3">
+                                <lightning-combobox
+                                    name="candidate"
+                                    label="Select a Candidate to View Their Results"
+                                    placeholder="-- Search for a Candidate --"
+                                    value={selectedCandidateId}
+                                    options={candidateOptions}
+                                    onchange={handleCandidateChange}>
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3 slds-align-bottom">
+                                <lightning-button
+                                    label="View Results"
+                                    onclick={handleViewResults}
+                                    variant="brand"
+                                    disabled={isViewResultsDisabled}
+                                    class="slds-m-right_x-small">
+                                </lightning-button>
+                                <lightning-button
+                                    label="Rerun Screening"
+                                    onclick={handleRerunScreening}
+                                    variant="neutral"
+                                    disabled={isViewResultsDisabled}>
+                                </lightning-button>
+                            </div>
+                        </div>
+                    </div>
+                </lightning-card>
+            </div>
+
+            <!-- Statistics Section -->
+            <div class="slds-m-top_large">
+                <lightning-card title="Rule Statistics" icon-name="standard:metrics">
+                    <div class="slds-p-around_medium">
+                        <div class="slds-grid slds-wrap slds-gutters">
+                            <div class="slds-col slds-size_1-of-4">
+                                <div class="stat-box">
+                                    <div class="stat-label">Total Rules</div>
+                                    <div class="stat-value">{totalRules}</div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4">
+                                <div class="stat-box">
+                                    <div class="stat-label">Active Rules</div>
+                                    <div class="stat-value stat-value-success">{activeRules}</div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4">
+                                <div class="stat-box">
+                                    <div class="stat-label">Avg Pass Rate</div>
+                                    <div class="stat-value">{averagePassRate}%</div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4">
+                                <div class="stat-box">
+                                    <div class="stat-label">Total Executions</div>
+                                    <div class="stat-value">{totalExecutions}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </lightning-card>
+            </div>
+        </div>
+    </lightning-card>
+
+    <!-- Add/Edit Rule Modal -->
+    <template if:true={isModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-modal__title slds-hyphenate">{modalTitle}</h2>
+                </header>
+
+                <div class="slds-modal__content slds-p-around_medium" style="max-height: 60vh; overflow-y: auto;">
+                    <lightning-tabset active-tab-value={activeTab}>
+                        
+                        <!-- Basic Configuration Tab -->
+                        <lightning-tab label="Basic Configuration" value="basic">
+                            <div class="slds-grid slds-gutters_small slds-wrap slds-m-top_small">
+                                <div class="slds-col slds-size_1-of-1">
+                                    <lightning-combobox 
+                                        name="jobPosting" 
+                                        label="Apply to Job Posting" 
+                                        value={newRule.Applied_Role__c} 
+                                        placeholder="-- Select a Job Posting --" 
+                                        options={jobPostingOptions} 
+                                        onchange={handleNewRuleChange} 
+                                        data-field="Applied_Role__c" 
+                                        required>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input 
+                                        label="Rule Name" 
+                                        data-field="Name" 
+                                        value={newRule.Name} 
+                                        required 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input 
+                                        label="Priority (Lower = Higher Priority)" 
+                                        data-field="Priority__c" 
+                                        type="number" 
+                                        value={newRule.Priority__c} 
+                                        required 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-combobox 
+                                        label="Rule Category" 
+                                        data-field="Rule_Category__c" 
+                                        value={newRule.Rule_Category__c} 
+                                        placeholder="Select Category" 
+                                        options={categoryOptions} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input 
+                                        label="Group Name (Optional)" 
+                                        data-field="Group_Name__c" 
+                                        value={newRule.Group_Name__c} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </lightning-tab>
+
+                        <!-- Rule Logic Tab -->
+                        <lightning-tab label="Rule Logic" value="logic">
+                            <div class="slds-grid slds-gutters_small slds-wrap slds-m-top_small">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-combobox 
+                                        label="Target Object" 
+                                        data-field="Target_Object__c" 
+                                        value={selectedTargetObject} 
+                                        placeholder="Select Target Object" 
+                                        options={targetObjectOptions} 
+                                        onchange={handleTargetObjectChange}>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-combobox 
+                                        label="Field to Evaluate" 
+                                        data-field="Field_API_Name__c" 
+                                        value={newRule.Field_API_Name__c} 
+                                        placeholder="Select Field" 
+                                        options={fieldApiNameOptions} 
+                                        onchange={handleNewRuleChange} 
+                                        disabled={isFieldApiNameDisabled}>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-combobox 
+                                        label="Operator" 
+                                        data-field="Operator__c" 
+                                        value={newRule.Operator__c} 
+                                        placeholder="Select Operator" 
+                                        options={operatorOptions} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input 
+                                        label="Expected Value" 
+                                        data-field="Expected_Value__c" 
+                                        value={newRule.Expected_Value__c} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-combobox 
+                                        label="Match Type" 
+                                        data-field="Match_Type__c" 
+                                        value={newRule.Match_Type__c} 
+                                        placeholder="Any (default)" 
+                                        options={matchTypeOptions} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-combobox 
+                                        label="Action if Rule Fails" 
+                                        data-field="Action__c" 
+                                        value={newRule.Action__c} 
+                                        placeholder="Select Action" 
+                                        options={actionOptions} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-1">
+                                    <lightning-textarea 
+                                        label="Failure Message" 
+                                        data-field="Failure_Message__c" 
+                                        value={newRule.Failure_Message__c} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-textarea>
+                                </div>
+                            </div>
+                        </lightning-tab>
+
+                        <!-- Workflow Routing Tab -->
+                        <lightning-tab label="Workflow Routing" value="routing">
+                            <div class="slds-grid slds-gutters_small slds-wrap slds-m-top_small">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-combobox 
+                                        label="Journey Path" 
+                                        data-field="Journey_Path__c" 
+                                        value={newRule.Journey_Path__c} 
+                                        placeholder="Select Journey Path" 
+                                        options={journeyPathOptions} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input 
+                                        label="Route to Queue" 
+                                        data-field="Route_To_Queue__c" 
+                                        value={newRule.Route_To_Queue__c} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input 
+                                        label="Escalation Level (1-5)" 
+                                        data-field="Escalation_Level__c" 
+                                        type="number" 
+                                        value={newRule.Escalation_Level__c} 
+                                        onchange={handleNewRuleChange} 
+                                        min="1" 
+                                        max="5">
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input 
+                                        type="checkbox" 
+                                        label="Auto-Route Enabled" 
+                                        data-field="Auto_Route__c" 
+                                        checked={newRule.Auto_Route__c} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </lightning-tab>
+
+                        <!-- Manual Override Tab -->
+                        <lightning-tab label="Manual Override" value="override">
+                            <div class="slds-grid slds-gutters_small slds-wrap slds-m-top_small">
+                                <div class="slds-col slds-size_1-of-1">
+                                    <lightning-input 
+                                        type="checkbox" 
+                                        label="Allow Manual Override" 
+                                        data-field="Allow_Manual_Override__c" 
+                                        checked={newRule.Allow_Manual_Override__c} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-input>
+                                </div>
+                                <template if:true={newRule.Allow_Manual_Override__c}>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input 
+                                            type="checkbox" 
+                                            label="Override Reason Required" 
+                                            data-field="Override_Reason_Required__c" 
+                                            checked={newRule.Override_Reason_Required__c} 
+                                            onchange={handleNewRuleChange}>
+                                        </lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input 
+                                            type="checkbox" 
+                                            label="Override Approval Required" 
+                                            data-field="Override_Approval_Required__c" 
+                                            checked={newRule.Override_Approval_Required__c} 
+                                            onchange={handleNewRuleChange}>
+                                        </lightning-input>
+                                    </div>
+                                </template>
+                            </div>
+                        </lightning-tab>
+                    </lightning-tabset>
+                </div>
+
+                <footer class="slds-modal__footer">
+                    <template if:true={isEditMode}>
+                        <lightning-button 
+                            label="Delete" 
+                            variant="destructive" 
+                            onclick={handleDeleteRuleFromModal} 
+                            class="slds-m-right_auto">
+                        </lightning-button>
+                    </template>
+                    <lightning-button label="Cancel" onclick={closeModal}></lightning-button>
+                    <lightning-button variant="brand" label="Save Rule" onclick={handleSaveNewRule}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Version History Modal
+    <template if:true={isVersionModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                            title="Close" 
+                            onclick={closeVersionModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">Version History: {selectedRuleForVersion.Name}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-button 
+                        label="Create New Version" 
+                        onclick={handleCreateVersion} 
+                        variant="brand" 
+                        icon-name="utility:add"
+                        class="slds-m-bottom_medium">
+                    </lightning-button>
+                    
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col">Version</th>
+                                <th scope="col">Notes</th>
+                                <th scope="col">Created Date</th>
+                                <th scope="col">Created By</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={versionHistory} for:item="version">
+                                <tr key={version.ruleId}>
+                                    <td>{version.version}</td>
+                                    <td>{version.versionNotes}</td>
+                                    <td><lightning-formatted-date-time value={version.createdDate}></lightning-formatted-date-time></td>
+                                    <td>{version.createdBy}</td>
+                                    <td>
+                                        <template if:true={version.isCurrent}>
+                                            <span class="slds-badge slds-theme_success">Current</span>
+                                        </template>
+                                        <template if:false={version.isCurrent}>
+                                            <span class="slds-badge">Historical</span>
+                                        </template>
+                                    </td>
+                                    <td>
+                                        <template if:false={version.isCurrent}>
+                                            <lightning-button 
+                                                label="Rollback" 
+                                                onclick={handleRollback} 
+                                                data-version-id={version.ruleId}
+                                                variant="destructive-text"
+                                                icon-name="utility:undo">
+                                            </lightning-button>
+                                        </template>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template> -->
+    
+<!-- Version History Modal - WITHOUT manual create button -->
+<template if:true={isVersionModalOpen}>
+    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                        title="Close" 
+                        onclick={closeVersionModal}>
+                    <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 class="slds-modal__title slds-hyphenate">Version History: {selectedRuleForVersion.Name}</h2>
+                <p class="slds-text-body_small slds-m-top_x-small">
+                    New versions are automatically created when you edit a rule
+                </p>
+            </header>
+            <div class="slds-modal__content slds-p-around_medium">
+                
+                <!-- Info Message -->
+                <div class="slds-box slds-theme_info slds-m-bottom_medium">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <lightning-icon icon-name="utility:info" size="small" variant="inverse"></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                            <p class="slds-text-body_regular">
+                                <strong>Auto-Versioning:</strong> Every time you edit and save a rule, 
+                                a new version is automatically created. The old version is preserved in history.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Version History Table -->
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th scope="col">Version</th>
+                            <th scope="col">Notes</th>
+                            <th scope="col">Created Date</th>
+                            <th scope="col">Created By</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={versionHistory} for:item="version">
+                            <tr key={version.ruleId}>
+                                <td>
+                                    <div class="slds-truncate">
+                                        <strong>v{version.version}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="slds-truncate" title={version.versionNotes}>
+                                        {version.versionNotes}
+                                    </div>
+                                </td>
+                                <td>
+                                    <lightning-formatted-date-time value={version.createdDate}></lightning-formatted-date-time>
+                                </td>
+                                <td>{version.createdBy}</td>
+                                <td>
+                                    <template if:true={version.isCurrent}>
+                                        <span class="slds-badge slds-theme_success">
+                                            <lightning-icon icon-name="utility:check" size="xx-small"></lightning-icon>
+                                            Current
+                                        </span>
+                                    </template>
+                                    <template if:false={version.isCurrent}>
+                                        <span class="slds-badge slds-theme_shade">Historical</span>
+                                    </template>
+                                </td>
+                                <td>
+                                    <template if:false={version.isCurrent}>
+                                        <lightning-button 
+                                            label="Rollback to This Version" 
+                                            onclick={handleRollback} 
+                                            data-version-id={version.ruleId}
+                                            variant="destructive-text"
+                                            icon-name="utility:undo"
+                                            title="Make this version current">
+                                        </lightning-button>
+                                    </template>
+                                    <template if:true={version.isCurrent}>
+                                        <span class="slds-text-color_weak">Current Version</span>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <footer class="slds-modal__footer">
+                <lightning-button label="Close" onclick={closeVersionModal} variant="neutral"></lightning-button>
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</template>
+
+    <!-- Test Sandbox Modal -->
+    <template if:true={isTestModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                            title="Close" 
+                            onclick={closeTestModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">Test Rule: {selectedRuleForTest.Name}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-combobox
+                        label="Select Candidate to Test Against"
+                        value={testCandidateId}
+                        options={candidateOptions}
+                        onchange={handleTestCandidateChange}
+                        placeholder="-- Select a Candidate --">
+                    </lightning-combobox>
+                    
+                    <lightning-button 
+                        label="Run Test" 
+                        onclick={handleRunTest} 
+                        variant="brand" 
+                        icon-name="utility:play"
+                        class="slds-m-top_medium"
+                        disabled={isLoading}>
+                    </lightning-button>
+
+                    <template if:true={testResult}>
+                        <div class="slds-box slds-theme_shade slds-m-top_medium">
+                            <h3 class="slds-text-heading_small slds-m-bottom_small">Test Results</h3>
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <p><strong>Rule:</strong> {testResult.ruleName}</p>
+                                    <p><strong>Candidate:</strong> {testResult.candidateName}</p>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <p><strong>Outcome:</strong> <span class={testOutcomeClass}>{testResult.outcome}</span></p>
+                                    <p><strong>Details:</strong> {testResult.details}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Close" onclick={closeTestModal}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Candidate Results Modal -->
+    <template if:true={isResultModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                            title="Close" 
+                            onclick={closeResultsModal}>
                         <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
                         <span class="slds-assistive-text">Close</span>
                     </button>

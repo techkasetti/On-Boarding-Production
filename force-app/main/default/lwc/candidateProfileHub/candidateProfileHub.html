@@ -148,7 +148,7 @@
                                     <div slot="content">
                                         <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{work.Role__c}</h3>
                                         <p class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle">{work.Organization__c}</p>
-                                        <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{work.Duration_Text__c}</p>
+                                        <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{work.durationDisplay}</p>
                                         <template if:true={work.Responsibilities__c}>
                                             <p class="slds-text-body_regular item-description">{work.Responsibilities__c}</p>
                                         </template>
@@ -179,7 +179,7 @@
                                     <div slot="content">
                                         <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{edu.Institution__c}</h3>
                                         <p class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle">{edu.Degree__c}</p>
-                                        <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{edu.Duration_Text__c}</p>
+                                        <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{edu.durationDisplay}</p>
                                         <template if:true={edu.Details__c}>
                                             <p class="slds-text-body_regular item-description">{edu.Details__c}</p>
                                         </template>
@@ -220,6 +220,9 @@
                                                 <div class="slds-media__body">
                                                     <h3 class="slds-text-body_regular slds-truncate" title={license.Name}>{license.Name}</h3>
                                                     <p class="slds-text-body_small slds-text-color_weak">{license.Type__c}</p>
+                                                    <template if:true={license.dateDisplay}>
+                                                        <p class="slds-text-body_small slds-m-top_xx-small slds-text-color_weak">{license.dateDisplay}</p>
+                                                    </template>
                                                     <template if:true={license.Notes__c}>
                                                         <p class="slds-text-body_small slds-m-top_xx-small">{license.Notes__c}</p>
                                                     </template>
@@ -233,60 +236,205 @@
                     </c-profile-section>
 
                     <!-- Clinical Skills Section -->
-                    <template if:true={hasClinicalSkills}>
-                        <c-profile-section
-                            icon-name="standard:skill"
-                            add-button-label="Add Clinical Skill"
-                            empty-state-message="No clinical skills added yet"
-                            items={profileData.clinicalSkills}
-                            onaddnew={handleAddClinicalSkill}
-                            class="animated-section"
-                        >
-                            <span slot="title">Clinical Skills</span>
-                            <div slot="items">
-                                <div class="skills-container slds-grid slds-wrap slds-grid_pull-padded">
-                                    <template for:each={profileData.clinicalSkills} for:item="skill">
-                                        <div key={skill.Id} class="slds-col slds-p-horizontal_small slds-m-bottom_small">
-                                            <span class="skill-badge clinical-skill" onclick={handleEditClinicalSkill} data-id={skill.Id}>
-                                                {skill.Name}
-                                                <template if:true={skill.Skill_Type__c}>
-                                                    <span class="skill-type"> • {skill.Skill_Type__c}</span>
-                                                </template>
-                                            </span>
-                                        </div>
-                                    </template>
-                                </div>
+                    <c-profile-section
+                        icon-name="standard:skill"
+                        add-button-label="Add Clinical Skill"
+                        empty-state-message="No clinical skills added yet"
+                        items={profileData.clinicalSkills}
+                        onaddnew={handleAddClinicalSkill}
+                        class="animated-section"
+                    >
+                        <span slot="title">Clinical Skills</span>
+                        <div slot="items">
+                            <div class="skills-container slds-grid slds-wrap slds-grid_pull-padded">
+                                <template for:each={profileData.clinicalSkills} for:item="skill">
+                                    <div key={skill.Id} class="slds-col slds-p-horizontal_small slds-m-bottom_small">
+                                        <span class="skill-badge clinical-skill" onclick={handleEditClinicalSkill} data-id={skill.Id}>
+                                            {skill.Name}
+                                            <template if:true={skill.Skill_Type__c}>
+                                                <span class="skill-type"> • {skill.Skill_Type__c}</span>
+                                            </template>
+                                        </span>
+                                    </div>
+                                </template>
                             </div>
-                        </c-profile-section>
-                    </template>
+                        </div>
+                    </c-profile-section>
 
                     <!-- Technical Skills Section -->
-                    <template if:true={hasTechnicalSkills}>
-                        <c-profile-section
-                            icon-name="standard:apex"
-                            add-button-label="Add Technical Skill"
-                            empty-state-message="No technical skills added yet"
-                            items={profileData.technicalSkills}
-                            onaddnew={handleAddTechnicalSkill}
-                            class="animated-section"
-                        >
-                            <span slot="title">Technical Skills</span>
-                            <div slot="items">
-                                <div class="skills-container slds-grid slds-wrap slds-grid_pull-padded">
-                                    <template for:each={profileData.technicalSkills} for:item="skill">
-                                        <div key={skill.Id} class="slds-col slds-p-horizontal_small slds-m-bottom_small">
-                                            <span class="skill-badge technical-skill" onclick={handleEditTechnicalSkill} data-id={skill.Id}>
-                                                {skill.Name}
-                                                <template if:true={skill.Category__c}>
-                                                    <span class="skill-type"> • {skill.Category__c}</span>
-                                                </template>
-                                            </span>
-                                        </div>
-                                    </template>
-                                </div>
+                    <c-profile-section
+                        icon-name="standard:apex"
+                        add-button-label="Add Technical Skill"
+                        empty-state-message="No technical skills added yet"
+                        items={profileData.technicalSkills}
+                        onaddnew={handleAddTechnicalSkill}
+                        class="animated-section"
+                    >
+                        <span slot="title">Technical Skills</span>
+                        <div slot="items">
+                            <div class="skills-container slds-grid slds-wrap slds-grid_pull-padded">
+                                <template for:each={profileData.technicalSkills} for:item="skill">
+                                    <div key={skill.Id} class="slds-col slds-p-horizontal_small slds-m-bottom_small">
+                                        <span class="skill-badge technical-skill" onclick={handleEditTechnicalSkill} data-id={skill.Id}>
+                                            {skill.Name}
+                                            <template if:true={skill.Category__c}>
+                                                <span class="skill-type"> • {skill.Category__c}</span>
+                                            </template>
+                                        </span>
+                                    </div>
+                                </template>
                             </div>
-                        </c-profile-section>
-                    </template>
+                        </div>
+                    </c-profile-section>
+
+                    <!-- Procedures Section -->
+                    <c-profile-section
+                        icon-name="standard:service_report"
+                        add-button-label="Add Procedure"
+                        empty-state-message="No procedures added yet"
+                        items={profileData.procedures}
+                        onaddnew={handleAddProcedure}
+                        class="animated-section"
+                    >
+                        <span slot="title">Procedures Performed</span>
+                        <div slot="items">
+                            <div class="slds-grid slds-wrap slds-grid_pull-padded">
+                                <template for:each={profileData.procedures} for:item="procedure">
+                                    <div key={procedure.Id} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small">
+                                        <div class="license-card slds-box slds-box_x-small">
+                                            <lightning-button-icon
+                                                icon-name="utility:edit"
+                                                alternative-text="Edit"
+                                                title="Edit"
+                                                variant="bare"
+                                                onclick={handleEditProcedure}
+                                                data-id={procedure.Id}
+                                                class="edit-icon-badge"
+                                            ></lightning-button-icon>
+                                            <div class="slds-media slds-media_center">
+                                                <div class="slds-media__figure">
+                                                    <lightning-icon icon-name="standard:service_report" size="small"></lightning-icon>
+                                                </div>
+                                                <div class="slds-media__body">
+                                                    <h3 class="slds-text-body_regular slds-truncate" title={procedure.Name}>{procedure.Name}</h3>
+                                                    <p class="slds-text-body_small slds-text-color_weak">{procedure.Category__c}</p>
+                                                    <template if:true={procedure.Notes__c}>
+                                                        <p class="slds-text-body_small slds-m-top_xx-small">{procedure.Notes__c}</p>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </c-profile-section>
+
+                    <!-- Internships Section -->
+                    <c-profile-section
+                        icon-name="standard:entity"
+                        add-button-label="Add Internship"
+                        empty-state-message="No internships added yet"
+                        items={profileData.internships}
+                        onaddnew={handleAddInternship}
+                        class="animated-section"
+                    >
+                        <span slot="title">Internships / Clinical Rotations</span>
+                        <div slot="items">
+                            <template for:each={profileData.internships} for:item="intern">
+                                <c-profile-item-card
+                                    key={intern.Id}
+                                    icon-name="standard:entity"
+                                    record-id={intern.Id}
+                                    onedit={handleEditInternship}
+                                >
+                                    <div slot="content">
+                                        <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{intern.Organization__c}</h3>
+                                        <p class="slds-text-color_weak slds-text-body_small item-meta">{intern.durationDisplay}</p>
+                                    </div>
+                                </c-profile-item-card>
+                            </template>
+                        </div>
+                    </c-profile-section>
+
+                    <!-- Research & Publications Section -->
+                    <c-profile-section
+                        icon-name="standard:article"
+                        add-button-label="Add Publication"
+                        empty-state-message="No research or publications added yet"
+                        items={profileData.researchPublications}
+                        onaddnew={handleAddResearch}
+                        class="animated-section"
+                    >
+                        <span slot="title">Research, Publications & Conferences</span>
+                        <div slot="items">
+                            <template for:each={profileData.researchPublications} for:item="research">
+                                <c-profile-item-card
+                                    key={research.Id}
+                                    icon-name="standard:article"
+                                    record-id={research.Id}
+                                    onedit={handleEditResearch}
+                                >
+                                    <div slot="content">
+                                        <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{research.Title__c}</h3>
+                                        <p class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle">{research.Type__c}</p>
+                                        <template if:true={research.dateDisplay}>
+                                            <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{research.dateDisplay}</p>
+                                        </template>
+                                        <template if:true={research.Description__c}>
+                                            <p class="slds-text-body_regular item-description">{research.Description__c}</p>
+                                        </template>
+                                    </div>
+                                </c-profile-item-card>
+                            </template>
+                        </div>
+                    </c-profile-section>
+
+                    <!-- Professional Memberships Section -->
+                    <c-profile-section
+                        icon-name="standard:groups"
+                        add-button-label="Add Membership"
+                        empty-state-message="No professional memberships added yet"
+                        items={profileData.memberships}
+                        onaddnew={handleAddMembership}
+                        class="animated-section"
+                    >
+                        <span slot="title">Professional Memberships</span>
+                        <div slot="items">
+                            <div class="slds-grid slds-wrap slds-grid_pull-padded">
+                                <template for:each={profileData.memberships} for:item="member">
+                                    <div key={member.Id} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small">
+                                        <div class="license-card slds-box slds-box_x-small">
+                                            <lightning-button-icon
+                                                icon-name="utility:edit"
+                                                alternative-text="Edit"
+                                                title="Edit"
+                                                variant="bare"
+                                                onclick={handleEditMembership}
+                                                data-id={member.Id}
+                                                class="edit-icon-badge"
+                                            ></lightning-button-icon>
+                                            <div class="slds-media slds-media_center">
+                                                <div class="slds-media__figure">
+                                                    <lightning-icon icon-name="standard:groups" size="small"></lightning-icon>
+                                                </div>
+                                                <div class="slds-media__body">
+                                                    <h3 class="slds-text-body_regular slds-truncate" title={member.Organization_Name__c}>{member.Organization_Name__c}</h3>
+                                                    <p class="slds-text-body_small slds-text-color_weak">{member.Membership_Type__c}</p>
+                                                    <template if:true={member.dateDisplay}>
+                                                        <p class="slds-text-body_small slds-m-top_xx-small slds-text-color_weak">{member.dateDisplay}</p>
+                                                    </template>
+                                                    <template if:true={member.Member_Id__c}>
+                                                        <p class="slds-text-body_small slds-m-top_xx-small">ID: {member.Member_Id__c}</p>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </c-profile-section>
                 </template>
             </div>
         </lightning-card>

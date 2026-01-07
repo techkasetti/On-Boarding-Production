@@ -39,23 +39,23 @@ public with sharing class CandidateProfileController {
         
         result.candidate = candidates[0];
 
-        // Query related records
+        // Query related records with date fields
         result.workExperiences = [
-            SELECT Id, Role__c, Organization__c, Duration_Text__c, Responsibilities__c 
+            SELECT Id, Role__c, Organization__c, Start_Date__c, End_Date__c, Is_Current__c, Responsibilities__c 
             FROM Work_Experience__c 
             WHERE Candidate__c = :candidateId 
-            ORDER BY CreatedDate DESC
+            ORDER BY Start_Date__c DESC NULLS LAST, CreatedDate DESC
         ];
 
         result.educations = [
-            SELECT Id, Degree__c, Institution__c, Duration_Text__c, Details__c 
+            SELECT Id, Degree__c, Institution__c, Start_Year__c, End_Year__c, Details__c 
             FROM Education__c 
             WHERE Candidate__c = :candidateId 
-            ORDER BY CreatedDate DESC
+            ORDER BY Start_Year__c DESC NULLS LAST, CreatedDate DESC
         ];
 
         result.licenses = [
-            SELECT Id, Name, Type__c, Notes__c 
+            SELECT Id, Name, Type__c, Issue_Date__c, Expiry_Date__c, Notes__c 
             FROM License_Certification__c 
             WHERE Candidate__c = :candidateId 
             ORDER BY Name ASC
@@ -83,21 +83,21 @@ public with sharing class CandidateProfileController {
         ];
 
         result.internships = [
-            SELECT Id, Organization__c, Duration_Text__c
+            SELECT Id, Organization__c, Start_Date__c, End_Date__c
             FROM Internship__c
             WHERE Candidate__c = :candidateId
-            ORDER BY CreatedDate DESC
+            ORDER BY Start_Date__c DESC NULLS LAST, CreatedDate DESC
         ];
 
         result.researchPublications = [
-            SELECT Id, Title__c, Type__c, Description__c
+            SELECT Id, Title__c, Type__c, Publication_Date__c, Description__c
             FROM Research_Publication__c
             WHERE Candidate__c = :candidateId
-            ORDER BY CreatedDate DESC
+            ORDER BY Publication_Date__c DESC NULLS LAST, CreatedDate DESC
         ];
 
         result.memberships = [
-            SELECT Id, Organization_Name__c, Membership_Type__c, Member_Id__c
+            SELECT Id, Organization_Name__c, Membership_Type__c, Member_Id__c, Member_Since__c
             FROM Membership__c
             WHERE Candidate__c = :candidateId
             ORDER BY Organization_Name__c ASC
@@ -226,7 +226,9 @@ public with sharing class CandidateProfileController {
         record.Candidate__c = (Id) dataMap.get('Candidate__c');
         record.Role__c = (String) dataMap.get('Role__c');
         record.Organization__c = (String) dataMap.get('Organization__c');
-        record.Duration_Text__c = (String) dataMap.get('Duration_Text__c');
+        record.Start_Date__c = parseDate(dataMap.get('Start_Date__c'));
+        record.End_Date__c = parseDate(dataMap.get('End_Date__c'));
+        record.Is_Current__c = (Boolean) dataMap.get('Is_Current__c');
         record.Responsibilities__c = (String) dataMap.get('Responsibilities__c');
         
         return record;
@@ -242,7 +244,8 @@ public with sharing class CandidateProfileController {
         record.Candidate__c = (Id) dataMap.get('Candidate__c');
         record.Institution__c = (String) dataMap.get('Institution__c');
         record.Degree__c = (String) dataMap.get('Degree__c');
-        record.Duration_Text__c = (String) dataMap.get('Duration_Text__c');
+        record.Start_Year__c = parseDecimal(dataMap.get('Start_Year__c'));
+        record.End_Year__c = parseDecimal(dataMap.get('End_Year__c'));
         record.Details__c = (String) dataMap.get('Details__c');
         
         return record;
@@ -258,6 +261,8 @@ public with sharing class CandidateProfileController {
         record.Candidate__c = (Id) dataMap.get('Candidate__c');
         record.Name = (String) dataMap.get('Name');
         record.Type__c = (String) dataMap.get('Type__c');
+        record.Issue_Date__c = parseDate(dataMap.get('Issue_Date__c'));
+        record.Expiry_Date__c = parseDate(dataMap.get('Expiry_Date__c'));
         record.Notes__c = (String) dataMap.get('Notes__c');
         
         return record;
@@ -317,7 +322,8 @@ public with sharing class CandidateProfileController {
         
         record.Candidate__c = (Id) dataMap.get('Candidate__c');
         record.Organization__c = (String) dataMap.get('Organization__c');
-        record.Duration_Text__c = (String) dataMap.get('Duration_Text__c');
+        record.Start_Date__c = parseDate(dataMap.get('Start_Date__c'));
+        record.End_Date__c = parseDate(dataMap.get('End_Date__c'));
         
         return record;
     }
@@ -332,6 +338,7 @@ public with sharing class CandidateProfileController {
         record.Candidate__c = (Id) dataMap.get('Candidate__c');
         record.Title__c = (String) dataMap.get('Title__c');
         record.Type__c = (String) dataMap.get('Type__c');
+        record.Publication_Date__c = parseDate(dataMap.get('Publication_Date__c'));
         record.Description__c = (String) dataMap.get('Description__c');
         
         return record;
@@ -348,7 +355,63 @@ public with sharing class CandidateProfileController {
         record.Organization_Name__c = (String) dataMap.get('Organization_Name__c');
         record.Membership_Type__c = (String) dataMap.get('Membership_Type__c');
         record.Member_Id__c = (String) dataMap.get('Member_Id__c');
+        record.Member_Since__c = parseDate(dataMap.get('Member_Since__c'));
         
         return record;
+    }
+
+    // =================================================================
+    // Helper Methods for Data Type Conversion
+    // =================================================================
+
+    private static Date parseDate(Object dateValue) {
+        if (dateValue == null) {
+            return null;
+        }
+        
+        if (dateValue instanceof String) {
+            String dateStr = (String) dateValue;
+            if (String.isBlank(dateStr)) {
+                return null;
+            }
+            try {
+                // Parse YYYY-MM-DD format
+                return Date.valueOf(dateStr);
+            } catch (Exception e) {
+                System.debug('Error parsing date: ' + dateStr + ', Error: ' + e.getMessage());
+                return null;
+            }
+        }
+        
+        return null;
+    }
+
+    private static Decimal parseDecimal(Object decimalValue) {
+        if (decimalValue == null) {
+            return null;
+        }
+        
+        if (decimalValue instanceof Integer) {
+            return Decimal.valueOf((Integer) decimalValue);
+        }
+        
+        if (decimalValue instanceof Decimal) {
+            return (Decimal) decimalValue;
+        }
+        
+        if (decimalValue instanceof String) {
+            String decStr = (String) decimalValue;
+            if (String.isBlank(decStr)) {
+                return null;
+            }
+            try {
+                return Decimal.valueOf(decStr);
+            } catch (Exception e) {
+                System.debug('Error parsing decimal: ' + decStr + ', Error: ' + e.getMessage());
+                return null;
+            }
+        }
+        
+        return null;
     }
 }
