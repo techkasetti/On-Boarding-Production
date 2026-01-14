@@ -110,6 +110,11 @@
 // For displaying screening results in LWC
 // =====================================================
 
+// =====================================================
+// CANDIDATE STATUS CONTROLLER - FIXED VERSION
+// Enhanced error handling and debugging
+// =====================================================
+
 public with sharing class CandidateStatusController {
     
     public class CandidateStatusDto {
@@ -174,7 +179,6 @@ public with sharing class CandidateStatusController {
             this.overrideDate = ov.Override_Date__c;
         }
     }
-    
     @AuraEnabled(cacheable=true)
     public static CandidateStatusDto getCandidateStatus(Id candidateId) {
         if (candidateId == null) {

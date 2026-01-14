@@ -260,7 +260,92 @@ public with sharing class ScreeningController {
     
     // ==================== AUTO-VERSIONING ON SAVE ====================
     
-    @AuraEnabled
+    // @AuraEnabled
+    // public static Screening_Rule__c saveNewRule(Screening_Rule__c newRule) {
+    //     if (String.isBlank(newRule.Name) || newRule.Priority__c == null || 
+    //         String.isBlank(newRule.Applied_Role__c)) {
+    //         throw new AuraHandledException('Rule Name, Priority, and Applied Role are required.');
+    //     }
+        
+    //     try {
+    //         // Generate Rule_Key if blank
+    //         if (String.isBlank(newRule.Rule_Key__c)) {
+    //             newRule.Rule_Key__c = newRule.Name.replaceAll('[^a-zA-Z0-9]', '_').toUpperCase();
+    //         }
+            
+    //         // ==================== AUTO VERSIONING LOGIC ====================
+    //         if (newRule.Id != null) {
+    //             // EDIT MODE: Automatically create new version
+    //             System.debug('EDIT MODE DETECTED - Creating new version automatically');
+                
+    //             // Get the existing rule to compare
+    //             Screening_Rule__c existingRule = [
+    //                 SELECT Id, Name, Version__c, Priority__c, Applied_Role__c,
+    //                        Target_Object__c, Field_API_Name__c, Operator__c, Expected_Value__c,
+    //                        Action__c, Failure_Message__c, Journey_Path__c, Route_To_Queue__c,
+    //                        Escalation_Level__c, Allow_Manual_Override__c, Rule_Key__c,
+    //                        Override_Reason_Required__c, Override_Approval_Required__c,
+    //                        Group_Name__c, Rule_Category__c, Match_Type__c, Auto_Route__c
+    //                 FROM Screening_Rule__c 
+    //                 WHERE Id = :newRule.Id 
+    //                 LIMIT 1
+    //             ];
+                
+    //             // Check if any important field has changed
+    //             Boolean hasChanges = hasSignificantChanges(existingRule, newRule);
+                
+    //             if (hasChanges) {
+    //                 System.debug('Significant changes detected - creating new version');
+                    
+    //                 // Deactivate current version
+    //                 existingRule.Is_Current_Version__c = false;
+    //                 existingRule.Active__c = false;
+    //                 update existingRule;
+                    
+    //                 // Create new version
+    //                 Screening_Rule__c newVersion = newRule.clone(false, true, false, false);
+    //                 newVersion.Version__c = (existingRule.Version__c != null ? existingRule.Version__c : 1.0) + 1.0;
+    //                 newVersion.Is_Current_Version__c = true;
+    //                 newVersion.Parent_Rule_Version__c = existingRule.Id;
+    //                 newVersion.Active__c = true;
+    //                 newVersion.Rule_Key__c = existingRule.Rule_Key__c;
+    //                 newVersion.Version_Notes__c = 'Auto-versioned on edit - ' + System.now().format();
+                    
+    //                 // Reset statistics for new version
+    //                 newVersion.Last_Execution_Date__c = null;
+    //                 newVersion.Execution_Count__c = 0;
+    //                 newVersion.Pass_Rate__c = null;
+    //                 newVersion.Fail_Rate__c = null;
+    //                 newVersion.Last_Tested_Date__c = null;
+    //                 newVersion.Test_Pass_Count__c = 0;
+    //                 newVersion.Test_Fail_Count__c = 0;
+                    
+    //                 insert newVersion;
+                    
+    //                 System.debug('New version created: ' + newVersion.Id + ' (Version ' + newVersion.Version__c + ')');
+    //                 return newVersion;
+    //             } else {
+    //                 System.debug('No significant changes - updating existing version');
+    //                 update newRule;
+    //                 return newRule;
+    //             }
+                
+    //         } else {
+    //             // CREATE MODE: New rule
+    //             System.debug('CREATE MODE - Creating new rule');
+    //             newRule.Version__c = 1.0;
+    //             newRule.Is_Current_Version__c = true;
+    //             insert newRule;
+    //             return newRule;
+    //         }
+            
+    //     } catch (Exception e) {
+    //         System.debug('ERROR in saveNewRule: ' + e.getMessage());
+    //         System.debug('Stack trace: ' + e.getStackTraceString());
+    //         throw new AuraHandledException('Error saving rule: ' + e.getMessage());
+    //     }
+    // }
+     @AuraEnabled
     public static Screening_Rule__c saveNewRule(Screening_Rule__c newRule) {
         if (String.isBlank(newRule.Name) || newRule.Priority__c == null || 
             String.isBlank(newRule.Applied_Role__c)) {
@@ -273,10 +358,10 @@ public with sharing class ScreeningController {
                 newRule.Rule_Key__c = newRule.Name.replaceAll('[^a-zA-Z0-9]', '_').toUpperCase();
             }
             
-            // ==================== AUTO VERSIONING LOGIC ====================
+            // ==================== STORAGE-OPTIMIZED VERSIONING ====================
             if (newRule.Id != null) {
-                // EDIT MODE: Automatically create new version
-                System.debug('EDIT MODE DETECTED - Creating new version automatically');
+                // EDIT MODE: Only version on SIGNIFICANT changes
+                System.debug('EDIT MODE DETECTED - Checking for significant changes');
                 
                 // Get the existing rule to compare
                 Screening_Rule__c existingRule = [
@@ -291,11 +376,14 @@ public with sharing class ScreeningController {
                     LIMIT 1
                 ];
                 
-                // Check if any important field has changed
-                Boolean hasChanges = hasSignificantChanges(existingRule, newRule);
+                // Check if any CRITICAL field has changed (not cosmetic changes)
+                Boolean hasChanges = hasCriticalChanges(existingRule, newRule);
                 
                 if (hasChanges) {
-                    System.debug('Significant changes detected - creating new version');
+                    System.debug('CRITICAL changes detected - creating new version');
+                    
+                    // STORAGE OPTIMIZATION: Delete old versions (keep only last 3)
+                    deleteOldVersions(existingRule.Rule_Key__c, 3);
                     
                     // Deactivate current version
                     existingRule.Is_Current_Version__c = false;
@@ -309,7 +397,7 @@ public with sharing class ScreeningController {
                     newVersion.Parent_Rule_Version__c = existingRule.Id;
                     newVersion.Active__c = true;
                     newVersion.Rule_Key__c = existingRule.Rule_Key__c;
-                    newVersion.Version_Notes__c = 'Auto-versioned on edit - ' + System.now().format();
+                    newVersion.Version_Notes__c = 'Auto-versioned - ' + System.now().format('yyyy-MM-dd HH:mm');
                     
                     // Reset statistics for new version
                     newVersion.Last_Execution_Date__c = null;
@@ -325,7 +413,7 @@ public with sharing class ScreeningController {
                     System.debug('New version created: ' + newVersion.Id + ' (Version ' + newVersion.Version__c + ')');
                     return newVersion;
                 } else {
-                    System.debug('No significant changes - updating existing version');
+                    System.debug('No critical changes - updating existing version');
                     update newRule;
                     return newRule;
                 }
@@ -342,17 +430,113 @@ public with sharing class ScreeningController {
         } catch (Exception e) {
             System.debug('ERROR in saveNewRule: ' + e.getMessage());
             System.debug('Stack trace: ' + e.getStackTraceString());
+            
+            // Better error message for storage limit
+            if (e.getMessage().contains('STORAGE_LIMIT_EXCEEDED')) {
+                throw new AuraHandledException('Storage limit exceeded. Please free up space by deleting old debug logs or unused data.');
+            }
             throw new AuraHandledException('Error saving rule: ' + e.getMessage());
         }
     }
+
+     // ==================== STORAGE OPTIMIZATION: DELETE OLD VERSIONS ====================
     
-    // ==================== HELPER: CHECK FOR SIGNIFICANT CHANGES ====================
+    private static void deleteOldVersions(String ruleKey, Integer keepCount) {
+        try {
+            List<Screening_Rule__c> allVersions = [
+                SELECT Id, Version__c, Is_Current_Version__c
+                FROM Screening_Rule__c
+                WHERE Rule_Key__c = :ruleKey
+                ORDER BY Version__c DESC
+            ];
+            
+            if (allVersions.size() > keepCount) {
+                List<Screening_Rule__c> versionsToDelete = new List<Screening_Rule__c>();
+                Integer count = 0;
+                
+                for (Screening_Rule__c version : allVersions) {
+                    if (!version.Is_Current_Version__c && count >= keepCount - 1) {
+                        versionsToDelete.add(version);
+                    }
+                    if (!version.Is_Current_Version__c) {
+                        count++;
+                    }
+                }
+                
+                if (!versionsToDelete.isEmpty()) {
+                    delete versionsToDelete;
+                    System.debug('Deleted ' + versionsToDelete.size() + ' old versions to save storage');
+                }
+            }
+        } catch (Exception e) {
+            System.debug('Warning: Could not delete old versions: ' + e.getMessage());
+        }
+    }
     
-    private static Boolean hasSignificantChanges(Screening_Rule__c oldRule, Screening_Rule__c newRule) {
-        // Check if any important field has changed
+    // // ==================== HELPER: CHECK FOR SIGNIFICANT CHANGES ====================
+    
+    // private static Boolean hasSignificantChanges(Screening_Rule__c oldRule, Screening_Rule__c newRule) {
+    //     // Check if any important field has changed
+    //     Boolean changed = false;
+        
+    //     // Rule logic fields
+    //     if (!equals(oldRule.Target_Object__c, newRule.Target_Object__c)) {
+    //         System.debug('Changed: Target_Object__c');
+    //         changed = true;
+    //     }
+    //     if (!equals(oldRule.Field_API_Name__c, newRule.Field_API_Name__c)) {
+    //         System.debug('Changed: Field_API_Name__c');
+    //         changed = true;
+    //     }
+    //     if (!equals(oldRule.Operator__c, newRule.Operator__c)) {
+    //         System.debug('Changed: Operator__c');
+    //         changed = true;
+    //     }
+    //     if (!equals(oldRule.Expected_Value__c, newRule.Expected_Value__c)) {
+    //         System.debug('Changed: Expected_Value__c');
+    //         changed = true;
+    //     }
+    //     if (!equals(oldRule.Action__c, newRule.Action__c)) {
+    //         System.debug('Changed: Action__c');
+    //         changed = true;
+    //     }
+    //     if (!equals(oldRule.Match_Type__c, newRule.Match_Type__c)) {
+    //         System.debug('Changed: Match_Type__c');
+    //         changed = true;
+    //     }
+        
+    //     // Routing fields
+    //     if (!equals(oldRule.Journey_Path__c, newRule.Journey_Path__c)) {
+    //         System.debug('Changed: Journey_Path__c');
+    //         changed = true;
+    //     }
+    //     if (!equals(oldRule.Route_To_Queue__c, newRule.Route_To_Queue__c)) {
+    //         System.debug('Changed: Route_To_Queue__c');
+    //         changed = true;
+    //     }
+        
+    //     // Priority
+    //     if (oldRule.Priority__c != newRule.Priority__c) {
+    //         System.debug('Changed: Priority__c');
+    //         changed = true;
+    //     }
+        
+    //     // Name change
+    //     if (!equals(oldRule.Name, newRule.Name)) {
+    //         System.debug('Changed: Name');
+    //         changed = true;
+    //     }
+        
+    //     return changed;
+    // }
+     
+    // ==================== HELPER: CHECK FOR CRITICAL CHANGES ONLY ====================
+    
+    private static Boolean hasCriticalChanges(Screening_Rule__c oldRule, Screening_Rule__c newRule) {
+        // Only version on CRITICAL changes that affect rule behavior
         Boolean changed = false;
         
-        // Rule logic fields
+        // Rule logic fields (CRITICAL)
         if (!equals(oldRule.Target_Object__c, newRule.Target_Object__c)) {
             System.debug('Changed: Target_Object__c');
             changed = true;
@@ -378,27 +562,8 @@ public with sharing class ScreeningController {
             changed = true;
         }
         
-        // Routing fields
-        if (!equals(oldRule.Journey_Path__c, newRule.Journey_Path__c)) {
-            System.debug('Changed: Journey_Path__c');
-            changed = true;
-        }
-        if (!equals(oldRule.Route_To_Queue__c, newRule.Route_To_Queue__c)) {
-            System.debug('Changed: Route_To_Queue__c');
-            changed = true;
-        }
-        
-        // Priority
-        if (oldRule.Priority__c != newRule.Priority__c) {
-            System.debug('Changed: Priority__c');
-            changed = true;
-        }
-        
-        // Name change
-        if (!equals(oldRule.Name, newRule.Name)) {
-            System.debug('Changed: Name');
-            changed = true;
-        }
+        // Note: Priority, Name, Journey_Path, Route_To_Queue changes do NOT create new versions
+        // to save storage
         
         return changed;
     }

@@ -105,9 +105,16 @@
         </div>
     </lightning-card>
 </template> -->
+
+
+
+
+
+
+<!--/////////////////////////////////////////////////////////////////////////////////////
 <template>
     <lightning-card title="Candidate Screening Status" icon-name="standard:assessment">
-        <!-- Action Button -->
+         Action Button 
         <div slot="actions">
             <lightning-button
                 label="Rerun Screening"
@@ -118,23 +125,23 @@
         </div>
 
         <div class="slds-p-horizontal_small">
-            <!-- Loading -->
+            // Loading 
             <template if:false={data}>
                 <div class="slds-is-relative slds-p-vertical_large">
                     <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
                 </div>
             </template>
 
-            <!-- Error -->
+            // Error 
             <template if:true={error}>
                 <div class="slds-p-around_medium slds-text-color_error">
                     An error occurred: {error.body.message}
                 </div>
             </template>
 
-            <!-- Main Content -->
+           // Main Content 
             <template if:true={data}>
-                <!-- Header Status -->
+             // Header Status
                 <div class="slds-grid slds-gutters slds-m-bottom_medium slds-m-top_small">
                     <div class="slds-col slds-size_1-of-3">
                         <p class="slds-text-title">Candidate Name</p>
@@ -154,7 +161,7 @@
                     </div>
                 </div>
 
-                <!-- Summary Statistics -->
+            // Summary Statistics 
                 <div class="slds-grid slds-gutters slds-m-bottom_medium">
                     <div class="slds-col slds-size_1-of-4">
                         <div class="stat-card">
@@ -182,7 +189,7 @@
                     </div>
                 </div>
 
-                <!-- Routing Recommendation -->
+                // Routing Recommendation 
                 <template if:true={data.routingInfo}>
                     <div class="slds-box slds-theme_warning slds-m-bottom_medium">
                         <div class="slds-media">
@@ -208,7 +215,7 @@
                     </div>
                 </template>
 
-                <!-- Results Table -->
+             // Results Table 
                 <h3 class="slds-text-heading_medium slds-m-bottom_small">Detailed Results</h3>
 
                 <template if:true={hasResults}>
@@ -268,7 +275,7 @@
                     </div>
                 </template>
 
-                <!-- Overrides Section -->
+                //Overrides Section 
                 <template if:true={hasOverrides}>
                     <h3 class="slds-text-heading_medium slds-m-top_large slds-m-bottom_small">Manual Overrides</h3>
                     <table class="slds-table slds-table_cell-buffer slds-table_bordered">
@@ -298,6 +305,383 @@
                         </tbody>
                     </table>
                 </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>
+-->
+<!-- candidateScreenStatus.html - ENHANCED WITH AI (COMPLETE VERSION) -->
+<template>
+    <lightning-card icon-name="standard:assessment">
+        <!-- Dynamic Title with Menu -->
+        <div slot="title">
+            <div class="slds-grid slds-grid_vertical-align-center">
+                <h2 class="slds-card__header-title slds-truncate">
+                    Screening Analysis
+                </h2>
+                <lightning-button-menu 
+                    alternative-text="Show menu" 
+                    icon-size="x-small" 
+                    menu-alignment="right"
+                    class="slds-m-left_x-small">
+                    <lightning-menu-item 
+                        value="refresh" 
+                        label="Refresh Data" 
+                        icon-name="utility:refresh"
+                        onclick={handleRefresh}>
+                    </lightning-menu-item>
+                    <lightning-menu-item 
+                        value="export" 
+                        label="Export Results" 
+                        icon-name="utility:download">
+                    </lightning-menu-item>
+                </lightning-button-menu>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div slot="actions">
+            <lightning-button-group>
+                <lightning-button
+                    label="Run Screening"
+                    onclick={handleRerun}
+                    disabled={isRunning}
+                    icon-name="utility:loop"
+                    variant="neutral">
+                </lightning-button>
+                <lightning-button
+                    label="Run AI Screening"
+                    onclick={handleRunAIScreening}
+                    disabled={isAIRunning}
+                    icon-name="utility:einstein"
+                    variant="brand">
+                </lightning-button>
+            </lightning-button-group>
+        </div>
+
+        <div class="slds-card__body">
+            <!-- Loading State -->
+            <template if:false={dataLoaded}>
+                <div class="slds-is-relative slds-p-vertical_large">
+                    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <!-- Error State -->
+            <template if:true={error}>
+                <div class="slds-p-around_medium">
+                    <div class="slds-notify slds-notify_alert slds-alert_error">
+                        <span class="slds-assistive-text">error</span>
+                        <h2>An error occurred: {error.body.message}</h2>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Main Content -->
+            <template if:true={dataLoaded}>
+                
+                <!-- Candidate Info Header -->
+                <div class="candidate-header slds-m-bottom_large slds-m-horizontal_medium">
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <lightning-icon icon-name="standard:contact" size="small"></lightning-icon>
+                                </div>
+                                <div class="info-content">
+                                    <p class="info-label">Candidate</p>
+                                    <p class="info-value">{candidateName}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <lightning-icon icon-name="standard:work_order" size="small"></lightning-icon>
+                                </div>
+                                <div class="info-content">
+                                    <p class="info-label">Job Posting</p>
+                                    <p class="info-value">{jobTitle}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <lightning-icon icon-name="standard:date_time" size="small"></lightning-icon>
+                                </div>
+                                <div class="info-content">
+                                    <p class="info-label">Last Screened</p>
+                                    <p class="info-value">
+                                        <lightning-formatted-date-time value={lastScreeningDate} 
+                                                                       year="numeric" 
+                                                                       month="short" 
+                                                                       day="2-digit" 
+                                                                       hour="2-digit" 
+                                                                       minute="2-digit">
+                                        </lightning-formatted-date-time>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs for Different Views -->
+                <lightning-tabset active-tab-value={activeTab} onselect={handleTabChange}>
+                    
+                    <!-- Rule-Based Screening Tab -->
+                    <lightning-tab label="Rule-Based Screening" value="rules" icon-name="standard:flow">
+                        <div class="slds-p-around_small">
+                            
+                            <!-- Rule-Based Score Card -->
+                            <div class="score-card-container slds-m-bottom_medium">
+                                <div class="score-card rule-based">
+                                    <div class="score-header">
+                                        <lightning-icon icon-name="standard:flow" size="x-small"></lightning-icon>
+                                        <h3 class="slds-text-heading_small">Rule-Based Analysis</h3>
+                                    </div>
+                                    <div class="score-value">{traditionalScore}<span class="score-unit">%</span></div>
+                                    <div class="score-status">
+                                        <span class={traditionalBadgeClass}>{traditionalStatus}</span>
+                                    </div>
+                                    <div class="score-meta">
+                                        <lightning-icon icon-name="utility:metrics" size="xx-small"></lightning-icon>
+                                        {totalRules} rules evaluated
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Stats -->
+                            <div class="stats-container slds-m-bottom_medium">
+                                <h4 class="stats-heading">
+                                    <lightning-icon icon-name="utility:chart" size="xx-small"></lightning-icon>
+                                    Results Breakdown
+                                </h4>
+                                <div class="quick-stats slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="stat-pill stat-success">
+                                            <div class="stat-icon-wrapper">
+                                                <lightning-icon icon-name="utility:success" size="x-small"></lightning-icon>
+                                            </div>
+                                            <span class="stat-number">{rulesPassed}</span>
+                                            <span class="stat-label">Passed</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="stat-pill stat-error">
+                                            <div class="stat-icon-wrapper">
+                                                <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                                            </div>
+                                            <span class="stat-number">{rulesFailed}</span>
+                                            <span class="stat-label">Failed</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="stat-pill stat-warning">
+                                            <div class="stat-icon-wrapper">
+                                                <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+                                            </div>
+                                            <span class="stat-number">{rulesReview}</span>
+                                            <span class="stat-label">Review</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Rule Results Table -->
+                            <div class="results-table-container">
+                                <h4 class="results-heading slds-m-bottom_small">
+                                    <lightning-icon icon-name="utility:list" size="x-small"></lightning-icon>
+                                    Detailed Rule Results
+                                </h4>
+                                <template if:true={hasRuleResults}>
+                                    <div class="table-wrapper">
+                                        <table class="slds-table slds-table_cell-buffer slds-table_bordered results-table">
+                                            <thead>
+                                                <tr class="slds-line-height_reset">
+                                                    <th scope="col" class="rule-name-col">Rule Name</th>
+                                                    <th scope="col" class="category-col">Category</th>
+                                                    <th scope="col" class="outcome-col">Outcome</th>
+                                                    <th scope="col" class="details-col">Details</th>
+                                                    <th scope="col" class="action-col">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template for:each={ruleResults} for:item="result">
+                                                    <tr key={result.ruleName} class="result-row">
+                                                        <td data-label="Rule Name">
+                                                            <div class="rule-name-cell">
+                                                                <lightning-icon icon-name="utility:rules" size="xx-small" class="rule-icon"></lightning-icon>
+                                                                <span>{result.ruleName}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td data-label="Category">
+                                                            <span class="category-badge">{result.ruleCategory}</span>
+                                                        </td>
+                                                        <td data-label="Outcome">
+                                                            <span class={result.outcomeClass}>{result.outcome}</span>
+                                                        </td>
+                                                        <td data-label="Details">
+                                                            <div class="details-cell" title={result.details}>
+                                                                {result.details}
+                                                            </div>
+                                                        </td>
+                                                        <td data-label="Action">
+                                                            <span class="action-text">{result.action}</span>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </template>
+
+                                <template if:false={hasRuleResults}>
+                                    <div class="slds-align_absolute-center slds-p-vertical_medium">
+                                        <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                        <p class="slds-m-left_small">No screening results found.</p>
+                                    </div>
+                                </template>
+                            </div>
+                            
+                            <!-- Routing Recommendation -->
+                            <template if:true={hasRouting}>
+                                <div class="routing-info-box slds-m-top_large slds-m-horizontal_medium">
+                                    <div class="slds-media">
+                                        <div class="slds-media__figure">
+                                            <lightning-icon icon-name="utility:routing_offline" 
+                                                          variant="warning" size="small"></lightning-icon>
+                                        </div>
+                                        <div class="slds-media__body">
+                                            <h4 class="slds-text-heading_small">Routing Recommendation</h4>
+                                            <div class="slds-grid slds-gutters slds-m-top_x-small">
+                                                <div class="slds-col">
+                                                    <p class="slds-text-body_small">
+                                                        <strong>Path:</strong> {routingPath}
+                                                    </p>
+                                                </div>
+                                                <div class="slds-col">
+                                                    <p class="slds-text-body_small">
+                                                        <strong>Queue:</strong> {routingQueue}
+                                                    </p>
+                                                </div>
+                                                <div class="slds-col">
+                                                    <p class="slds-text-body_small">
+                                                        <strong>Level:</strong> {routingLevel}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+                    
+                    <!-- AI Screening Tab -->
+                    <lightning-tab label="AI Screening" value="ai" icon-name="utility:einstein">
+                        <div class="slds-p-around_small">
+                            
+                            <template if:true={hasAIResult}>
+                                <!-- AI Score Card -->
+                                <div class="score-card-container slds-m-bottom_medium">
+                                    <div class="score-card ai-powered">
+                                        <div class="score-header">
+                                            <lightning-icon icon-name="utility:einstein" size="x-small"></lightning-icon>
+                                            <h3 class="slds-text-heading_small">AI Intelligence</h3>
+                                        </div>
+                                        <div class="score-value">{aiScore}<span class="score-unit">%</span></div>
+                                        <div class="score-status">
+                                            <span class={aiRecommendationBadgeClass}>{aiRecommendationLabel}</span>
+                                        </div>
+                                        <div class="score-meta">
+                                            <lightning-icon icon-name="utility:approval" size="xx-small"></lightning-icon>
+                                            Confidence: {aiConfidence}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- AI Insights -->
+                                <div class="slds-grid slds-gutters slds-m-bottom_medium slds-m-horizontal_medium">
+                                    <!-- Strengths -->
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="highlight-box strength-box">
+                                            <h4 class="slds-text-heading_small slds-m-bottom_small">
+                                                <lightning-icon icon-name="utility:like" size="x-small" 
+                                                               variant="success"></lightning-icon>
+                                                Key Strengths
+                                            </h4>
+                                            <ul class="slds-list_dotted">
+                                                <template for:each={aiStrengths} for:item="strength">
+                                                    <li key={strength}>{strength}</li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <!-- Concerns -->
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="highlight-box concern-box">
+                                            <h4 class="slds-text-heading_small slds-m-bottom_small">
+                                                <lightning-icon icon-name="utility:warning" size="x-small" 
+                                                               variant="warning"></lightning-icon>
+                                                Areas of Concern
+                                            </h4>
+                                            <ul class="slds-list_dotted">
+                                                <template for:each={aiConcerns} for:item="concern">
+                                                    <li key={concern}>{concern}</li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- AI Summary -->
+                                <div class="ai-summary-box slds-m-bottom_medium slds-m-horizontal_medium">
+                                    <h4 class="slds-text-heading_small slds-m-bottom_small">
+                                        <lightning-icon icon-name="utility:summary" size="x-small"></lightning-icon>
+                                        Quick Summary
+                                    </h4>
+                                    <p class="slds-text-body_regular">{aiQuickSummary}</p>
+                                </div>
+                                
+                                <!-- Full AI Analysis -->
+                                <div class="ai-full-analysis-section slds-m-horizontal_medium">
+                                    <h4 class="slds-text-heading_small slds-m-bottom_small">
+                                        <lightning-icon icon-name="utility:open_folder" size="x-small"></lightning-icon>
+                                        Detailed AI Analysis
+                                    </h4>
+                                    <div class="ai-full-analysis">
+                                        <lightning-formatted-rich-text value={aiFullAnalysis}>
+                                        </lightning-formatted-rich-text>
+                                    </div>
+                                </div>
+                            </template>
+                            
+                            <template if:false={hasAIResult}>
+                                <div class="slds-align_absolute-center slds-p-vertical_xx-large">
+                                    <div class="slds-text-align_center">
+                                        <lightning-icon icon-name="utility:einstein" size="large" 
+                                                       class="slds-m-bottom_medium"></lightning-icon>
+                                        <h3 class="slds-text-heading_medium slds-m-bottom_small">
+                                            No AI Analysis Yet
+                                        </h3>
+                                        <p class="slds-text-body_regular slds-m-bottom_medium slds-text-color_weak">
+                                            Run AI screening to get intelligent insights and recommendations
+                                        </p>
+                                        <lightning-button
+                                            label="Run AI Screening"
+                                            onclick={handleRunAIScreening}
+                                            variant="brand"
+                                            icon-name="utility:einstein">
+                                        </lightning-button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+                    
+                </lightning-tabset>
             </template>
         </div>
     </lightning-card>

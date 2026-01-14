@@ -23,6 +23,8 @@ public with sharing class WorkflowRoutingService {
     }
     
     public static RoutingDecision determineRouting(Id candidateId, String correlationId) {
+        System.debug('Determining routing for candidate: ' + candidateId);
+        
         RoutingDecision decision = new RoutingDecision();
         decision.correlationId = correlationId;
         
@@ -46,9 +48,12 @@ public with sharing class WorkflowRoutingService {
             ORDER BY Screening_Rule__r.Escalation_Level__c DESC NULLS LAST
         ];
         
+        System.debug('Found ' + results.size() + ' screening results for routing');
+        
         if (results.isEmpty()) {
             decision.reason = 'No screening results found';
             decision.queueName = 'Default Queue';
+            decision.journeyPath = 'Not Defined';
             return decision;
         }
         
@@ -59,6 +64,8 @@ public with sharing class WorkflowRoutingService {
         String primaryQueue = null;
         
         for (Screening_Result__c result : results) {
+            System.debug('Result: ' + result.Screening_Rule__r.Name + ' = ' + result.Outcome__c);
+            
             if (result.Outcome__c == 'Fail') {
                 hasFailures = true;
                 decision.requiredActions.add('Review failure: ' + result.Screening_Rule__r.Name);
@@ -107,6 +114,8 @@ public with sharing class WorkflowRoutingService {
             decision.reason = 'Passed all screening criteria';
         }
         
+        System.debug('Routing Decision: ' + decision.journeyPath + ' -> ' + decision.queueName);
+        
         return decision;
     }
     
@@ -127,3 +136,4 @@ public with sharing class WorkflowRoutingService {
         insert record;
     }
 }
+

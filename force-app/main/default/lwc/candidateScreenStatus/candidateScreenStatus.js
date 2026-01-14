@@ -112,103 +112,389 @@
 //         return 'An unknown error occurred.';
 //     }
 // }
+///////////////////////////////////////////////////////////////////////////////////////////
+// import { LightningElement, api, wire, track } from 'lwc';
+// import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+// import { refreshApex } from '@salesforce/apex';
+// import getCandidateStatus from '@salesforce/apex/CandidateStatusController.getCandidateStatus';
+// import rerunScreening from '@salesforce/apex/CandidateStatusController.rerunScreening';
+
+// export default class CandidateScreenStatus extends LightningElement {
+//     @api recordId;
+//     @track isRunning = false;
+//     @track data; // FIXED: Use tracked property instead of modifying wired result
+//     @track error;
+    
+//     _wiredStatusResult; // Store wired result reference
+
+//     @wire(getCandidateStatus, { candidateId: '$recordId' })
+//     wiredStatus(result) {
+//         this._wiredStatusResult = result;
+
+//         if (result.data) {
+//             // FIXED: Create new object instead of modifying wired result
+//             const processedResults = result.data.results.map(res => {
+//                 let outcomeClass = 'slds-badge';
+//                 let rowClass = '';
+
+//                 switch (res.outcome) {
+//                     case 'Pass':
+//                         outcomeClass += ' slds-badge_lightest slds-theme_success';
+//                         break;
+//                     case 'Fail':
+//                         outcomeClass += ' slds-badge_lightest slds-theme_error';
+//                         rowClass = 'slds-hint-parent';
+//                         break;
+//                     case 'Review':
+//                         outcomeClass += ' slds-badge_lightest slds-theme_warning';
+//                         break;
+//                     default:
+//                         break;
+//                 }
+
+//                 return { ...res, outcomeClass, rowClass };
+//             });
+
+//             // FIXED: Assign to tracked property
+//             this.data = { 
+//                 ...result.data, 
+//                 results: processedResults 
+//             };
+//             this.error = undefined;
+//         } else if (result.error) {
+//             this.error = result.error;
+//             this.data = undefined;
+//         }
+//     }
+
+//     async handleRerun() {
+//         this.isRunning = true;
+//         this._showToast('In Progress', 'Re-running screening...', 'info');
+
+//         try {
+//             await rerunScreening({ candidateId: this.recordId });
+            
+//             // Refresh the wired data
+//             await this.handleRefresh();
+            
+//             this._showToast('Success', 'Screening process started', 'success');
+//         } catch (error) {
+//             console.error('Error rerunning screening:', error);
+//             this._showToast('Error', 'Failed to start screening: ' + this._extractError(error), 'error');
+//         } finally {
+//             this.isRunning = false;
+//         }
+//     }
+
+//     async handleRefresh() {
+//         try {
+//             await refreshApex(this._wiredStatusResult);
+//         } catch (error) {
+//             console.error('Error refreshing data:', error);
+//         }
+//     }
+
+//     get hasResults() {
+//         return this.data && this.data.results && this.data.results.length > 0;
+//     }
+
+//     get hasOverrides() {
+//         return this.data && this.data.overrides && this.data.overrides.length > 0;
+//     }
+
+//     get statusBadgeClass() {
+//         if (!this.data) return 'slds-badge';
+//         switch (this.data.status) {
+//             case 'Passed':
+//                 return 'slds-badge slds-theme_success';
+//             case 'Failed':
+//                 return 'slds-badge slds-theme_error';
+//             case 'Manual Review':
+//                 return 'slds-badge slds-theme_warning';
+//             default:
+//                 return 'slds-badge';
+//         }
+//     }
+
+//     _showToast(title, message, variant) {
+//         this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+//     }
+
+//     _extractError(error) {
+//         if (error && error.body && error.body.message) {
+//             return error.body.message;
+//         }
+//         return 'An unknown error occurred';
+//     }
+// }
+// candidateScreenStatus.js - ENHANCED WITH AI (SEPARATE TABS)
 import { LightningElement, api, wire, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
+
+// Traditional screening
 import getCandidateStatus from '@salesforce/apex/CandidateStatusController.getCandidateStatus';
 import rerunScreening from '@salesforce/apex/CandidateStatusController.rerunScreening';
 
+// AI screening
+import runAIScreeningForCandidate from '@salesforce/apex/AIScreeningController.runAIScreeningForCandidate';
+import getLatestAIResult from '@salesforce/apex/AIScreeningController.getLatestAIResult';
+
 export default class CandidateScreenStatus extends LightningElement {
     @api recordId;
+    
     @track isRunning = false;
+    @track isAIRunning = false;
+    @track error;
+    @track dataLoaded = false;
+    @track activeTab = 'rules'; // Default to rules tab
+    @track lastScreeningDate = null;
+    
+    // Traditional screening data
+    @track candidateName = '';
+    @track jobTitle = '';
+    @track traditionalScore = 0;
+    @track traditionalStatus = 'Not Screened';
+    @track totalRules = 0;
+    @track rulesPassed = 0;
+    @track rulesFailed = 0;
+    @track rulesReview = 0;
+    @track ruleResults = [];
+    @track routingInfo = null;
+    
+    // AI screening data
+    @track aiResult = null;
+    @track aiScore = 0;
+    @track aiRecommendation = '';
+    @track aiConfidence = '';
+    @track aiQuickSummary = '';
+    @track aiFullAnalysis = '';
+    @track aiStrengths = [];
+    @track aiConcerns = [];
+    
     _wiredStatusResult;
+    _wiredAIResult;
 
+    // Wire traditional screening data
     @wire(getCandidateStatus, { candidateId: '$recordId' })
     wiredStatus(result) {
         this._wiredStatusResult = result;
-
+        
         if (result.data) {
-            let processedResults = result.data.results.map(res => {
-                let outcomeClass = 'slds-badge';
-                let rowClass = '';
-
-                switch (res.outcome) {
-                    case 'Pass':
-                        outcomeClass += ' slds-badge_lightest slds-theme_success';
-                        break;
-                    case 'Fail':
-                        outcomeClass += ' slds-badge_lightest slds-theme_error';
-                        rowClass = 'slds-hint-parent';
-                        break;
-                    case 'Review':
-                        outcomeClass += ' slds-badge_lightest slds-theme_warning';
-                        break;
-                    default:
-                        break;
-                }
-
-                return { ...res, outcomeClass, rowClass };
-            });
-
-            const updatedData = { ...result.data, results: processedResults };
-            this._wiredStatusResult = { ...result, data: updatedData };
+            const data = result.data;
+            
+            this.candidateName = data.name || '';
+            this.traditionalStatus = data.status || 'Not Screened';
+            this.totalRules = data.totalRules || 0;
+            this.rulesPassed = data.rulesPassed || 0;
+            this.rulesFailed = data.rulesFailed || 0;
+            this.rulesReview = data.rulesReview || 0;
+            this.lastScreeningDate = data.lastScreeningDate;
+            
+            // Calculate traditional score
+            if (this.totalRules > 0) {
+                this.traditionalScore = Math.round((this.rulesPassed / this.totalRules) * 100);
+            }
+            
+            // Process rule results
+            if (data.results) {
+                this.ruleResults = data.results.map(res => {
+                    return {
+                        ...res,
+                        outcomeClass: this.getOutcomeBadgeClass(res.outcome)
+                    };
+                });
+            }
+            
+            // Routing info
+            if (data.routingInfo) {
+                this.routingInfo = {
+                    path: data.routingInfo.journeyPath,
+                    queue: data.routingInfo.queue,
+                    level: data.routingInfo.escalationLevel
+                };
+            }
+            
+            this.dataLoaded = true;
+            this.error = undefined;
+            
+        } else if (result.error) {
+            this.error = result.error;
+            this.dataLoaded = false;
         }
     }
 
+    // Wire AI screening data
+    @wire(getLatestAIResult, { candidateId: '$recordId' })
+    wiredAIResult(result) {
+        this._wiredAIResult = result;
+        
+        if (result.data) {
+            this.aiResult = result.data;
+            this.processAIData(result.data);
+        } else if (result.error) {
+            console.error('Error loading AI result:', result.error);
+            this.aiResult = null;
+        }
+    }
+
+    // Process AI data
+    processAIData(data) {
+        this.aiScore = Math.round(data.Overall_Score__c || 0);
+        this.aiRecommendation = data.Recommendation__c || '';
+        this.aiConfidence = data.Confidence_Level__c || '';
+        this.aiQuickSummary = data.Quick_Summary__c || '';
+        this.aiFullAnalysis = data.Full_Analysis__c || '';
+        
+        // Parse strengths
+        try {
+            const strengthsArray = JSON.parse(data.Strengths__c || '[]');
+            this.aiStrengths = strengthsArray.slice(0, 3); // Top 3
+        } catch (e) {
+            this.aiStrengths = [];
+        }
+        
+        // Parse concerns
+        try {
+            const concernsArray = JSON.parse(data.Concerns__c || '[]');
+            this.aiConcerns = concernsArray.slice(0, 3); // Top 3
+        } catch (e) {
+            this.aiConcerns = [];
+        }
+    }
+
+    // Run traditional screening
     async handleRerun() {
         this.isRunning = true;
-        this._showToast('In Progress', 'Re-running screening...', 'info');
+        this.showToast('In Progress', 'Re-running screening...', 'info');
 
         try {
             await rerunScreening({ candidateId: this.recordId });
-            this.handleRefresh();
-            this._showToast('Success', 'Screening process started', 'success');
+            await this.handleRefresh();
+            this.showToast('Success', 'Screening process started', 'success');
         } catch (error) {
-            this._showToast('Error', 'Failed to start screening: ' + this._extractError(error), 'error');
+            console.error('Error rerunning screening:', error);
+            this.showToast('Error', 'Failed to start screening: ' + this.extractError(error), 'error');
         } finally {
             this.isRunning = false;
         }
     }
 
-    handleRefresh() {
-        return refreshApex(this._wiredStatusResult);
-    }
+    // Run AI screening
+    async handleRunAIScreening() {
+        this.isAIRunning = true;
+        this.showToast('AI Analysis', 'Running AI-powered screening...', 'info');
 
-    get data() {
-        return this._wiredStatusResult && this._wiredStatusResult.data;
-    }
-
-    get error() {
-        return this._wiredStatusResult && this._wiredStatusResult.error;
-    }
-
-    get hasResults() {
-        return this.data && this.data.results && this.data.results.length > 0;
-    }
-
-    get hasOverrides() {
-        return this.data && this.data.overrides && this.data.overrides.length > 0;
-    }
-
-    get statusBadgeClass() {
-        if (!this.data) return 'slds-badge';
-        switch (this.data.status) {
-            case 'Passed':
-                return 'slds-badge slds-theme_success';
-            case 'Failed':
-                return 'slds-badge slds-theme_error';
-            case 'Manual Review':
-                return 'slds-badge slds-theme_warning';
-            default:
-                return 'slds-badge';
+        try {
+            const result = await runAIScreeningForCandidate({ candidateId: this.recordId });
+            
+            if (result.success) {
+                this.showToast('Success', 'AI screening completed', 'success');
+                
+                // Refresh both data sources
+                await Promise.all([
+                    refreshApex(this._wiredAIResult),
+                    this.handleRefresh()
+                ]);
+                
+                // Switch to AI tab
+                this.activeTab = 'ai';
+            } else {
+                this.showToast('Error', result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error running AI screening:', error);
+            this.showToast('Error', 'AI screening failed: ' + this.extractError(error), 'error');
+        } finally {
+            this.isAIRunning = false;
         }
     }
 
-    _showToast(title, message, variant) {
+    // Refresh all data
+    async handleRefresh() {
+        try {
+            await Promise.all([
+                refreshApex(this._wiredStatusResult),
+                refreshApex(this._wiredAIResult)
+            ]);
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        }
+    }
+
+    // Tab change handler
+    handleTabChange(event) {
+        this.activeTab = event.target.value;
+    }
+
+    // Computed properties
+    get hasAIResult() {
+        return this.aiResult !== null;
+    }
+
+    get hasRuleResults() {
+        return this.ruleResults && this.ruleResults.length > 0;
+    }
+
+    get hasRouting() {
+        return this.routingInfo !== null;
+    }
+
+    get routingPath() {
+        return this.routingInfo ? this.routingInfo.path : '';
+    }
+
+    get routingQueue() {
+        return this.routingInfo ? this.routingInfo.queue : '';
+    }
+
+    get routingLevel() {
+        return this.routingInfo ? this.routingInfo.level : '';
+    }
+    
+    get traditionalBadgeClass() {
+        if (this.traditionalScore >= 80) return 'slds-badge slds-theme_success';
+        if (this.traditionalScore >= 60) return 'slds-badge slds-theme_warning';
+        return 'slds-badge slds-theme_error';
+    }
+
+    get aiRecommendationBadgeClass() {
+        const rec = this.aiRecommendation;
+        if (rec === 'STRONGLY_RECOMMEND' || rec === 'RECOMMEND') {
+            return 'slds-badge slds-theme_success';
+        }
+        if (rec === 'NEUTRAL') {
+            return 'slds-badge slds-theme_warning';
+        }
+        return 'slds-badge slds-theme_error';
+    }
+
+    get aiRecommendationLabel() {
+        const labels = {
+            'STRONGLY_RECOMMEND': 'STRONG REC',
+            'RECOMMEND': 'RECOMMEND',
+            'NEUTRAL': 'NEUTRAL',
+            'NOT_RECOMMEND': 'NOT REC',
+            'STRONGLY_NOT_RECOMMEND': 'REJECT'
+        };
+        return labels[this.aiRecommendation] || this.aiRecommendation;
+    }
+    
+    // Helper methods
+    getOutcomeBadgeClass(outcome) {
+        const classes = {
+            'Pass': 'slds-badge slds-badge_lightest slds-theme_success',
+            'Fail': 'slds-badge slds-badge_lightest slds-theme_error',
+            'Review': 'slds-badge slds-badge_lightest slds-theme_warning'
+        };
+        return classes[outcome] || 'slds-badge';
+    }
+
+    showToast(title, message, variant) {
         this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
     }
 
-    _extractError(error) {
+    extractError(error) {
         if (error && error.body && error.body.message) {
             return error.body.message;
         }

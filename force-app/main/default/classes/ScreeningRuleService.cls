@@ -139,100 +139,66 @@ public with sharing class ScreeningRuleService {
         return results;
     }
 
-    // =====================================================
-// REPLACE THIS METHOD IN ScreeningRuleService.cls
-// Uses correct relationship name for Research_and_Publications__r
-// =====================================================
+    private static Map<String, List<SObject>> buildAllRelatedRecordsMap(Candidate__c cand) {
+        Map<String, List<SObject>> recordMap = new Map<String, List<SObject>>();
+        
+        if (cand.License_Certifications__r != null) {
+            recordMap.put('License_Certification__c', 
+                         (List<SObject>) cand.License_Certifications__r);
+        }
+        
+        if (cand.Clinical_Skills__r != null) {
+            recordMap.put('Clinical_Skill__c', 
+                         (List<SObject>) cand.Clinical_Skills__r);
+        }
+        
+        if (cand.Work_Experiences__r != null) {
+            recordMap.put('Work_Experience__c', 
+                         (List<SObject>) cand.Work_Experiences__r);
+        }
+        
+        if (cand.Internships__r != null) {
+            recordMap.put('Internship__c', 
+                         (List<SObject>) cand.Internships__r);
+        }
+        
+        if (cand.Educations__r != null) {
+            recordMap.put('Education__c', 
+                         (List<SObject>) cand.Educations__r);
+        }
+        
+        if (cand.Procedures__r != null) {
+            recordMap.put('Procedure__c', 
+                         (List<SObject>) cand.Procedures__r);
+        }
+        
+        if (cand.Research_and_Publications__r != null) {
+            recordMap.put('Research_Publication__c', 
+                         (List<SObject>) cand.Research_and_Publications__r);
+        }
+        
+        if (cand.Technical_Skills__r != null) {
+            recordMap.put('Technical_Skill__c', 
+                         (List<SObject>) cand.Technical_Skills__r);
+        }
+        
+        if (cand.Memberships__r != null) {
+            recordMap.put('Membership__c', 
+                         (List<SObject>) cand.Memberships__r);
+        }
+        
+        return recordMap;
+    }
 
-private static Map<String, List<SObject>> buildAllRelatedRecordsMap(Candidate__c cand) {
-    Map<String, List<SObject>> recordMap = new Map<String, List<SObject>>();
-    
-    // Store ALL license/certifications
-    if (cand.License_Certifications__r != null) {
-        recordMap.put('License_Certification__c', 
-                     (List<SObject>) cand.License_Certifications__r);
-    }
-    
-    // Store ALL clinical skills
-    if (cand.Clinical_Skills__r != null) {
-        recordMap.put('Clinical_Skill__c', 
-                     (List<SObject>) cand.Clinical_Skills__r);
-    }
-    
-    // Store ALL work experiences
-    if (cand.Work_Experiences__r != null) {
-        recordMap.put('Work_Experience__c', 
-                     (List<SObject>) cand.Work_Experiences__r);
-    }
-    
-    // Store ALL internships
-    if (cand.Internships__r != null) {
-        recordMap.put('Internship__c', 
-                     (List<SObject>) cand.Internships__r);
-    }
-    
-    // Store ALL education records
-    if (cand.Educations__r != null) {
-        recordMap.put('Education__c', 
-                     (List<SObject>) cand.Educations__r);
-    }
-    
-    // Store ALL procedures
-    if (cand.Procedures__r != null) {
-        recordMap.put('Procedure__c', 
-                     (List<SObject>) cand.Procedures__r);
-    }
-    
-    // CORRECTED: Research_and_Publications__r (with underscores)
-    if (cand.Research_and_Publications__r != null) {
-        recordMap.put('Research_Publication__c', 
-                     (List<SObject>) cand.Research_and_Publications__r);
-    }
-    
-    // Store ALL technical skills
-    if (cand.Technical_Skills__r != null) {
-        recordMap.put('Technical_Skill__c', 
-                     (List<SObject>) cand.Technical_Skills__r);
-    }
-    
-    // Store ALL memberships
-    if (cand.Memberships__r != null) {
-        recordMap.put('Membership__c', 
-                     (List<SObject>) cand.Memberships__r);
-    }
-    
-    return recordMap;
-}
-
-// =====================================================
-// NOTE: Verify ALL other relationship names too!
-// =====================================================
-
-/*
-Run the verification script to confirm these names are correct:
-- License_Certifications__r ✓
-- Clinical_Skills__r ✓
-- Work_Experiences__r ✓
-- Internships__r ✓
-- Educations__r ✓
-- Procedures__r ✓
-- Research_and_Publications__r ✓ (CONFIRMED)
-- Technical_Skills__r ✓
-- Memberships__r ✓
-
-If any fail, update them based on the script output!
-*/
     private static EvalResult evaluateRuleAgainstMultipleRecords(
         Screening_Rule__c rule, 
         List<SObject> records, 
         Candidate__c candidate
     ) {
         if (records == null || records.isEmpty()) {
-            return new EvalResult(
-                rule, 
-                'Review', 
-                'No ' + rule.Target_Object__c + ' records found'
-            );
+            String outcome = (rule.Action__c == 'FlagForReview') ? 'Review' : 'Fail';
+            String details = '✗ No ' + getObjectLabel(rule.Target_Object__c) + ' records found for candidate';
+            return new EvalResult(rule, outcome, details);
         }
         
         String matchType = String.isBlank(rule.Match_Type__c) ? 'Any' : rule.Match_Type__c;
@@ -241,10 +207,23 @@ If any fail, update them based on the script output!
         List<String> failedRecords = new List<String>();
         List<String> passedRecords = new List<String>();
         
+        System.debug('=== Evaluating Rule: ' + rule.Name + ' ===');
+        System.debug('Target Object: ' + rule.Target_Object__c);
+        System.debug('Field: ' + rule.Field_API_Name__c);
+        System.debug('Operator: ' + rule.Operator__c);
+        System.debug('Expected Value: ' + rule.Expected_Value__c);
+        System.debug('Number of records: ' + records.size());
+        
         for (SObject record : records) {
             try {
                 Object actualValue = record.get(rule.Field_API_Name__c);
+                
+                System.debug('  Checking record: ' + getRecordIdentifier(record));
+                System.debug('    Actual value: ' + actualValue);
+                
                 Boolean isMet = compare(actualValue, rule.Operator__c, rule.Expected_Value__c);
+                
+                System.debug('    Match result: ' + isMet);
                 
                 if (isMet) {
                     anyRecordPassed = true;
@@ -254,6 +233,7 @@ If any fail, update them based on the script output!
                     failedRecords.add(getRecordIdentifier(record));
                 }
             } catch (Exception e) {
+                System.debug('    ERROR: ' + e.getMessage());
                 allRecordsPassed = false;
                 failedRecords.add(getRecordIdentifier(record) + ' (Error: ' + e.getMessage() + ')');
             }
@@ -265,48 +245,101 @@ If any fail, update them based on the script output!
         if (matchType == 'All') {
             if (allRecordsPassed) {
                 outcome = 'Pass';
-                details = 'All ' + records.size() + ' records met criteria';
+                details = '✓ All ' + records.size() + ' ' + getObjectLabel(rule.Target_Object__c) + ' records met criteria';
             } else {
-                outcome = 'Fail';
-                details = 'Failed: ' + String.join(failedRecords, ', ');
+                outcome = (rule.Action__c == 'FlagForReview') ? 'Review' : 'Fail';
+                details = '✗ Some records failed: ' + String.join(failedRecords, ', ');
             }
         } else {
             if (anyRecordPassed) {
-                outcome = 'Pass';
-                details = 'Matching: ' + String.join(passedRecords, ', ');
+                outcome = (rule.Action__c == 'FlagForReview') ? 'Review' : 'Pass';
+                details = '✓ Found matching: ' + String.join(passedRecords, ', ');
             } else {
-                outcome = 'Fail';
-                details = 'No matching records found';
+                outcome = (rule.Action__c == 'FlagForReview') ? 'Review' : 'Fail';
+                details = '✗ No ' + getObjectLabel(rule.Target_Object__c) + ' records matched criteria. Checked ' + records.size() + ' record(s).';
             }
         }
         
-        if (rule.Action__c == 'FlagForReview' || rule.Action__c == 'RouteToJurisdiction') {
-            outcome = anyRecordPassed ? 'Review' : 'Pass';
-        }
+        System.debug('Final outcome: ' + outcome);
+        System.debug('Details: ' + details);
         
         return new EvalResult(rule, outcome, details);
     }
 
-    private static String getRecordIdentifier(SObject record) {
-        try {
-            Object nameValue = record.get('Name');
-            if (nameValue != null) return String.valueOf(nameValue);
-        } catch (Exception e) { }
-        
-        List<String> identifierFields = new List<String>{
-            'Title__c', 'Organization__c', 'Degree__c', 'Type__c', 'Organization_Name__c'
+    private static String getObjectLabel(String objectApiName) {
+        Map<String, String> labels = new Map<String, String>{
+            'License_Certification__c' => 'License/Certification',
+            'Clinical_Skill__c' => 'Clinical Skill',
+            'Work_Experience__c' => 'Work Experience',
+            'Education__c' => 'Education',
+            'Procedure__c' => 'Procedure',
+            'Research_Publication__c' => 'Research/Publication',
+            'Technical_Skill__c' => 'Technical Skill',
+            'Membership__c' => 'Membership',
+            'Internship__c' => 'Internship'
         };
-        
-        for (String field : identifierFields) {
-            try {
-                Object value = record.get(field);
-                if (value != null) return String.valueOf(value);
-            } catch (Exception e) { continue; }
-        }
-        
-        return 'Record';
+        return labels.containsKey(objectApiName) ? labels.get(objectApiName) : objectApiName;
     }
 
+    // 🔥 FIXED: Object-specific field priorities for better display names
+    private static String getRecordIdentifier(SObject record) {
+        // Get the object type to determine which fields to check
+        String objectType = String.valueOf(record.getSObjectType());
+        
+        // Object-specific field priorities
+        Map<String, List<String>> fieldsByObject = new Map<String, List<String>>{
+            'Education__c' => new List<String>{'Degree__c', 'Institution__c', 'Name'},
+            'Work_Experience__c' => new List<String>{'Role__c', 'Organization__c', 'Name'},
+            'License_Certification__c' => new List<String>{'Name', 'Type__c'},
+            'Clinical_Skill__c' => new List<String>{'Name', 'Skill_Type__c'},
+            'Research_Publication__c' => new List<String>{'Title__c', 'Name'},
+            'Procedure__c' => new List<String>{'Name', 'Category__c'},
+            'Technical_Skill__c' => new List<String>{'Name', 'Category__c'},
+            'Membership__c' => new List<String>{'Organization_Name__c', 'Name'},
+            'Internship__c' => new List<String>{'Organization__c', 'Name'}
+        };
+        
+        // Try object-specific fields first
+        if (fieldsByObject.containsKey(objectType)) {
+            for (String field : fieldsByObject.get(objectType)) {
+                try {
+                    Object value = record.get(field);
+                    if (value != null && String.valueOf(value).trim() != '') {
+                        return String.valueOf(value);
+                    }
+                } catch (Exception e) { 
+                    continue; 
+                }
+            }
+        }
+        
+        // Fallback to generic fields
+        List<String> genericFields = new List<String>{
+            'Name',
+            'Title__c',
+            'Degree__c',
+            'Organization__c',
+            'Organization_Name__c',
+            'Role__c',
+            'Type__c'
+        };
+        
+        for (String field : genericFields) {
+            try {
+                Object value = record.get(field);
+                if (value != null && String.valueOf(value).trim() != '') {
+                    return String.valueOf(value);
+                }
+            } catch (Exception e) { 
+                continue; 
+            }
+        }
+        
+        // Last resort: return "Unknown [ObjectType]"
+        return 'Unknown ' + getObjectLabel(objectType);
+    }
+
+    // 🔥 FIXED: Handle NULL values for ALL field types on Candidate
     private static EvalResult evaluateSingleRule(Screening_Rule__c rule, SObject record) {
         if (record == null) {
             return new EvalResult(rule, 'Review', 'Target record does not exist');
@@ -314,6 +347,21 @@ If any fail, update them based on the script output!
 
         try {
             Object actualValue = record.get(rule.Field_API_Name__c);
+            
+            // 🔥 CRITICAL FIX: Check for null/blank values BEFORE any comparison
+            if (actualValue == null || (actualValue instanceof String && String.isBlank((String)actualValue))) {
+                String outcome = (rule.Action__c == 'FlagForReview') ? 'Review' : 'Fail';
+                String details = 'Field: ' + rule.Field_API_Name__c + ' is null/empty (cannot evaluate rule)';
+                
+                System.debug('⚠️ NULL/BLANK field detected: ' + rule.Field_API_Name__c);
+                System.debug('   Action: ' + rule.Action__c);
+                System.debug('   Outcome: ' + outcome);
+                
+                EvalResult result = new EvalResult(rule, outcome, details);
+                result.actualValue = null;
+                return result;
+            }
+            
             Boolean isMet = compare(actualValue, rule.Operator__c, rule.Expected_Value__c);
             
             String outcome = isMet ? 'Pass' : 'Fail';
@@ -331,8 +379,24 @@ If any fail, update them based on the script output!
         }
     }
 
+    // 🔥 FIXED: Comprehensive null/blank handling with case-insensitive operators
     private static Boolean compare(Object actual, String operator, String expected) {
-        if (actual == null) return false;
+        // 🔥 SAFETY CHECK: This should never happen due to evaluateSingleRule check, but just in case
+        if (actual == null) {
+            System.debug('    ⚠️ WARNING: compare() received null actual value');
+            return false;
+        }
+        
+        // 🔥 SAFETY CHECK: Handle blank strings
+        if (actual instanceof String && String.isBlank((String)actual)) {
+            System.debug('    ⚠️ WARNING: compare() received blank string');
+            return false;
+        }
+        
+        if (String.isBlank(expected)) {
+            System.debug('    compare() -> expected is blank, returning false');
+            return false;
+        }
 
         if (actual instanceof Date) {
             return compareDate((Date) actual, operator, expected);
@@ -347,17 +411,67 @@ If any fail, update them based on the script output!
             return compareNumeric(actual, operator, expected);
         }
 
-        String actualStr = String.valueOf(actual).toLowerCase();
-        String expectedStr = expected.toLowerCase();
+        // Clean and normalize strings
+        String actualStr = String.valueOf(actual).trim().toLowerCase();
+        String expectedStr = expected.trim().toLowerCase();
+        String operatorLower = operator.trim().toLowerCase();
+        
+        System.debug('    Normalized actual: "' + actualStr + '"');
+        System.debug('    Normalized expected: "' + expectedStr + '"');
+        System.debug('    Normalized operator: "' + operatorLower + '"');
 
-        switch on operator {
-            when 'Equals' { return actualStr.equals(expectedStr); }
-            when 'Not Equals' { return !actualStr.equals(expectedStr); }
-            when 'Contains' { return actualStr.contains(expectedStr); }
-            when 'Does Not Contain' { return !actualStr.contains(expectedStr); }
-            when 'Starts With' { return actualStr.startsWith(expectedStr); }
-            when 'Ends With' { return actualStr.endsWith(expectedStr); }
-            when else { return false; }
+        if (operatorLower == 'equals') {
+            Boolean result = actualStr.equals(expectedStr);
+            System.debug('    Equals check: ' + result);
+            return result;
+        } 
+        else if (operatorLower == 'not equals') {
+            Boolean result = !actualStr.equals(expectedStr);
+            System.debug('    Not Equals check: ' + result);
+            return result;
+        }
+        else if (operatorLower == 'contains') {
+            // 🔥 Handle OR logic with | separator
+            if (expectedStr.contains('|')) {
+                System.debug('    OR logic detected, splitting by |');
+                List<String> keywords = expectedStr.split('\\|');
+                System.debug('    Keywords: ' + keywords);
+                
+                for (String keyword : keywords) {
+                    String cleanKeyword = keyword.trim();
+                    System.debug('      Testing keyword: "' + cleanKeyword + '"');
+                    
+                    if (actualStr.contains(cleanKeyword)) {
+                        System.debug('      ✓ MATCH FOUND!');
+                        return true;
+                    }
+                }
+                System.debug('      ✗ No matches found');
+                return false;
+            }
+            
+            Boolean result = actualStr.contains(expectedStr);
+            System.debug('    Contains check: ' + result);
+            return result;
+        }
+        else if (operatorLower == 'does not contain') {
+            Boolean result = !actualStr.contains(expectedStr);
+            System.debug('    Does Not Contain check: ' + result);
+            return result;
+        }
+        else if (operatorLower == 'starts with') {
+            Boolean result = actualStr.startsWith(expectedStr);
+            System.debug('    Starts With check: ' + result);
+            return result;
+        }
+        else if (operatorLower == 'ends with') {
+            Boolean result = actualStr.endsWith(expectedStr);
+            System.debug('    Ends With check: ' + result);
+            return result;
+        }
+        else {
+            System.debug('    Unknown operator: ' + operator);
+            return false;
         }
     }
 
@@ -378,15 +492,16 @@ If any fail, update them based on the script output!
             }
         }
         
-        switch on operator {
-            when 'Equals' { return actualDate == expectedDate; }
-            when 'Not Equals' { return actualDate != expectedDate; }
-            when 'Greater Than' { return actualDate > expectedDate; }
-            when 'Greater Than or Equal' { return actualDate >= expectedDate; }
-            when 'Less Than' { return actualDate < expectedDate; }
-            when 'Less Than or Equal' { return actualDate <= expectedDate; }
-            when else { return false; }
-        }
+        String operatorLower = operator.trim().toLowerCase();
+        
+        if (operatorLower == 'equals') return actualDate == expectedDate;
+        if (operatorLower == 'not equals') return actualDate != expectedDate;
+        if (operatorLower == 'greater than') return actualDate > expectedDate;
+        if (operatorLower == 'greater than or equal') return actualDate >= expectedDate;
+        if (operatorLower == 'less than') return actualDate < expectedDate;
+        if (operatorLower == 'less than or equal') return actualDate <= expectedDate;
+        
+        return false;
     }
 
     private static Boolean compareDateTime(DateTime actualDateTime, String operator, String expectedStr) {
@@ -402,11 +517,12 @@ If any fail, update them based on the script output!
             }
         }
         
-        switch on operator {
-            when 'Greater Than' { return actualDateTime > expectedDateTime; }
-            when 'Less Than' { return actualDateTime < expectedDateTime; }
-            when else { return false; }
-        }
+        String operatorLower = operator.trim().toLowerCase();
+        
+        if (operatorLower == 'greater than') return actualDateTime > expectedDateTime;
+        if (operatorLower == 'less than') return actualDateTime < expectedDateTime;
+        
+        return false;
     }
 
     private static Boolean compareNumeric(Object actual, String operator, String expectedStr) {
@@ -414,27 +530,29 @@ If any fail, update them based on the script output!
             Decimal actualNum = Decimal.valueOf(String.valueOf(actual));
             Decimal expectedNum = Decimal.valueOf(expectedStr);
             
-            switch on operator {
-                when 'Equals' { return actualNum == expectedNum; }
-                when 'Not Equals' { return actualNum != expectedNum; }
-                when 'Greater Than' { return actualNum > expectedNum; }
-                when 'Greater Than or Equal' { return actualNum >= expectedNum; }
-                when 'Less Than' { return actualNum < expectedNum; }
-                when 'Less Than or Equal' { return actualNum <= expectedNum; }
-                when else { return false; }
-            }
+            String operatorLower = operator.trim().toLowerCase();
+            
+            if (operatorLower == 'equals') return actualNum == expectedNum;
+            if (operatorLower == 'not equals') return actualNum != expectedNum;
+            if (operatorLower == 'greater than') return actualNum > expectedNum;
+            if (operatorLower == 'greater than or equal') return actualNum >= expectedNum;
+            if (operatorLower == 'less than') return actualNum < expectedNum;
+            if (operatorLower == 'less than or equal') return actualNum <= expectedNum;
+            
+            return false;
         } catch (Exception e) {
+            System.debug('    compareNumeric() exception: ' + e.getMessage());
             return false;
         }
     }
 
     private static Boolean compareBoolean(Boolean actual, String operator, String expectedStr) {
         Boolean expected = Boolean.valueOf(expectedStr);
+        String operatorLower = operator.trim().toLowerCase();
         
-        switch on operator {
-            when 'Equals' { return actual == expected; }
-            when 'Not Equals' { return actual != expected; }
-            when else { return false; }
-        }
+        if (operatorLower == 'equals') return actual == expected;
+        if (operatorLower == 'not equals') return actual != expected;
+        
+        return false;
     }
 }
