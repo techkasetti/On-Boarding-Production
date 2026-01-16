@@ -227,7 +227,7 @@
 //         return 'An unknown error occurred';
 //     }
 // }
-// candidateScreenStatus.js - ENHANCED WITH AI (SEPARATE TABS)
+// candidateScreenStatus.js - UPDATED WITH JOB TITLE FIX AND CONFIDENCE TOOLTIP
 import { LightningElement, api, wire, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
@@ -272,6 +272,8 @@ export default class CandidateScreenStatus extends LightningElement {
     @track aiStrengths = [];
     @track aiConcerns = [];
     
+    @track showConfidenceModal = false; // 🔥 NEW: Modal state
+    
     _wiredStatusResult;
     _wiredAIResult;
 
@@ -284,6 +286,7 @@ export default class CandidateScreenStatus extends LightningElement {
             const data = result.data;
             
             this.candidateName = data.name || '';
+            this.jobTitle = data.jobTitle || 'Not Assigned'; // 🔥 FIX: Get actual job title from data
             this.traditionalStatus = data.status || 'Not Screened';
             this.totalRules = data.totalRules || 0;
             this.rulesPassed = data.rulesPassed || 0;
@@ -296,12 +299,49 @@ export default class CandidateScreenStatus extends LightningElement {
                 this.traditionalScore = Math.round((this.rulesPassed / this.totalRules) * 100);
             }
             
-            // Process rule results
+            // Process rule results with ACTION BADGE CLASSES
             if (data.results) {
                 this.ruleResults = data.results.map(res => {
+                    // Determine row class for visual emphasis
+                    let rowClass = '';
+                    if (res.outcome === 'Fail') {
+                        rowClass = 'result-row-fail';
+                    } else if (res.outcome === 'Review') {
+                        rowClass = 'result-row-review';
+                    }
+                    
+                    // 🔥 FIX: Determine action badge styling
+                    let actionBadgeClass = 'action-badge ';
+                    let actionLabel = res.action || '';
+                    
+                    if (res.action) {
+                        const actionLower = res.action.toLowerCase();
+                        
+                        if (actionLower.includes('reject')) {
+                            actionBadgeClass += 'action-badge-reject';
+                            actionLabel = 'Auto Reject';
+                        } else if (actionLower.includes('review') || actionLower.includes('flag')) {
+                            actionBadgeClass += 'action-badge-review';
+                            actionLabel = 'Flag For Review';
+                        } else if (actionLower.includes('approve')) {
+                            actionBadgeClass += 'action-badge-approve';
+                            actionLabel = 'Approve';
+                        } else if (actionLower.includes('route')) {
+                            actionBadgeClass += 'action-badge-route';
+                            actionLabel = 'Route to Queue';
+                        } else {
+                            actionBadgeClass += 'action-badge-default';
+                            // Format CamelCase to readable text
+                            actionLabel = res.action.replace(/([A-Z])/g, ' $1').trim();
+                        }
+                    }
+                    
                     return {
                         ...res,
-                        outcomeClass: this.getOutcomeBadgeClass(res.outcome)
+                        rowClass: rowClass,
+                        outcomeClass: this.getOutcomeBadgeClass(res.outcome),
+                        actionBadgeClass: actionBadgeClass,
+                        actionLabel: actionLabel
                     };
                 });
             }
@@ -349,7 +389,7 @@ export default class CandidateScreenStatus extends LightningElement {
         // Parse strengths
         try {
             const strengthsArray = JSON.parse(data.Strengths__c || '[]');
-            this.aiStrengths = strengthsArray.slice(0, 3); // Top 3
+            this.aiStrengths = strengthsArray.slice(0, 5); // Top 5
         } catch (e) {
             this.aiStrengths = [];
         }
@@ -357,7 +397,7 @@ export default class CandidateScreenStatus extends LightningElement {
         // Parse concerns
         try {
             const concernsArray = JSON.parse(data.Concerns__c || '[]');
-            this.aiConcerns = concernsArray.slice(0, 3); // Top 3
+            this.aiConcerns = concernsArray.slice(0, 5); // Top 5
         } catch (e) {
             this.aiConcerns = [];
         }
@@ -417,6 +457,7 @@ export default class CandidateScreenStatus extends LightningElement {
                 refreshApex(this._wiredStatusResult),
                 refreshApex(this._wiredAIResult)
             ]);
+            this.showToast('Success', 'Data refreshed', 'success');
         } catch (error) {
             console.error('Error refreshing data:', error);
         }
@@ -425,6 +466,16 @@ export default class CandidateScreenStatus extends LightningElement {
     // Tab change handler
     handleTabChange(event) {
         this.activeTab = event.target.value;
+    }
+    
+    // 🔥 NEW: Confidence info modal handlers
+    handleShowConfidenceInfo(event) {
+        event.preventDefault();
+        this.showConfidenceModal = true;
+    }
+    
+    handleCloseConfidenceInfo() {
+        this.showConfidenceModal = false;
     }
 
     // Computed properties
@@ -453,29 +504,39 @@ export default class CandidateScreenStatus extends LightningElement {
     }
     
     get traditionalBadgeClass() {
-        if (this.traditionalScore >= 80) return 'slds-badge slds-theme_success';
-        if (this.traditionalScore >= 60) return 'slds-badge slds-theme_warning';
-        return 'slds-badge slds-theme_error';
+        if (this.traditionalScore >= 80) return 'slds-badge slds-theme_success score-badge-excellent';
+        if (this.traditionalScore >= 60) return 'slds-badge slds-theme_warning score-badge-good';
+        if (this.traditionalScore >= 40) return 'slds-badge slds-theme_warning score-badge-fair';
+        return 'slds-badge slds-theme_error score-badge-poor';
     }
 
     get aiRecommendationBadgeClass() {
         const rec = this.aiRecommendation;
-        if (rec === 'STRONGLY_RECOMMEND' || rec === 'RECOMMEND') {
-            return 'slds-badge slds-theme_success';
+        if (rec === 'STRONGLY_RECOMMEND') {
+            return 'slds-badge ai-badge-strong-recommend';
+        }
+        if (rec === 'RECOMMEND') {
+            return 'slds-badge ai-badge-recommend';
         }
         if (rec === 'NEUTRAL') {
-            return 'slds-badge slds-theme_warning';
+            return 'slds-badge ai-badge-neutral';
         }
-        return 'slds-badge slds-theme_error';
+        if (rec === 'NOT_RECOMMEND') {
+            return 'slds-badge ai-badge-not-recommend';
+        }
+        if (rec === 'STRONGLY_NOT_RECOMMEND') {
+            return 'slds-badge ai-badge-reject';
+        }
+        return 'slds-badge';
     }
 
     get aiRecommendationLabel() {
         const labels = {
-            'STRONGLY_RECOMMEND': 'STRONG REC',
+            'STRONGLY_RECOMMEND': 'STRONG RECOMMEND',
             'RECOMMEND': 'RECOMMEND',
             'NEUTRAL': 'NEUTRAL',
-            'NOT_RECOMMEND': 'NOT REC',
-            'STRONGLY_NOT_RECOMMEND': 'REJECT'
+            'NOT_RECOMMEND': 'NOT RECOMMEND',
+            'STRONGLY_NOT_RECOMMEND': 'STRONGLY NOT RECOMMEND'
         };
         return labels[this.aiRecommendation] || this.aiRecommendation;
     }
@@ -483,9 +544,9 @@ export default class CandidateScreenStatus extends LightningElement {
     // Helper methods
     getOutcomeBadgeClass(outcome) {
         const classes = {
-            'Pass': 'slds-badge slds-badge_lightest slds-theme_success',
-            'Fail': 'slds-badge slds-badge_lightest slds-theme_error',
-            'Review': 'slds-badge slds-badge_lightest slds-theme_warning'
+            'Pass': 'outcome-badge outcome-badge-pass',
+            'Fail': 'outcome-badge outcome-badge-fail',
+            'Review': 'outcome-badge outcome-badge-review'
         };
         return classes[outcome] || 'slds-badge';
     }

@@ -465,6 +465,11 @@
 //     }
 // }
 
+// =====================================================
+// AI SCREENING CONTROLLER - UPDATED WITH BALANCED PROMPTS
+// Gemini AI-powered candidate screening
+// =====================================================
+
 public with sharing class AIScreeningController {
     
     @InvocableMethod(label='Run AI Screening' description='Analyze candidate using Gemini AI')
@@ -571,7 +576,7 @@ public with sharing class AIScreeningController {
             System.debug('=== RAW AI RESPONSE ===');
             System.debug(aiContent);
             
-            // 🔥 FIXED: Parse AI response with markdown fence removal
+            // Parse AI response with markdown fence removal
             AIAnalysis analysis = parseAIResponse(aiContent);
             
             System.debug('=== PARSED ANALYSIS ===');
@@ -620,7 +625,7 @@ public with sharing class AIScreeningController {
             aiResult.Execution_Time__c = System.currentTimeMillis() - startTime;
             aiResult.Tokens_Used__c = apiResponse.usageMetadata != null ? apiResponse.usageMetadata.totalTokenCount : 0;
             aiResult.Response_Raw__c = JSON.serialize(apiResponse);
-            aiResult.Prompt_Version__c = 'v1.0';
+            aiResult.Prompt_Version__c = 'v1.1'; // Updated version
             
             insert aiResult;
             
@@ -643,10 +648,21 @@ public with sharing class AIScreeningController {
         return result;
     }
     
+    // 🔥 UPDATED: More balanced AI prompt
     private static String buildSystemPrompt() {
         return 'You are an expert healthcare recruitment AI assistant specializing in candidate evaluation. ' +
                'Your role is to analyze healthcare candidates against job requirements and screening rules. ' +
                'Provide structured, objective assessments focusing on qualifications, experience, and fit. ' +
+               '\n\n' +
+               '**IMPORTANT GUIDELINES:**\n' +
+               '- Use "STRONGLY_RECOMMEND" or "STRONGLY_NOT_RECOMMEND" ONLY for exceptional cases (top 10% or bottom 10%)\n' +
+               '- Most candidates should receive "RECOMMEND", "NEUTRAL", or "NOT_RECOMMEND"\n' +
+               '- "High" or "Very High" confidence should be reserved for clear-cut cases with strong evidence\n' +
+               '- If you have doubts or missing information, use "Medium" confidence and "NEUTRAL" recommendation\n' +
+               '- Balance is key: highlight BOTH strengths AND concerns for every candidate\n' +
+               '- Confidence indicates certainty of analysis, NOT candidate quality\n' +
+               '  Example: High confidence + NOT_RECOMMEND = Very sure candidate does not fit\n' +
+               '\n\n' +
                'Always respond in valid JSON format with the following structure:\n\n' +
                '{\n' +
                '  "overallScore": [number 0-100],\n' +
@@ -660,7 +676,7 @@ public with sharing class AIScreeningController {
                'CRITICAL: Use ONLY these exact values:\n' +
                '- confidenceLevel: "Very High", "High", "Medium", or "Low" (NOT "Very Low")\n' +
                '- recommendation: "STRONGLY_RECOMMEND", "RECOMMEND", "NEUTRAL", "NOT_RECOMMEND", or "STRONGLY_NOT_RECOMMEND"\n\n' +
-               'Be thorough, fair, and evidence-based in your analysis.';
+               'Be thorough, fair, and evidence-based in your analysis. Avoid extreme recommendations unless clearly warranted.';
     }
     
     private static String buildUserPrompt(Candidate__c candidate, List<Screening_Rule__c> rules, Decimal traditionalScore) {
@@ -744,7 +760,7 @@ public with sharing class AIScreeningController {
         return prompt;
     }
     
-    // 🔥 FIXED: Enhanced JSON parsing with markdown fence removal
+    // Enhanced JSON parsing with markdown fence removal
     private static AIAnalysis parseAIResponse(String content) {
         AIAnalysis analysis = new AIAnalysis();
         
@@ -853,7 +869,7 @@ public with sharing class AIScreeningController {
         return analysis;
     }
     
-    // 🔥 NEW: Normalize recommendation to valid picklist values
+    // Normalize recommendation to valid picklist values
     private static String normalizeRecommendation(String rawRecommendation) {
         if (String.isBlank(rawRecommendation)) {
             return 'NEUTRAL';
@@ -893,7 +909,7 @@ public with sharing class AIScreeningController {
         return 'NEUTRAL';
     }
     
-    // 🔥 NEW: Normalize confidence level to valid picklist values
+    // Normalize confidence level to valid picklist values
     private static String normalizeConfidenceLevel(String rawConfidence) {
         if (String.isBlank(rawConfidence)) {
             return 'Medium';

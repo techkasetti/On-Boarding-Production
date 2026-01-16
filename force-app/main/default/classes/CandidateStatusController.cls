@@ -106,13 +106,8 @@
 // }
 
 // =====================================================
-// CANDIDATE STATUS CONTROLLER
+// CANDIDATE STATUS CONTROLLER - UPDATED WITH JOB TITLE FIX
 // For displaying screening results in LWC
-// =====================================================
-
-// =====================================================
-// CANDIDATE STATUS CONTROLLER - FIXED VERSION
-// Enhanced error handling and debugging
 // =====================================================
 
 public with sharing class CandidateStatusController {
@@ -120,6 +115,7 @@ public with sharing class CandidateStatusController {
     public class CandidateStatusDto {
         @AuraEnabled public Id candidateId;
         @AuraEnabled public String name;
+        @AuraEnabled public String jobTitle; // 🔥 NEW: Add job title
         @AuraEnabled public String status;
         @AuraEnabled public List<EvalResultDto> results;
         @AuraEnabled public Map<String, String> routingInfo;
@@ -179,6 +175,7 @@ public with sharing class CandidateStatusController {
             this.overrideDate = ov.Override_Date__c;
         }
     }
+    
     @AuraEnabled(cacheable=true)
     public static CandidateStatusDto getCandidateStatus(Id candidateId) {
         if (candidateId == null) {
@@ -192,13 +189,16 @@ public with sharing class CandidateStatusController {
         try {
             Candidate__c c = [
                 SELECT Id, Name, Screening_Status__c, Last_Screening_Date__c, 
-                       Latest_Correlation_Id__c, Routed_To_Queue__c, Current_Journey_Path__c
+                       Latest_Correlation_Id__c, Routed_To_Queue__c, Current_Journey_Path__c,
+                       Interested_In_Job__c, Interested_In_Job__r.Name // 🔥 FIX: Fetch job posting name
                 FROM Candidate__c 
                 WHERE Id = :candidateId 
                 LIMIT 1
             ];
             
+            dto.candidateId = candidateId;
             dto.name = c.Name;
+            dto.jobTitle = c.Interested_In_Job__c != null ? c.Interested_In_Job__r.Name : 'Not Assigned'; // 🔥 FIX: Set actual job title
             dto.status = c.Screening_Status__c != null ? c.Screening_Status__c : 'Not Yet Screened';
             dto.lastScreeningDate = c.Last_Screening_Date__c;
             dto.correlationId = c.Latest_Correlation_Id__c;

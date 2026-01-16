@@ -310,7 +310,7 @@
     </lightning-card>
 </template>
 -->
-<!-- candidateScreenStatus.html - ENHANCED WITH AI (COMPLETE VERSION) -->
+<!-- candidateScreenStatus.html - COMPLETE UPDATED VERSION -->
 <template>
     <lightning-card icon-name="standard:assessment">
         <!-- Dynamic Title with Menu -->
@@ -379,6 +379,25 @@
 
             <!-- Main Content -->
             <template if:true={dataLoaded}>
+                
+                <!-- 🔥 NEW: AI Screening Spinner Overlay -->
+                <template if:true={isAIRunning}>
+                    <div class="ai-screening-overlay">
+                        <div class="ai-screening-modal">
+                            <lightning-icon icon-name="utility:einstein" size="large" class="ai-icon-animated"></lightning-icon>
+                            <h3 class="slds-text-heading_medium slds-m-top_medium">AI Screening in Progress</h3>
+                            <p class="slds-text-body_regular slds-m-top_small">
+                                Analyzing candidate profile with AI intelligence...
+                            </p>
+                            <div class="slds-m-top_medium">
+                                <lightning-spinner alternative-text="AI Processing" size="medium" variant="brand"></lightning-spinner>
+                            </div>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_medium">
+                                This may take 10-30 seconds
+                            </p>
+                        </div>
+                    </div>
+                </template>
                 
                 <!-- Candidate Info Header -->
                 <div class="candidate-header slds-m-bottom_large slds-m-horizontal_medium">
@@ -489,7 +508,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Rule Results Table -->
+                            <!-- Results Table -->
                             <div class="results-table-container">
                                 <h4 class="results-heading slds-m-bottom_small">
                                     <lightning-icon icon-name="utility:list" size="x-small"></lightning-icon>
@@ -500,20 +519,30 @@
                                         <table class="slds-table slds-table_cell-buffer slds-table_bordered results-table">
                                             <thead>
                                                 <tr class="slds-line-height_reset">
-                                                    <th scope="col" class="rule-name-col">Rule Name</th>
-                                                    <th scope="col" class="category-col">Category</th>
-                                                    <th scope="col" class="outcome-col">Outcome</th>
-                                                    <th scope="col" class="details-col">Details</th>
-                                                    <th scope="col" class="action-col">Action</th>
+                                                    <th scope="col" class="rule-name-col">
+                                                        <div class="slds-truncate" title="Rule Name">Rule Name</div>
+                                                    </th>
+                                                    <th scope="col" class="category-col">
+                                                        <div class="slds-truncate" title="Category">Category</div>
+                                                    </th>
+                                                    <th scope="col" class="outcome-col">
+                                                        <div class="slds-truncate" title="Outcome">Outcome</div>
+                                                    </th>
+                                                    <th scope="col" class="details-col">
+                                                        <div class="slds-truncate" title="Details">Details</div>
+                                                    </th>
+                                                    <th scope="col" class="action-col">
+                                                        <div class="slds-truncate" title="Action">Action</div>
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <template for:each={ruleResults} for:item="result">
-                                                    <tr key={result.ruleName} class="result-row">
+                                                    <tr key={result.ruleName} class={result.rowClass}>
                                                         <td data-label="Rule Name">
                                                             <div class="rule-name-cell">
                                                                 <lightning-icon icon-name="utility:rules" size="xx-small" class="rule-icon"></lightning-icon>
-                                                                <span>{result.ruleName}</span>
+                                                                <span class="rule-name-text">{result.ruleName}</span>
                                                             </div>
                                                         </td>
                                                         <td data-label="Category">
@@ -528,7 +557,19 @@
                                                             </div>
                                                         </td>
                                                         <td data-label="Action">
-                                                            <span class="action-text">{result.action}</span>
+                                                            <template if:true={result.action}>
+                                                                <span class={result.actionBadgeClass}>
+                                                                    <lightning-icon 
+                                                                        icon-name="utility:forward" 
+                                                                        size="xx-small" 
+                                                                        class="action-icon">
+                                                                    </lightning-icon>
+                                                                    {result.actionLabel}
+                                                                </span>
+                                                            </template>
+                                                            <template if:false={result.action}>
+                                                                <span class="slds-text-color_weak">No Action</span>
+                                                            </template>
                                                         </td>
                                                     </tr>
                                                 </template>
@@ -598,6 +639,13 @@
                                         <div class="score-meta">
                                             <lightning-icon icon-name="utility:approval" size="xx-small"></lightning-icon>
                                             Confidence: {aiConfidence}
+                                        </div>
+                                        <!-- 🔥 FIXED: More reliable tooltip using popover -->
+                                        <div class="confidence-explanation slds-m-top_small">
+                                            <button class="confidence-info-btn" onclick={handleShowConfidenceInfo} title="Click to learn about confidence levels">
+                                                <lightning-icon icon-name="utility:info" size="xx-small"></lightning-icon>
+                                                <span class="slds-text-body_small">What does confidence mean?</span>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -685,4 +733,158 @@
             </template>
         </div>
     </lightning-card>
+    
+    <!-- 🔥 IMPROVED: Confidence Info Modal -->
+<template if:true={showConfidenceModal}>
+    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container confidence-modal-container">
+            <header class="slds-modal__header">
+                <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                        title="Close" 
+                        onclick={handleCloseConfidenceInfo}>
+                    <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 class="slds-modal__title slds-hyphenate">
+                    <lightning-icon icon-name="utility:info" size="small" class="slds-m-right_x-small"></lightning-icon>
+                    Understanding AI Confidence Levels
+                </h2>
+            </header>
+            <div class="slds-modal__content slds-p-around_large confidence-modal-content">
+                
+                <!-- Key Concept Alert Box -->
+                <div class="key-concept-box">
+                    <div class="key-concept-icon">
+                        <lightning-icon icon-name="utility:announcement" size="medium"></lightning-icon>
+                    </div>
+                    <div class="key-concept-text">
+                        <h3 class="key-concept-title">Key Concept</h3>
+                        <p class="key-concept-description">
+                            Confidence indicates how <strong>certain</strong> the AI is about its recommendation, 
+                            not whether the candidate is <strong>good</strong> or <strong>bad</strong>.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Confidence Levels Section -->
+                <div class="confidence-section">
+                    <h3 class="section-title">
+                        <lightning-icon icon-name="utility:layers" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                        Confidence Levels Explained
+                    </h3>
+                    
+                    <div class="confidence-levels-grid">
+                        <!-- Very High -->
+                        <div class="confidence-level-card level-very-high">
+                            <div class="level-header-row">
+                                <span class="level-badge badge-very-high">Very High</span>
+                                <span class="level-subtitle">Abundant clear evidence</span>
+                            </div>
+                            <p class="level-description">
+                                AI has comprehensive data supporting its analysis with no ambiguity.
+                            </p>
+                        </div>
+                        
+                        <!-- High -->
+                        <div class="confidence-level-card level-high">
+                            <div class="level-header-row">
+                                <span class="level-badge badge-high">High</span>
+                                <span class="level-subtitle">Strong supporting evidence</span>
+                            </div>
+                            <p class="level-description">
+                                AI has solid data points clearly indicating the recommendation.
+                            </p>
+                        </div>
+                        
+                        <!-- Medium -->
+                        <div class="confidence-level-card level-medium">
+                            <div class="level-header-row">
+                                <span class="level-badge badge-medium">Medium</span>
+                                <span class="level-subtitle">Some evidence, some gaps</span>
+                            </div>
+                            <p class="level-description">
+                                AI has partial data with some missing information or ambiguity.
+                            </p>
+                        </div>
+                        
+                        <!-- Low -->
+                        <div class="confidence-level-card level-low">
+                            <div class="level-header-row">
+                                <span class="level-badge badge-low">Low</span>
+                                <span class="level-subtitle">Insufficient data</span>
+                            </div>
+                            <p class="level-description">
+                                AI lacks enough information to make a confident assessment.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Real Examples Section -->
+                <div class="examples-section">
+                    <h3 class="section-title">
+                        <lightning-icon icon-name="utility:rules" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                        Real-World Examples
+                    </h3>
+                    
+                    <!-- Example 1: Positive -->
+                    <div class="example-card example-positive">
+                        <div class="example-header">
+                            <lightning-icon icon-name="utility:success" size="x-small"></lightning-icon>
+                            <h4 class="example-title">High Confidence + STRONGLY RECOMMEND</h4>
+                        </div>
+                        <div class="example-content">
+                            <p class="example-scenario">
+                                <strong>Scenario:</strong> Candidate has all required certifications, exceeds experience requirements, 
+                                and has stellar credentials with clear documentation.
+                            </p>
+                            <p class="example-interpretation">
+                                <strong>Interpretation:</strong> The AI is <em>very certain</em> this candidate is an excellent fit.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Example 2: Negative -->
+                    <div class="example-card example-negative">
+                        <div class="example-header">
+                            <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                            <h4 class="example-title">High Confidence + STRONGLY NOT RECOMMEND</h4>
+                        </div>
+                        <div class="example-content">
+                            <p class="example-scenario">
+                                <strong>Scenario:</strong> Candidate is missing critical requirements (expired license, 
+                                wrong specialty, insufficient experience).
+                            </p>
+                            <p class="example-interpretation">
+                                <strong>Interpretation:</strong> The AI is <em>very certain</em> this candidate does not fit the role.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Example 3: Neutral -->
+                    <div class="example-card example-neutral">
+                        <div class="example-header">
+                            <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+                            <h4 class="example-title">Low Confidence + NEUTRAL</h4>
+                        </div>
+                        <div class="example-content">
+                            <p class="example-scenario">
+                                <strong>Scenario:</strong> Incomplete profile data — missing education records, 
+                                unclear work experience, or limited certification details.
+                            </p>
+                            <p class="example-interpretation">
+                                <strong>Interpretation:</strong> The AI needs more information before making a strong recommendation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <footer class="slds-modal__footer">
+                <lightning-button variant="brand" label="Got It" onclick={handleCloseConfidenceInfo}></lightning-button>
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</template>
 </template>
