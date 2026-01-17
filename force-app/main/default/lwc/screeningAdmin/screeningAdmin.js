@@ -360,7 +360,6 @@ const COLUMNS = [
             rowActions: [
                 { label: 'Edit', name: 'edit' },
                 { label: 'Version History', name: 'version_history' },
-                { label: 'Test Rule', name: 'test' },
                 { label: 'Delete', name: 'delete' }
             ]
         }
