@@ -61,14 +61,7 @@ export default class JobPostingConsole extends NavigationMixin(LightningElement)
 
     get categoryOptions() {
         return [
-            { label: 'Technology', value: 'Technology' },
-            { label: 'Healthcare', value: 'Healthcare' },
-            { label: 'Finance', value: 'Finance' },
-            { label: 'Marketing', value: 'Marketing' },
-            { label: 'Sales', value: 'Sales' },
-            { label: 'Operations', value: 'Operations' },
-            { label: 'HR', value: 'HR' },
-            { label: 'Legal', value: 'Legal' },
+            { label: 'Medical', value: 'Medical' },
             { label: 'Other', value: 'Other' }
         ];
     }
@@ -165,7 +158,7 @@ export default class JobPostingConsole extends NavigationMixin(LightningElement)
             reader.readAsText(file);
         }
     }
-    
+
     async handleCSVSubmit() {
     if (!this.fileName) {
         this.showError('Please upload a CSV file first');

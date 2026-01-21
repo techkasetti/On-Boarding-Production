@@ -1,316 +1,588 @@
-<!-- <template>
-    <lightning-card title="Candidate Screening Status" icon-name="standard:assessment">
-        // Actions: ONLY Rerun Screening button
-        <div slot="actions">
-            <lightning-button
-                label="Rerun Screening"
-                onclick={handleRerun}
-                disabled={isRunning}
-                icon-name="utility:loop">
-            </lightning-button>
+<!-- candidateScreenStatus.html - COMPLETE UPDATED VERSION 
+<template>
+    <lightning-card icon-name="standard:assessment">
+        //Dynamic Title with Menu 
+        <div slot="title">
+            <div class="slds-grid slds-grid_vertical-align-center">
+                <h2 class="slds-card__header-title slds-truncate">
+                    Screening Analysis
+                </h2>
+                <lightning-button-menu 
+                    alternative-text="Show menu" 
+                    icon-size="x-small" 
+                    menu-alignment="right"
+                    class="slds-m-left_x-small">
+                    <lightning-menu-item 
+                        value="refresh" 
+                        label="Refresh Data" 
+                        icon-name="utility:refresh"
+                        onclick={handleRefresh}>
+                    </lightning-menu-item>
+                    <lightning-menu-item 
+                        value="export" 
+                        label="Export Results" 
+                        icon-name="utility:download">
+                    </lightning-menu-item>
+                </lightning-button-menu>
+            </div>
         </div>
 
-        <div class="slds-p-horizontal_small">
-            // Loading Spinner 
-            <template if:false={data}>
+        // Action Buttons 
+        <div slot="actions">
+            <lightning-button-group>
+                <lightning-button
+                    label="Run Screening"
+                    onclick={handleRerun}
+                    disabled={isRunning}
+                    icon-name="utility:loop"
+                    variant="neutral">
+                </lightning-button>
+                <lightning-button
+                    label="Run AI Screening"
+                    onclick={handleRunAIScreening}
+                    disabled={isAIRunning}
+                    icon-name="utility:einstein"
+                    variant="brand">
+                </lightning-button>
+            </lightning-button-group>
+        </div>
+
+        <div class="slds-card__body">
+            // Loading State 
+            <template if:false={dataLoaded}>
                 <div class="slds-is-relative slds-p-vertical_large">
                     <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
                 </div>
             </template>
 
-            // Error Panel 
+            // Error State 
             <template if:true={error}>
                 <div class="slds-p-around_medium">
-                    An error occurred: {error.body.message}
+                    <div class="slds-notify slds-notify_alert slds-alert_error">
+                        <span class="slds-assistive-text">error</span>
+                        <h2>An error occurred: {error.body.message}</h2>
+                    </div>
                 </div>
             </template>
 
-            // Main Content 
-            <template if:true={data}>
-                // Header Status 
-                <div class="slds-grid slds-gutters slds-m-bottom_medium">
-                    <div class="slds-col">
-                        <p class="slds-text-title">Candidate Name</p>
-                        <p class="slds-text-heading_small">{data.name}</p>
-                    </div>
-                    <div class="slds-col">
-                        <p class="slds-text-title">Overall Status</p>
-                        <p class="slds-text-heading_small">{data.status}</p>
-                    </div>
-                </div>
-
-                // Routing Recommendation Box
-                <template if:true={data.routingInfo}>
-                    <div class="slds-box slds-theme_shade slds-theme_alert-texture slds-m-bottom_medium">
-                        <div class="slds-media">
-                            <div class="slds-media__figure">
-                                <lightning-icon
-                                    icon-name="utility:routing_offline"
-                                    variant="warning"
-                                    size="small">
-                                </lightning-icon>
+            // Main Content
+            <template if:true={dataLoaded}>
+                
+                // 🔥 NEW: AI Screening Spinner Overlay 
+                <template if:true={isAIRunning}>
+                    <div class="ai-screening-overlay">
+                        <div class="ai-screening-modal">
+                            <lightning-icon icon-name="utility:einstein" size="large" class="ai-icon-animated"></lightning-icon>
+                            <h3 class="slds-text-heading_medium slds-m-top_medium">AI Screening in Progress</h3>
+                            <p class="slds-text-body_regular slds-m-top_small">
+                                Analyzing candidate profile with AI intelligence...
+                            </p>
+                            <div class="slds-m-top_medium">
+                                <lightning-spinner alternative-text="AI Processing" size="medium" variant="brand"></lightning-spinner>
                             </div>
-                            <div class="slds-media__body">
-                                <p class="slds-text-heading_small">Routing Recommendation</p>
-                                <p><strong>Queue:</strong> {data.routingInfo.queue}</p>
-                                <p><strong>Reason:</strong> {data.routingInfo.notes}</p>
-                            </div>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_medium">
+                                This may take 10-30 seconds
+                            </p>
                         </div>
                     </div>
                 </template>
-
-                // Results Table 
-                <h3 class="slds-text-heading_medium slds-m-bottom_small">Screening Results</h3>
-
-                <template if:true={hasResults}>
-                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
-                        <thead>
-                            <tr class="slds-line-height_reset">
-                                <th scope="col">
-                                    <div class="slds-truncate" title="Rule Name">Rule Name</div>
-                                </th>
-                                <th scope="col" style="width: 15%;">
-                                    <div class="slds-truncate" title="Outcome">Outcome</div>
-                                </th>
-                                <th scope="col">
-                                    <div class="slds-truncate" title="Details">Details</div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template for:each={data.results} for:item="result">
-                                <tr key={result.ruleName}>
-                                    <td data-label="Rule Name">
-                                        <div class="slds-truncate">{result.ruleName}</div>
-                                    </td>
-                                    <td data-label="Outcome">
-                                        <span class={result.outcomeClass}>{result.outcome}</span>
-                                    </td>
-                                    <td data-label="Details">
-                                        <div class="slds-truncate">{result.details}</div>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </template>
-
-                // No Results Message 
-                <template if:false={hasResults}>
-                    <div class="slds-align_absolute-center slds-p-vertical_medium">
-                        No screening results found.
-                    </div>
-                </template>
-            </template>
-        </div>
-    </lightning-card>
-</template> -->
-
-
-
-
-
-
-<!--/////////////////////////////////////////////////////////////////////////////////////
-<template>
-    <lightning-card title="Candidate Screening Status" icon-name="standard:assessment">
-         Action Button 
-        <div slot="actions">
-            <lightning-button
-                label="Rerun Screening"
-                onclick={handleRerun}
-                disabled={isRunning}
-                icon-name="utility:loop">
-            </lightning-button>
-        </div>
-
-        <div class="slds-p-horizontal_small">
-            // Loading 
-            <template if:false={data}>
-                <div class="slds-is-relative slds-p-vertical_large">
-                    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
-                </div>
-            </template>
-
-            // Error 
-            <template if:true={error}>
-                <div class="slds-p-around_medium slds-text-color_error">
-                    An error occurred: {error.body.message}
-                </div>
-            </template>
-
-           // Main Content 
-            <template if:true={data}>
-             // Header Status
-                <div class="slds-grid slds-gutters slds-m-bottom_medium slds-m-top_small">
-                    <div class="slds-col slds-size_1-of-3">
-                        <p class="slds-text-title">Candidate Name</p>
-                        <p class="slds-text-heading_small">{data.name}</p>
-                    </div>
-                    <div class="slds-col slds-size_1-of-3">
-                        <p class="slds-text-title">Overall Status</p>
-                        <p class="slds-text-heading_small">
-                            <span class={statusBadgeClass}>{data.status}</span>
-                        </p>
-                    </div>
-                    <div class="slds-col slds-size_1-of-3">
-                        <p class="slds-text-title">Last Screened</p>
-                        <p class="slds-text-body_regular">
-                            <lightning-formatted-date-time value={data.lastScreeningDate}></lightning-formatted-date-time>
-                        </p>
-                    </div>
-                </div>
-
-            // Summary Statistics 
-                <div class="slds-grid slds-gutters slds-m-bottom_medium">
-                    <div class="slds-col slds-size_1-of-4">
-                        <div class="stat-card">
-                            <div class="stat-number">{data.totalRules}</div>
-                            <div class="stat-label">Total Rules</div>
-                        </div>
-                    </div>
-                    <div class="slds-col slds-size_1-of-4">
-                        <div class="stat-card stat-card-success">
-                            <div class="stat-number">{data.rulesPassed}</div>
-                            <div class="stat-label">Passed</div>
-                        </div>
-                    </div>
-                    <div class="slds-col slds-size_1-of-4">
-                        <div class="stat-card stat-card-error">
-                            <div class="stat-number">{data.rulesFailed}</div>
-                            <div class="stat-label">Failed</div>
-                        </div>
-                    </div>
-                    <div class="slds-col slds-size_1-of-4">
-                        <div class="stat-card stat-card-warning">
-                            <div class="stat-number">{data.rulesReview}</div>
-                            <div class="stat-label">Review</div>
-                        </div>
-                    </div>
-                </div>
-
-                // Routing Recommendation 
-                <template if:true={data.routingInfo}>
-                    <div class="slds-box slds-theme_warning slds-m-bottom_medium">
-                        <div class="slds-media">
-                            <div class="slds-media__figure">
-                                <lightning-icon
-                                    icon-name="utility:routing_offline"
-                                    variant="warning"
-                                    size="small">
-                                </lightning-icon>
+                
+                // Candidate Info Header 
+                <div class="candidate-header slds-m-bottom_large slds-m-horizontal_medium">
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <lightning-icon icon-name="standard:contact" size="small"></lightning-icon>
+                                </div>
+                                <div class="info-content">
+                                    <p class="info-label">Candidate</p>
+                                    <p class="info-value">{candidateName}</p>
+                                </div>
                             </div>
-                            <div class="slds-media__body">
-                                <h3 class="slds-text-heading_small slds-m-bottom_xx-small">Routing Recommendation</h3>
-                                <p><strong>Journey Path:</strong> {data.routingInfo.journeyPath}</p>
-                                <p><strong>Queue:</strong> {data.routingInfo.queue}</p>
-                                <p><strong>Escalation Level:</strong> {data.routingInfo.escalationLevel}</p>
-                                <p><strong>Reason:</strong> {data.routingInfo.reason}</p>
-                                <template if:true={data.routingInfo.actions}>
-                                    <p><strong>Required Actions:</strong></p>
-                                    <p class="slds-m-left_medium">{data.routingInfo.actions}</p>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <lightning-icon icon-name="standard:work_order" size="small"></lightning-icon>
+                                </div>
+                                <div class="info-content">
+                                    <p class="info-label">Job Posting</p>
+                                    <p class="info-value">{jobTitle}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <lightning-icon icon-name="standard:date_time" size="small"></lightning-icon>
+                                </div>
+                                <div class="info-content">
+                                    <p class="info-label">Last Screened</p>
+                                    <p class="info-value">
+                                        <lightning-formatted-date-time value={lastScreeningDate} 
+                                                                       year="numeric" 
+                                                                       month="short" 
+                                                                       day="2-digit" 
+                                                                       hour="2-digit" 
+                                                                       minute="2-digit">
+                                        </lightning-formatted-date-time>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                // Tabs for Different Views 
+                <lightning-tabset active-tab-value={activeTab} onselect={handleTabChange}>
+                    
+                    // Rule-Based Screening Tab 
+                    <lightning-tab label="Rule-Based Screening" value="rules" icon-name="standard:flow">
+                        <div class="slds-p-around_small">
+                            
+                            // Rule-Based Score Card 
+                            <div class="score-card-container slds-m-bottom_medium">
+                                <div class="score-card rule-based">
+                                    <div class="score-header">
+                                        <lightning-icon icon-name="standard:flow" size="x-small"></lightning-icon>
+                                        <h3 class="slds-text-heading_small">Rule-Based Analysis</h3>
+                                    </div>
+                                    <div class="score-value">{traditionalScore}<span class="score-unit">%</span></div>
+                                    <div class="score-status">
+                                        <span class={traditionalBadgeClass}>{traditionalStatus}</span>
+                                    </div>
+                                    <div class="score-meta">
+                                        <lightning-icon icon-name="utility:metrics" size="xx-small"></lightning-icon>
+                                        {totalRules} rules evaluated
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            // Quick Stats 
+                            <div class="stats-container slds-m-bottom_medium">
+                                <h4 class="stats-heading">
+                                    <lightning-icon icon-name="utility:chart" size="xx-small"></lightning-icon>
+                                    Results Breakdown
+                                </h4>
+                                <div class="quick-stats slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="stat-pill stat-success">
+                                            <div class="stat-icon-wrapper">
+                                                <lightning-icon icon-name="utility:success" size="x-small"></lightning-icon>
+                                            </div>
+                                            <span class="stat-number">{rulesPassed}</span>
+                                            <span class="stat-label">Passed</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="stat-pill stat-error">
+                                            <div class="stat-icon-wrapper">
+                                                <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                                            </div>
+                                            <span class="stat-number">{rulesFailed}</span>
+                                            <span class="stat-label">Failed</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="stat-pill stat-warning">
+                                            <div class="stat-icon-wrapper">
+                                                <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+                                            </div>
+                                            <span class="stat-number">{rulesReview}</span>
+                                            <span class="stat-label">Review</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            // Results Table 
+                            <div class="results-table-container">
+                                <h4 class="results-heading slds-m-bottom_small">
+                                    <lightning-icon icon-name="utility:list" size="x-small"></lightning-icon>
+                                    Detailed Rule Results
+                                </h4>
+                                <template if:true={hasRuleResults}>
+                                    <div class="table-wrapper">
+                                        <table class="slds-table slds-table_cell-buffer slds-table_bordered results-table">
+                                            <thead>
+                                                <tr class="slds-line-height_reset">
+                                                    <th scope="col" class="rule-name-col">
+                                                        <div class="slds-truncate" title="Rule Name">Rule Name</div>
+                                                    </th>
+                                                    <th scope="col" class="category-col">
+                                                        <div class="slds-truncate" title="Category">Category</div>
+                                                    </th>
+                                                    <th scope="col" class="outcome-col">
+                                                        <div class="slds-truncate" title="Outcome">Outcome</div>
+                                                    </th>
+                                                    <th scope="col" class="details-col">
+                                                        <div class="slds-truncate" title="Details">Details</div>
+                                                    </th>
+                                                    <th scope="col" class="action-col">
+                                                        <div class="slds-truncate" title="Action">Action</div>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template for:each={ruleResults} for:item="result">
+                                                    <tr key={result.ruleName} class={result.rowClass}>
+                                                        <td data-label="Rule Name">
+                                                            <div class="rule-name-cell">
+                                                                <lightning-icon icon-name="utility:rules" size="xx-small" class="rule-icon"></lightning-icon>
+                                                                <span class="rule-name-text">{result.ruleName}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td data-label="Category">
+                                                            <span class="category-badge">{result.ruleCategory}</span>
+                                                        </td>
+                                                        <td data-label="Outcome">
+                                                            <span class={result.outcomeClass}>{result.outcome}</span>
+                                                        </td>
+                                                        <td data-label="Details">
+                                                            <div class="details-cell" title={result.details}>
+                                                                {result.details}
+                                                            </div>
+                                                        </td>
+                                                        <td data-label="Action">
+                                                            <template if:true={result.action}>
+                                                                <span class={result.actionBadgeClass}>
+                                                                    <lightning-icon 
+                                                                        icon-name="utility:forward" 
+                                                                        size="xx-small" 
+                                                                        class="action-icon">
+                                                                    </lightning-icon>
+                                                                    {result.actionLabel}
+                                                                </span>
+                                                            </template>
+                                                            <template if:false={result.action}>
+                                                                <span class="slds-text-color_weak">No Action</span>
+                                                            </template>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </template>
+
+                                <template if:false={hasRuleResults}>
+                                    <div class="slds-align_absolute-center slds-p-vertical_medium">
+                                        <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                        <p class="slds-m-left_small">No screening results found.</p>
+                                    </div>
                                 </template>
                             </div>
-                        </div>
-                    </div>
-                </template>
-
-             // Results Table 
-                <h3 class="slds-text-heading_medium slds-m-bottom_small">Detailed Results</h3>
-
-                <template if:true={hasResults}>
-                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
-                        <thead>
-                            <tr class="slds-line-height_reset">
-                                <th scope="col">
-                                    <div class="slds-truncate" title="Rule Name">Rule Name</div>
-                                </th>
-                                <th scope="col">
-                                    <div class="slds-truncate" title="Category">Category</div>
-                                </th>
-                                <th scope="col" style="width: 12%;">
-                                    <div class="slds-truncate" title="Outcome">Outcome</div>
-                                </th>
-                                <th scope="col">
-                                    <div class="slds-truncate" title="Details">Details</div>
-                                </th>
-                                <th scope="col">
-                                    <div class="slds-truncate" title="Action">Action</div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template for:each={data.results} for:item="result">
-                                <tr key={result.ruleName} class={result.rowClass}>
-                                    <td data-label="Rule Name">
-                                        <div class="slds-truncate" title={result.ruleName}>
-                                            {result.ruleName}
-                                            <template if:true={result.overrideApplied}>
-                                                <lightning-icon icon-name="utility:info" size="xx-small" title="Manual override applied"></lightning-icon>
-                                            </template>
+                            
+                            // Routing Recommendation 
+                            <template if:true={hasRouting}>
+                                <div class="routing-info-box slds-m-top_large slds-m-horizontal_medium">
+                                    <div class="slds-media">
+                                        <div class="slds-media__figure">
+                                            <lightning-icon icon-name="utility:routing_offline" 
+                                                          variant="warning" size="small"></lightning-icon>
                                         </div>
-                                    </td>
-                                    <td data-label="Category">
-                                        <div class="slds-truncate">{result.ruleCategory}</div>
-                                    </td>
-                                    <td data-label="Outcome">
-                                        <span class={result.outcomeClass}>{result.outcome}</span>
-                                    </td>
-                                    <td data-label="Details">
-                                        <div class="slds-truncate" title={result.details}>{result.details}</div>
-                                    </td>
-                                    <td data-label="Action">
-                                        <div class="slds-truncate">{result.action}</div>
-                                    </td>
-                                </tr>
+                                        <div class="slds-media__body">
+                                            <h4 class="slds-text-heading_small">Routing Recommendation</h4>
+                                            <div class="slds-grid slds-gutters slds-m-top_x-small">
+                                                <div class="slds-col">
+                                                    <p class="slds-text-body_small">
+                                                        <strong>Path:</strong> {routingPath}
+                                                    </p>
+                                                </div>
+                                                <div class="slds-col">
+                                                    <p class="slds-text-body_small">
+                                                        <strong>Queue:</strong> {routingQueue}
+                                                    </p>
+                                                </div>
+                                                <div class="slds-col">
+                                                    <p class="slds-text-body_small">
+                                                        <strong>Level:</strong> {routingLevel}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </template>
-                        </tbody>
-                    </table>
-                </template>
-
-                <template if:false={hasResults}>
-                    <div class="slds-align_absolute-center slds-p-vertical_medium">
-                        <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
-                        <p class="slds-m-left_small">No screening results found.</p>
-                    </div>
-                </template>
-
-                //Overrides Section 
-                <template if:true={hasOverrides}>
-                    <h3 class="slds-text-heading_medium slds-m-top_large slds-m-bottom_small">Manual Overrides</h3>
-                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
-                        <thead>
-                            <tr>
-                                <th>Rule Name</th>
-                                <th>Original</th>
-                                <th>New Outcome</th>
-                                <th>Reason</th>
-                                <th>Status</th>
-                                <th>Override By</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template for:each={data.overrides} for:item="override">
-                                <tr key={override.ruleName}>
-                                    <td>{override.ruleName}</td>
-                                    <td>{override.originalOutcome}</td>
-                                    <td>{override.newOutcome}</td>
-                                    <td>{override.reason}</td>
-                                    <td><span class="slds-badge">{override.approvalStatus}</span></td>
-                                    <td>{override.overrideBy}</td>
-                                    <td><lightning-formatted-date-time value={override.overrideDate}></lightning-formatted-date-time></td>
-                                </tr>
+                        </div>
+                    </lightning-tab>
+                    
+                    // AI Screening Tab 
+                    <lightning-tab label="AI Screening" value="ai" icon-name="utility:einstein">
+                        <div class="slds-p-around_small">
+                            
+                            <template if:true={hasAIResult}>
+                                // AI Score Card 
+                                <div class="score-card-container slds-m-bottom_medium">
+                                    <div class="score-card ai-powered">
+                                        <div class="score-header">
+                                            <lightning-icon icon-name="utility:einstein" size="x-small"></lightning-icon>
+                                            <h3 class="slds-text-heading_small">AI Intelligence</h3>
+                                        </div>
+                                        <div class="score-value">{aiScore}<span class="score-unit">%</span></div>
+                                        <div class="score-status">
+                                            <span class={aiRecommendationBadgeClass}>{aiRecommendationLabel}</span>
+                                        </div>
+                                        <div class="score-meta">
+                                            <lightning-icon icon-name="utility:approval" size="xx-small"></lightning-icon>
+                                            Confidence: {aiConfidence}
+                                        </div>
+                                        // 🔥 FIXED: More reliable tooltip using popover 
+                                        <div class="confidence-explanation slds-m-top_small">
+                                            <button class="confidence-info-btn" onclick={handleShowConfidenceInfo} title="Click to learn about confidence levels">
+                                                <lightning-icon icon-name="utility:info" size="xx-small"></lightning-icon>
+                                                <span class="slds-text-body_small">What does confidence mean?</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                // AI Insights 
+                                <div class="slds-grid slds-gutters slds-m-bottom_medium slds-m-horizontal_medium">
+                                    // Strengths 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="highlight-box strength-box">
+                                            <h4 class="slds-text-heading_small slds-m-bottom_small">
+                                                <lightning-icon icon-name="utility:like" size="x-small" 
+                                                               variant="success"></lightning-icon>
+                                                Key Strengths
+                                            </h4>
+                                            <ul class="slds-list_dotted">
+                                                <template for:each={aiStrengths} for:item="strength">
+                                                    <li key={strength}>{strength}</li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    // Concerns 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="highlight-box concern-box">
+                                            <h4 class="slds-text-heading_small slds-m-bottom_small">
+                                                <lightning-icon icon-name="utility:warning" size="x-small" 
+                                                               variant="warning"></lightning-icon>
+                                                Areas of Concern
+                                            </h4>
+                                            <ul class="slds-list_dotted">
+                                                <template for:each={aiConcerns} for:item="concern">
+                                                    <li key={concern}>{concern}</li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                //AI Summary 
+                                <div class="ai-summary-box slds-m-bottom_medium slds-m-horizontal_medium">
+                                    <h4 class="slds-text-heading_small slds-m-bottom_small">
+                                        <lightning-icon icon-name="utility:summary" size="x-small"></lightning-icon>
+                                        Quick Summary
+                                    </h4>
+                                    <p class="slds-text-body_regular">{aiQuickSummary}</p>
+                                </div>
+                                
+                                // Full AI Analysis 
+                                <div class="ai-full-analysis-section slds-m-horizontal_medium">
+                                    <h4 class="slds-text-heading_small slds-m-bottom_small">
+                                        <lightning-icon icon-name="utility:open_folder" size="x-small"></lightning-icon>
+                                        Detailed AI Analysis
+                                    </h4>
+                                    <div class="ai-full-analysis">
+                                        <lightning-formatted-rich-text value={aiFullAnalysis}>
+                                        </lightning-formatted-rich-text>
+                                    </div>
+                                </div>
                             </template>
-                        </tbody>
-                    </table>
-                </template>
+                            
+                            <template if:false={hasAIResult}>
+                                <div class="slds-align_absolute-center slds-p-vertical_xx-large">
+                                    <div class="slds-text-align_center">
+                                        <lightning-icon icon-name="utility:einstein" size="large" 
+                                                       class="slds-m-bottom_medium"></lightning-icon>
+                                        <h3 class="slds-text-heading_medium slds-m-bottom_small">
+                                            No AI Analysis Yet
+                                        </h3>
+                                        <p class="slds-text-body_regular slds-m-bottom_medium slds-text-color_weak">
+                                            Run AI screening to get intelligent insights and recommendations
+                                        </p>
+                                        <lightning-button
+                                            label="Run AI Screening"
+                                            onclick={handleRunAIScreening}
+                                            variant="brand"
+                                            icon-name="utility:einstein">
+                                        </lightning-button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+                    
+                </lightning-tabset>
             </template>
         </div>
     </lightning-card>
+    
+    // 🔥 IMPROVED: Confidence Info Modal 
+<template if:true={showConfidenceModal}>
+    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container confidence-modal-container">
+            <header class="slds-modal__header">
+                <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                        title="Close" 
+                        onclick={handleCloseConfidenceInfo}>
+                    <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 class="slds-modal__title slds-hyphenate">
+                    <lightning-icon icon-name="utility:info" size="small" class="slds-m-right_x-small"></lightning-icon>
+                    Understanding AI Confidence Levels
+                </h2>
+            </header>
+            <div class="slds-modal__content slds-p-around_large confidence-modal-content">
+                
+                // Key Concept Alert Box 
+                <div class="key-concept-box">
+                    <div class="key-concept-icon">
+                        <lightning-icon icon-name="utility:announcement" size="medium"></lightning-icon>
+                    </div>
+                    <div class="key-concept-text">
+                        <h3 class="key-concept-title">Key Concept</h3>
+                        <p class="key-concept-description">
+                            Confidence indicates how <strong>certain</strong> the AI is about its recommendation, 
+                            not whether the candidate is <strong>good</strong> or <strong>bad</strong>.
+                        </p>
+                    </div>
+                </div>
+                
+                // Confidence Levels Section 
+                <div class="confidence-section">
+                    <h3 class="section-title">
+                        <lightning-icon icon-name="utility:layers" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                        Confidence Levels Explained
+                    </h3>
+                    
+                    <div class="confidence-levels-grid">
+                        // Very High 
+                        <div class="confidence-level-card level-very-high">
+                            <div class="level-header-row">
+                                <span class="level-badge badge-very-high">Very High</span>
+                                <span class="level-subtitle">Abundant clear evidence</span>
+                            </div>
+                            <p class="level-description">
+                                AI has comprehensive data supporting its analysis with no ambiguity.
+                            </p>
+                        </div>
+                        
+                      //High 
+                        <div class="confidence-level-card level-high">
+                            <div class="level-header-row">
+                                <span class="level-badge badge-high">High</span>
+                                <span class="level-subtitle">Strong supporting evidence</span>
+                            </div>
+                            <p class="level-description">
+                                AI has solid data points clearly indicating the recommendation.
+                            </p>
+                        </div>
+                        
+                        // Medium 
+                        <div class="confidence-level-card level-medium">
+                            <div class="level-header-row">
+                                <span class="level-badge badge-medium">Medium</span>
+                                <span class="level-subtitle">Some evidence, some gaps</span>
+                            </div>
+                            <p class="level-description">
+                                AI has partial data with some missing information or ambiguity.
+                            </p>
+                        </div>
+                        
+                        //Low 
+                        <div class="confidence-level-card level-low">
+                            <div class="level-header-row">
+                                <span class="level-badge badge-low">Low</span>
+                                <span class="level-subtitle">Insufficient data</span>
+                            </div>
+                            <p class="level-description">
+                                AI lacks enough information to make a confident assessment.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+              // Real Examples Section
+                <div class="examples-section">
+                    <h3 class="section-title">
+                        <lightning-icon icon-name="utility:rules" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                        Real-World Examples
+                    </h3>
+                    
+                    //Example 1: Positive 
+                    <div class="example-card example-positive">
+                        <div class="example-header">
+                            <lightning-icon icon-name="utility:success" size="x-small"></lightning-icon>
+                            <h4 class="example-title">High Confidence + STRONGLY RECOMMEND</h4>
+                        </div>
+                        <div class="example-content">
+                            <p class="example-scenario">
+                                <strong>Scenario:</strong> Candidate has all required certifications, exceeds experience requirements, 
+                                and has stellar credentials with clear documentation.
+                            </p>
+                            <p class="example-interpretation">
+                                <strong>Interpretation:</strong> The AI is <em>very certain</em> this candidate is an excellent fit.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    //Example 2: Negative 
+                    <div class="example-card example-negative">
+                        <div class="example-header">
+                            <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                            <h4 class="example-title">High Confidence + STRONGLY NOT RECOMMEND</h4>
+                        </div>
+                        <div class="example-content">
+                            <p class="example-scenario">
+                                <strong>Scenario:</strong> Candidate is missing critical requirements (expired license, 
+                                wrong specialty, insufficient experience).
+                            </p>
+                            <p class="example-interpretation">
+                                <strong>Interpretation:</strong> The AI is <em>very certain</em> this candidate does not fit the role.
+                            </p>
+                        </div>
+                    </div>
+                    
+                  //Example 3: Neutral 
+                    <div class="example-card example-neutral">
+                        <div class="example-header">
+                            <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+                            <h4 class="example-title">Low Confidence + NEUTRAL</h4>
+                        </div>
+                        <div class="example-content">
+                            <p class="example-scenario">
+                                <strong>Scenario:</strong> Incomplete profile data — missing education records, 
+                                unclear work experience, or limited certification details.
+                            </p>
+                            <p class="example-interpretation">
+                                <strong>Interpretation:</strong> The AI needs more information before making a strong recommendation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <footer class="slds-modal__footer">
+                <lightning-button variant="brand" label="Got It" onclick={handleCloseConfidenceInfo}></lightning-button>
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
 </template>
+</template>
+
 -->
-<!-- candidateScreenStatus.html - COMPLETE UPDATED VERSION -->
+
+<!-- ========================================== -->
+<!-- candidateScreenStatus.html - WITH MANUAL OVERRIDE UI -->
+<!-- ========================================== -->
+
 <template>
     <lightning-card icon-name="standard:assessment">
         <!-- Dynamic Title with Menu -->
@@ -380,7 +652,7 @@
             <!-- Main Content -->
             <template if:true={dataLoaded}>
                 
-                <!-- 🔥 NEW: AI Screening Spinner Overlay -->
+                <!-- AI Screening Spinner Overlay -->
                 <template if:true={isAIRunning}>
                     <div class="ai-screening-overlay">
                         <div class="ai-screening-modal">
@@ -620,6 +892,169 @@
                         </div>
                     </lightning-tab>
                     
+                    <!-- 🔥 NEW: Manual Override Tab -->
+                    <lightning-tab label="Manual Override" value="override" icon-name="utility:record_update">
+                        <div class="slds-p-around_small">
+                            
+                            <!-- Override Instructions -->
+                            <div class="override-instructions slds-m-bottom_medium slds-m-horizontal_medium">
+                                <div class="slds-media">
+                                    <div class="slds-media__figure">
+                                        <lightning-icon icon-name="utility:info" size="small" variant="inverse"></lightning-icon>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <h4 class="slds-text-heading_small slds-m-bottom_x-small">Manual Override</h4>
+                                      
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Overrideable Rules Table -->
+                            <template if:true={hasOverrideableRules}>
+                                <div class="override-table-container slds-m-horizontal_medium">
+                                    <h4 class="override-section-heading slds-m-bottom_small">
+                                        <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+                                        Rules Requiring Attention ({overrideableRulesCount})
+                                    </h4>
+                                    
+                                    <div class="override-cards-container">
+                                        <template for:each={overrideableRules} for:item="rule">
+                                            <div key={rule.ruleId} class={rule.cardClass}>
+                                                
+                                                <!-- Rule Header -->
+                                                <div class="override-card-header">
+                                                    <div class="override-card-title">
+                                                        <lightning-icon icon-name="utility:rules" size="xx-small"></lightning-icon>
+                                                        <h5 class="slds-text-heading_small">{rule.ruleName}</h5>
+                                                    </div>
+                                                    <span class={rule.outcomeClass}>{rule.outcome}</span>
+                                                </div>
+                                                
+                                                <!-- Rule Details -->
+                                                <div class="override-card-body">
+                                                    <div class="override-detail-row">
+                                                        <span class="detail-label">Candidate:</span>
+                                                        <span class="detail-value">{candidateName}</span>
+                                                    </div>
+                                                    <div class="override-detail-row">
+                                                        <span class="detail-label">Category:</span>
+                                                        <span class="detail-value">{rule.category}</span>
+                                                    </div>
+                                                    <div class="override-detail-row">
+                                                        <span class="detail-label">Details:</span>
+                                                        <span class="detail-value">{rule.details}</span>
+                                                    </div>
+                                                    <template if:true={rule.alreadyOverridden}>
+                                                        <div class="override-applied-notice">
+                                                            <lightning-icon icon-name="utility:success" size="xx-small"></lightning-icon>
+                                                            Override already applied
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                                
+                                                <!-- Override Button -->
+                                                <div class="override-card-footer">
+                                                    <lightning-button
+                                                        label={rule.buttonLabel}
+                                                        variant="brand"
+                                                        icon-name="utility:edit"
+                                                        onclick={handleOpenOverrideModal}
+                                                        data-result-id={rule.resultId}
+                                                        data-rule-id={rule.ruleId}
+                                                        data-rule-name={rule.ruleName}
+                                                        data-outcome={rule.outcome}
+                                                        disabled={rule.alreadyOverridden}
+                                                        class="override-button">
+                                                    </lightning-button>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                            
+                            <!-- No Overrideable Rules 
+                            <template if:false={hasOverrideableRules}>
+                                <div class="slds-align_absolute-center slds-p-vertical_xx-large">
+                                    <div class="slds-text-align_center">
+                                        <lightning-icon icon-name="utility:success" size="large" 
+                                                       class="slds-m-bottom_medium"></lightning-icon>
+                                        <h3 class="slds-text-heading_medium slds-m-bottom_small">
+                                            No Overrides Needed
+                                        </h3>
+                                        <p class="slds-text-body_regular slds-text-color_weak">
+                                            All rules have passed or no rules allow manual override
+                                        </p>
+                                    </div>
+                                </div>
+                            </template>
+                             -->
+
+                             <!-- No Overrideable Rules -->
+                            <template if:false={hasOverrideableRules}>
+                                <div class="slds-align_absolute-center slds-p-vertical_xx-large">
+                                    <div class="slds-text-align_center">
+                                        <lightning-icon icon-name="utility:success" size="large" 
+                                                    class="slds-m-bottom_medium"></lightning-icon>
+                                        <h3 class="slds-text-heading_medium slds-m-bottom_small">
+                                            No Manual Overrides Available
+                                        </h3>
+                                        <p class="slds-text-body_regular slds-text-color_weak">
+                                            <!-- ✅ UPDATED MESSAGE -->
+                                            Either all rules passed, or failed rules do not allow manual override.<br/>
+                                            To enable override, edit the rule and check "Allow Manual Override".
+                                        </p>
+                                    </div>
+                                </div>
+                            </template>
+                                                        <!-- Override History -->
+                            <template if:true={hasExistingOverrides}>
+                                <div class="override-history-section slds-m-top_x-large slds-m-horizontal_medium">
+                                    <h4 class="override-section-heading slds-m-bottom_small">
+                                        <lightning-icon icon-name="utility:history" size="x-small"></lightning-icon>
+                                        Override History
+                                    </h4>
+                                    
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Rule Name</th>
+                                                <th scope="col">Original</th>
+                                                <th scope="col">New Outcome</th>
+                                                <th scope="col">Reason</th>
+                                                <th scope="col">Status</th>
+                                                <th scope="col">Override By</th>
+                                                <th scope="col">Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={existingOverrides} for:item="override">
+                                                <tr key={override.overrideId}>
+                                                    <td>{override.ruleName}</td>
+                                                    <td><span class={override.originalOutcomeClass}>{override.originalOutcome}</span></td>
+                                                    <td><span class={override.newOutcomeClass}>{override.newOutcome}</span></td>
+                                                    <td>{override.reason}</td>
+                                                    <td><span class={override.statusBadgeClass}>{override.approvalStatus}</span></td>
+                                                    <td>{override.overrideBy}</td>
+                                                    <td>
+                                                        <lightning-formatted-date-time 
+                                                            value={override.overrideDate}
+                                                            year="numeric"
+                                                            month="short"
+                                                            day="2-digit"
+                                                            hour="2-digit"
+                                                            minute="2-digit">
+                                                        </lightning-formatted-date-time>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+                    
                     <!-- AI Screening Tab -->
                     <lightning-tab label="AI Screening" value="ai" icon-name="utility:einstein">
                         <div class="slds-p-around_small">
@@ -640,7 +1075,6 @@
                                             <lightning-icon icon-name="utility:approval" size="xx-small"></lightning-icon>
                                             Confidence: {aiConfidence}
                                         </div>
-                                        <!-- 🔥 FIXED: More reliable tooltip using popover -->
                                         <div class="confidence-explanation slds-m-top_small">
                                             <button class="confidence-info-btn" onclick={handleShowConfidenceInfo} title="Click to learn about confidence levels">
                                                 <lightning-icon icon-name="utility:info" size="xx-small"></lightning-icon>
@@ -734,157 +1168,196 @@
         </div>
     </lightning-card>
     
-    <!-- 🔥 IMPROVED: Confidence Info Modal -->
+    <!-- 🔥 NEW: Override Modal -->
+    <template if:true={showOverrideModal}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                            title="Close" 
+                            onclick={handleCloseOverrideModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">
+                        <lightning-icon icon-name="utility:record_update" size="small" class="slds-m-right_x-small"></lightning-icon>
+                        Override Screening Result
+                    </h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    
+                    <!-- Rule Information -->
+                    <div class="override-modal-info slds-m-bottom_medium">
+                        <div class="info-row">
+                            <span class="info-label-modal">Candidate:</span>
+                            <span class="info-value-modal">{candidateName}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label-modal">Rule Name:</span>
+                            <span class="info-value-modal">{selectedOverrideRule.ruleName}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label-modal">Current Outcome:</span>
+                            <span class={selectedOverrideRule.currentOutcomeClass}>{selectedOverrideRule.currentOutcome}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Override Form -->
+                    <div class="override-form">
+                        <lightning-combobox
+                            name="newOutcome"
+                            label="New Outcome"
+                            value={overrideForm.newOutcome}
+                            placeholder="Select new outcome"
+                            options={outcomeOptions}
+                            onchange={handleOverrideFormChange}
+                            required>
+                        </lightning-combobox>
+                        
+                        <lightning-combobox
+                            name="overrideType"
+                            label="Override Type"
+                            value={overrideForm.overrideType}
+                            placeholder="Select type"
+                            options={overrideTypeOptions}
+                            onchange={handleOverrideFormChange}
+                            required
+                            class="slds-m-top_small">
+                        </lightning-combobox>
+                        
+                        <lightning-textarea
+                            name="overrideReason"
+                            label="Override Reason (Required)"
+                            value={overrideForm.overrideReason}
+                            placeholder="Please provide a detailed reason for this override..."
+                            onchange={handleOverrideFormChange}
+                            required
+                            maxlength="32000"
+                            class="slds-m-top_small">
+                        </lightning-textarea>
+                        
+                        <div class="override-warning slds-m-top_medium">
+                            <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+                            <p class="slds-text-body_small">
+                                This override will be recorded and may require approval based on the rule configuration.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button 
+                        label="Cancel" 
+                        onclick={handleCloseOverrideModal}>
+                    </lightning-button>
+                    <lightning-button 
+                        variant="brand" 
+                        label="Submit Override" 
+                        onclick={handleSubmitOverride}
+                        disabled={isSubmittingOverride}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    
+   
 <template if:true={showConfidenceModal}>
-    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
-        <div class="slds-modal__container confidence-modal-container">
+    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open" aria-modal="true">
+        <div class="slds-modal__container">
+            <!-- Header -->
             <header class="slds-modal__header">
                 <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
                         title="Close" 
-                        onclick={handleCloseConfidenceInfo}>
+                        onclick={handleCloseConfidenceInfo}
+                        aria-label="Close">
                     <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
                     <span class="slds-assistive-text">Close</span>
                 </button>
-                <h2 class="slds-modal__title slds-hyphenate">
+                <h2 class="slds-modal__title slds-hyphenate" id="modal-heading">
                     <lightning-icon icon-name="utility:info" size="small" class="slds-m-right_x-small"></lightning-icon>
                     Understanding AI Confidence Levels
                 </h2>
             </header>
-            <div class="slds-modal__content slds-p-around_large confidence-modal-content">
-                
-                <!-- Key Concept Alert Box -->
-                <div class="key-concept-box">
-                    <div class="key-concept-icon">
-                        <lightning-icon icon-name="utility:announcement" size="medium"></lightning-icon>
+            
+            <!-- Content - properly scrollable -->
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content">
+                <div class="confidence-info-content">
+                    
+                    <!-- Important highlight -->
+                    <div class="info-highlight slds-m-bottom_medium">
+                        <div class="info-icon-container">
+                            <lightning-icon icon-name="utility:announcement" size="small"></lightning-icon>
+                        </div>
+                        <div class="info-text">
+                            <p class="slds-text-body_regular">
+                                <strong>Important:</strong> Confidence indicates how <em>certain</em> the AI is about its recommendation, 
+                                not whether the candidate is <em>good</em> or <em>bad</em>.
+                            </p>
+                        </div>
                     </div>
-                    <div class="key-concept-text">
-                        <h3 class="key-concept-title">Key Concept</h3>
-                        <p class="key-concept-description">
-                            Confidence indicates how <strong>certain</strong> the AI is about its recommendation, 
-                            not whether the candidate is <strong>good</strong> or <strong>bad</strong>.
-                        </p>
-                    </div>
-                </div>
-                
-                <!-- Confidence Levels Section -->
-                <div class="confidence-section">
-                    <h3 class="section-title">
-                        <lightning-icon icon-name="utility:layers" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                    
+                    <h3 class="slds-text-heading_small slds-m-top_large slds-m-bottom_small">
                         Confidence Levels Explained
                     </h3>
                     
-                    <div class="confidence-levels-grid">
-                        <!-- Very High -->
-                        <div class="confidence-level-card level-very-high">
-                            <div class="level-header-row">
-                                <span class="level-badge badge-very-high">Very High</span>
-                                <span class="level-subtitle">Abundant clear evidence</span>
-                            </div>
-                            <p class="level-description">
-                                AI has comprehensive data supporting its analysis with no ambiguity.
-                            </p>
+                    <!-- Very High -->
+                    <div class="confidence-level-item">
+                        <div class="level-header">
+                            <span class="level-badge level-very-high">Very High</span>
+                            <span class="level-description">Abundant clear evidence</span>
                         </div>
-                        
-                        <!-- High -->
-                        <div class="confidence-level-card level-high">
-                            <div class="level-header-row">
-                                <span class="level-badge badge-high">High</span>
-                                <span class="level-subtitle">Strong supporting evidence</span>
-                            </div>
-                            <p class="level-description">
-                                AI has solid data points clearly indicating the recommendation.
-                            </p>
-                        </div>
-                        
-                        <!-- Medium -->
-                        <div class="confidence-level-card level-medium">
-                            <div class="level-header-row">
-                                <span class="level-badge badge-medium">Medium</span>
-                                <span class="level-subtitle">Some evidence, some gaps</span>
-                            </div>
-                            <p class="level-description">
-                                AI has partial data with some missing information or ambiguity.
-                            </p>
-                        </div>
-                        
-                        <!-- Low -->
-                        <div class="confidence-level-card level-low">
-                            <div class="level-header-row">
-                                <span class="level-badge badge-low">Low</span>
-                                <span class="level-subtitle">Insufficient data</span>
-                            </div>
-                            <p class="level-description">
-                                AI lacks enough information to make a confident assessment.
-                            </p>
-                        </div>
+                        <p class="slds-text-body_small slds-m-top_x-small">
+                            AI has comprehensive data supporting its analysis with no ambiguity.
+                        </p>
                     </div>
+                    
+                    <!-- High -->
+                    <div class="confidence-level-item">
+                        <div class="level-header">
+                            <span class="level-badge level-high">High</span>
+                            <span class="level-description">Strong supporting evidence</span>
+                        </div>
+                        <p class="slds-text-body_small slds-m-top_x-small">
+                            AI has solid data points clearly indicating the recommendation.
+                        </p>
+                    </div>
+                    
+                    <!-- Medium -->
+                    <div class="confidence-level-item">
+                        <div class="level-header">
+                            <span class="level-badge level-medium">Medium</span>
+                            <span class="level-description">Some evidence, some gaps</span>
+                        </div>
+                        <p class="slds-text-body_small slds-m-top_x-small">
+                            AI has partial data with some missing information or ambiguity.
+                        </p>
+                    </div>
+                    
+                    <!-- Low -->
+                    <div class="confidence-level-item">
+                        <div class="level-header">
+                            <span class="level-badge level-low">Low</span>
+                            <span class="level-description">Insufficient data</span>
+                        </div>
+                        <p class="slds-text-body_small slds-m-top_x-small">
+                            AI lacks enough information to make a confident assessment.
+                        </p>
+                    </div>
+                    
                 </div>
-                
-                <!-- Real Examples Section -->
-                <div class="examples-section">
-                    <h3 class="section-title">
-                        <lightning-icon icon-name="utility:rules" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                        Real-World Examples
-                    </h3>
-                    
-                    <!-- Example 1: Positive -->
-                    <div class="example-card example-positive">
-                        <div class="example-header">
-                            <lightning-icon icon-name="utility:success" size="x-small"></lightning-icon>
-                            <h4 class="example-title">High Confidence + STRONGLY RECOMMEND</h4>
-                        </div>
-                        <div class="example-content">
-                            <p class="example-scenario">
-                                <strong>Scenario:</strong> Candidate has all required certifications, exceeds experience requirements, 
-                                and has stellar credentials with clear documentation.
-                            </p>
-                            <p class="example-interpretation">
-                                <strong>Interpretation:</strong> The AI is <em>very certain</em> this candidate is an excellent fit.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Example 2: Negative -->
-                    <div class="example-card example-negative">
-                        <div class="example-header">
-                            <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
-                            <h4 class="example-title">High Confidence + STRONGLY NOT RECOMMEND</h4>
-                        </div>
-                        <div class="example-content">
-                            <p class="example-scenario">
-                                <strong>Scenario:</strong> Candidate is missing critical requirements (expired license, 
-                                wrong specialty, insufficient experience).
-                            </p>
-                            <p class="example-interpretation">
-                                <strong>Interpretation:</strong> The AI is <em>very certain</em> this candidate does not fit the role.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Example 3: Neutral -->
-                    <div class="example-card example-neutral">
-                        <div class="example-header">
-                            <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
-                            <h4 class="example-title">Low Confidence + NEUTRAL</h4>
-                        </div>
-                        <div class="example-content">
-                            <p class="example-scenario">
-                                <strong>Scenario:</strong> Incomplete profile data — missing education records, 
-                                unclear work experience, or limited certification details.
-                            </p>
-                            <p class="example-interpretation">
-                                <strong>Interpretation:</strong> The AI needs more information before making a strong recommendation.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
             </div>
+            
+            <!-- Footer -->
             <footer class="slds-modal__footer">
-                <lightning-button variant="brand" label="Got It" onclick={handleCloseConfidenceInfo}></lightning-button>
+                <lightning-button 
+                    variant="brand" 
+                    label="Got It" 
+                    onclick={handleCloseConfidenceInfo}>
+                </lightning-button>
             </footer>
         </div>
     </section>
-    <div class="slds-backdrop slds-backdrop_open"></div>
+    <div class="slds-backdrop slds-backdrop_open" onclick={handleCloseConfidenceInfo}></div>
 </template>
 </template>
