@@ -448,16 +448,78 @@ public static List<RuleWrapper> getRules() {
     
     // ==================== MANUAL OVERRIDE ====================
     
+    // @AuraEnabled
+    // public static void createManualOverride(Id candidateId, Id ruleId, String overrideReason, 
+    //                                        String newOutcome, String overrideType) {
+    //     if (String.isBlank(overrideReason)) {
+    //         throw new AuraHandledException('Override reason is required.');
+    //     }
+        
+    //     try {
+    //         Screening_Rule__c rule = [
+    //             SELECT Allow_Manual_Override__c, Override_Approval_Required__c, Override_Approver__c
+    //             FROM Screening_Rule__c 
+    //             WHERE Id = :ruleId 
+    //             LIMIT 1
+    //         ];
+            
+    //         if (!rule.Allow_Manual_Override__c) {
+    //             throw new AuraHandledException('This rule does not allow manual overrides.');
+    //         }
+            
+    //         List<Screening_Result__c> results = [
+    //             SELECT Id, Outcome__c
+    //             FROM Screening_Result__c
+    //             WHERE Candidate__c = :candidateId AND Screening_Rule__c = :ruleId
+    //             ORDER BY CreatedDate DESC
+    //             LIMIT 1
+    //         ];
+            
+    //         Screening_Override__c override1 = new Screening_Override__c();
+    //         override1.Candidate__c = candidateId;
+    //         override1.Screening_Rule__c = ruleId;
+    //         override1.Screening_Result__c = !results.isEmpty() ? results[0].Id : null;
+    //         override1.Original_Outcome__c = !results.isEmpty() ? results[0].Outcome__c : null;
+    //         override1.New_Outcome__c = newOutcome;
+    //         override1.Override_Reason__c = overrideReason;
+    //         override1.Override_Type__c = overrideType;
+    //         override1.Override_By__c = UserInfo.getUserId();
+    //         override1.Override_Date__c = System.now();
+    //         override1.Approval_Status__c = rule.Override_Approval_Required__c ? 'Pending' : 'Approved';
+            
+    //         insert override1;
+            
+    //         if (!rule.Override_Approval_Required__c) {
+    //             ScreeningOverrideHandler.applyOverride(override1.Id);
+    //         }
+    //     } catch (Exception e) {
+    //         throw new AuraHandledException('Error creating override: ' + e.getMessage());
+    //     }
+    // }
+
+ // ==================== MANUAL OVERRIDE WITH APPROVAL ====================
+
     @AuraEnabled
-    public static void createManualOverride(Id candidateId, Id ruleId, String overrideReason, 
-                                           String newOutcome, String overrideType) {
+    public static Map<String, Object> createManualOverride(
+        Id candidateId, 
+        Id ruleId, 
+        String overrideReason, 
+        String newOutcome, 
+        String overrideType
+    ) {
         if (String.isBlank(overrideReason)) {
             throw new AuraHandledException('Override reason is required.');
         }
         
         try {
+            // Get rule details
             Screening_Rule__c rule = [
-                SELECT Allow_Manual_Override__c, Override_Approval_Required__c, Override_Approver__c
+                SELECT Allow_Manual_Override__c, 
+                       Override_Approval_Required__c, 
+                       Override_Approver__c,
+                       Override_Approver__r.Email,
+                       Override_Approver__r.Name,
+                       Name
                 FROM Screening_Rule__c 
                 WHERE Id = :ruleId 
                 LIMIT 1
@@ -467,14 +529,17 @@ public static List<RuleWrapper> getRules() {
                 throw new AuraHandledException('This rule does not allow manual overrides.');
             }
             
+            // Get latest screening result
             List<Screening_Result__c> results = [
                 SELECT Id, Outcome__c
                 FROM Screening_Result__c
-                WHERE Candidate__c = :candidateId AND Screening_Rule__c = :ruleId
+                WHERE Candidate__c = :candidateId 
+                AND Screening_Rule__c = :ruleId
                 ORDER BY CreatedDate DESC
                 LIMIT 1
             ];
             
+            // Create override record
             Screening_Override__c override1 = new Screening_Override__c();
             override1.Candidate__c = candidateId;
             override1.Screening_Rule__c = ruleId;
@@ -485,15 +550,125 @@ public static List<RuleWrapper> getRules() {
             override1.Override_Type__c = overrideType;
             override1.Override_By__c = UserInfo.getUserId();
             override1.Override_Date__c = System.now();
-            override1.Approval_Status__c = rule.Override_Approval_Required__c ? 'Pending' : 'Approved';
+            
+            // 🔥 NEW: Set approval status based on rule configuration
+            if (rule.Override_Approval_Required__c) {
+                override1.Approval_Status__c = 'Pending';
+            } else {
+                override1.Approval_Status__c = 'Approved';
+            }
             
             insert override1;
             
+            // 🔥 NEW: Send approval email if required
+            Boolean emailSent = false;
+            if (rule.Override_Approval_Required__c && rule.Override_Approver__c != null) {
+                try {
+                    emailSent = sendApprovalEmail(override1.Id, rule);
+                } catch (Exception emailError) {
+                    System.debug('Email send failed: ' + emailError.getMessage());
+                    // Don't fail the override creation if email fails
+                }
+            }
+            
+            // Apply override immediately if no approval required
             if (!rule.Override_Approval_Required__c) {
                 ScreeningOverrideHandler.applyOverride(override1.Id);
             }
+            
+            // Return result with email status
+            return new Map<String, Object>{
+                'success' => true,
+                'overrideId' => override1.Id,
+                'approvalRequired' => rule.Override_Approval_Required__c,
+                'emailSent' => emailSent,
+                'approverName' => rule.Override_Approver__c != null ? rule.Override_Approver__r.Name : null
+            };
+            
         } catch (Exception e) {
+            System.debug('ERROR in createManualOverride: ' + e.getMessage());
+            System.debug('Stack trace: ' + e.getStackTraceString());
             throw new AuraHandledException('Error creating override: ' + e.getMessage());
+        }
+    }
+    
+    // 🔥 NEW: Send approval email to manager
+    private static Boolean sendApprovalEmail(Id overrideId, Screening_Rule__c rule) {
+        if (rule.Override_Approver__c == null) {
+            System.debug('No approver configured for rule: ' + rule.Name);
+            return false;
+        }
+        
+        try {
+            // Get override details with candidate info
+            Screening_Override__c override1 = [
+                SELECT Id, Candidate__r.Name, Screening_Rule__r.Name,
+                       Original_Outcome__c, New_Outcome__c, Override_Reason__c,
+                       Override_Type__c, Override_By__r.Name, Override_Date__c
+                FROM Screening_Override__c
+                WHERE Id = :overrideId
+                LIMIT 1
+            ];
+            
+            // Get Salesforce base URL
+          //  String baseUrl = URL.getSalesforceBaseUrl().toExternalForm();
+          String baseUrl = URL.getOrgDomainUrl().toExternalForm();
+          String overrideUrl = baseUrl + '/' + override1.Id;
+
+            
+            // Create email
+            Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
+            
+            // Set recipient
+            email.setTargetObjectId(rule.Override_Approver__c);
+            email.setSaveAsActivity(false);
+            
+            // Set subject
+            email.setSubject('Approval Required: Screening Override for ' + override1.Candidate__r.Name);
+            
+            // Create HTML body
+            String htmlBody = '<html><body style="font-family: Arial, sans-serif;">';
+            htmlBody += '<h2 style="color: #0176d3;">Screening Override Approval Request</h2>';
+            htmlBody += '<p>A manual override has been requested for a candidate screening result and requires your approval.</p>';
+            
+            htmlBody += '<table border="1" cellpadding="10" style="border-collapse: collapse; margin: 20px 0; width: 100%; max-width: 600px;">';
+            htmlBody += '<tr><td style="background-color: #f3f4f6;"><strong>Candidate Name:</strong></td><td>' + override1.Candidate__r.Name + '</td></tr>';
+            htmlBody += '<tr><td style="background-color: #f3f4f6;"><strong>Rule Name:</strong></td><td>' + override1.Screening_Rule__r.Name + '</td></tr>';
+            htmlBody += '<tr><td style="background-color: #f3f4f6;"><strong>Original Outcome:</strong></td><td><span style="padding: 4px 8px; border-radius: 3px; background-color: #fee2e2; color: #991b1b;">' + override1.Original_Outcome__c + '</span></td></tr>';
+            htmlBody += '<tr><td style="background-color: #f3f4f6;"><strong>New Outcome:</strong></td><td><span style="padding: 4px 8px; border-radius: 3px; background-color: #d1fae5; color: #065f46;">' + override1.New_Outcome__c + '</span></td></tr>';
+            htmlBody += '<tr><td style="background-color: #f3f4f6;"><strong>Override Type:</strong></td><td>' + override1.Override_Type__c + '</td></tr>';
+            htmlBody += '<tr><td style="background-color: #f3f4f6;"><strong>Reason:</strong></td><td>' + override1.Override_Reason__c + '</td></tr>';
+            htmlBody += '<tr><td style="background-color: #f3f4f6;"><strong>Requested By:</strong></td><td>' + override1.Override_By__r.Name + '</td></tr>';
+            htmlBody += '<tr><td style="background-color: #f3f4f6;"><strong>Request Date:</strong></td><td>' + override1.Override_Date__c.format() + '</td></tr>';
+            htmlBody += '</table>';
+            
+            htmlBody += '<p><strong style="color: #d97706;">Action Required:</strong> Please review and approve or reject this override request.</p>';
+            
+            htmlBody += '<p style="margin: 20px 0;">';
+            htmlBody += '<a href="' + overrideUrl + '" style="background-color: #0176d3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Review Override Request</a>';
+            htmlBody += '</p>';
+            
+            htmlBody += '<hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">';
+            htmlBody += '<p style="color: #6b7280; font-size: 12px;">This is an automated notification from the Candidate Screening System. To approve or reject this override, click the link above or navigate to the record in Salesforce.</p>';
+            htmlBody += '</body></html>';
+            
+            email.setHtmlBody(htmlBody);
+            
+            // Send email
+            Messaging.SendEmailResult[] results = Messaging.sendEmail(new Messaging.SingleEmailMessage[] { email });
+            
+            if (results[0].isSuccess()) {
+                System.debug('✅ Approval email sent successfully to: ' + rule.Override_Approver__r.Email);
+                return true;
+            } else {
+                System.debug('❌ Email send failed: ' + results[0].getErrors()[0].getMessage());
+                return false;
+            }
+            
+        } catch (Exception e) {
+            System.debug('ERROR sending approval email: ' + e.getMessage());
+            System.debug('Stack trace: ' + e.getStackTraceString());
+            return false;
         }
     }
     

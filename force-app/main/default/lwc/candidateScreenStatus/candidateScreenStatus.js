@@ -334,7 +334,8 @@
 //         return 'An unknown error occurred';
 //     }
 // }
-// candidateScreenStatus.js - WITH MANUAL OVERRIDE FUNCTIONALITY
+// candidateScreenStatus.js - WITH APPROVAL EMAIL LOGIC
+
 import { LightningElement, api, wire, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
@@ -347,7 +348,7 @@ import rerunScreening from '@salesforce/apex/CandidateStatusController.rerunScre
 import runAIScreeningForCandidate from '@salesforce/apex/AIScreeningController.runAIScreeningForCandidate';
 import getLatestAIResult from '@salesforce/apex/AIScreeningController.getLatestAIResult';
 
-// 🔥 NEW: Manual Override imports
+// Manual Override
 import createManualOverride from '@salesforce/apex/ScreeningController.createManualOverride';
 import getOverridesForCandidate from '@salesforce/apex/ScreeningController.getOverridesForCandidate';
 
@@ -385,7 +386,7 @@ export default class CandidateScreenStatus extends LightningElement {
     
     @track showConfidenceModal = false;
     
-    // 🔥 NEW: Manual Override data
+    // Manual Override data
     @track showOverrideModal = false;
     @track isSubmittingOverride = false;
     @track overrideableRules = [];
@@ -399,7 +400,7 @@ export default class CandidateScreenStatus extends LightningElement {
     
     _wiredStatusResult;
     _wiredAIResult;
-    _allScreeningResults = []; // Store ALL results for override processing
+    _allScreeningResults = [];
 
     // Wire traditional screening data
     @wire(getCandidateStatus, { candidateId: '$recordId' })
@@ -418,14 +419,12 @@ export default class CandidateScreenStatus extends LightningElement {
             this.rulesReview = data.rulesReview || 0;
             this.lastScreeningDate = data.lastScreeningDate;
             
-            // Calculate traditional score
             if (this.totalRules > 0) {
                 this.traditionalScore = Math.round((this.rulesPassed / this.totalRules) * 100);
             }
             
-            // Process rule results
             if (data.results) {
-                this._allScreeningResults = data.results; // Store for override processing
+                this._allScreeningResults = data.results;
                 
                 this.ruleResults = data.results.map(res => {
                     let rowClass = '';
@@ -468,11 +467,9 @@ export default class CandidateScreenStatus extends LightningElement {
                     };
                 });
                 
-                // 🔥 NEW: Process overrideable rules
                 this.processOverrideableRules(data.results);
             }
             
-            // Routing info
             if (data.routingInfo) {
                 this.routingInfo = {
                     path: data.routingInfo.journeyPath,
@@ -484,7 +481,6 @@ export default class CandidateScreenStatus extends LightningElement {
             this.dataLoaded = true;
             this.error = undefined;
             
-            // Load existing overrides
             this.loadExistingOverrides();
             
         } else if (result.error) {
@@ -507,7 +503,6 @@ export default class CandidateScreenStatus extends LightningElement {
         }
     }
 
-    // 🔥 NEW: Load existing overrides
     async loadExistingOverrides() {
         try {
             const overrides = await getOverridesForCandidate({ candidateId: this.recordId });
@@ -532,44 +527,37 @@ export default class CandidateScreenStatus extends LightningElement {
         }
     }
 
-   
-processOverrideableRules(results) {
-    // Filter rules that:
-    // 1. Are Fail or Review
-    // 2. Have Allow_Manual_Override__c = true
-    // 3. Have not already been overridden
-    
-    this.overrideableRules = results
-        .filter(res => {
-            // ✅ CRITICAL FIX: Check if rule allows manual override
-            return (res.outcome === 'Fail' || res.outcome === 'Review') 
-                   && res.allowManualOverride === true  // ✅ NEW CONDITION
-                   && !res.overrideApplied;  // Don't show already overridden rules
-        })
-        .map(res => {
-            const cardClass = res.outcome === 'Fail' 
-                ? 'override-card override-card-fail' 
-                : 'override-card override-card-review';
-            
-            return {
-                resultId: res.resultId || null,
-                ruleId: res.ruleId || null,
-                ruleName: res.ruleName,
-                category: res.ruleCategory,
-                outcome: res.outcome,
-                details: res.details,
-                outcomeClass: this.getOutcomeBadgeClass(res.outcome),
-                cardClass: cardClass,
-                buttonLabel: 'Override Result',
-                alreadyOverridden: false,
-                allowManualOverride: res.allowManualOverride, // Store for reference
-                _rawData: res
-            };
-        });
-    
-    console.log('Overrideable rules (Allow_Manual_Override__c = true):', this.overrideableRules.length);
-}
-    // Process AI data
+    processOverrideableRules(results) {
+        this.overrideableRules = results
+            .filter(res => {
+                return (res.outcome === 'Fail' || res.outcome === 'Review') 
+                       && res.allowManualOverride === true
+                       && !res.overrideApplied;
+            })
+            .map(res => {
+                const cardClass = res.outcome === 'Fail' 
+                    ? 'override-card override-card-fail' 
+                    : 'override-card override-card-review';
+                
+                return {
+                    resultId: res.resultId || null,
+                    ruleId: res.ruleId || null,
+                    ruleName: res.ruleName,
+                    category: res.ruleCategory,
+                    outcome: res.outcome,
+                    details: res.details,
+                    outcomeClass: this.getOutcomeBadgeClass(res.outcome),
+                    cardClass: cardClass,
+                    buttonLabel: 'Override Result',
+                    alreadyOverridden: false,
+                    allowManualOverride: res.allowManualOverride,
+                    _rawData: res
+                };
+            });
+        
+        console.log('Overrideable rules (Allow_Manual_Override__c = true):', this.overrideableRules.length);
+    }
+
     processAIData(data) {
         this.aiScore = Math.round(data.Overall_Score__c || 0);
         this.aiRecommendation = data.Recommendation__c || '';
@@ -592,7 +580,6 @@ processOverrideableRules(results) {
         }
     }
 
-    // Run traditional screening
     async handleRerun() {
         this.isRunning = true;
         this.showToast('In Progress', 'Re-running screening...', 'info');
@@ -609,7 +596,6 @@ processOverrideableRules(results) {
         }
     }
 
-    // Run AI screening
     async handleRunAIScreening() {
         this.isAIRunning = true;
         this.showToast('AI Analysis', 'Running AI-powered screening...', 'info');
@@ -637,7 +623,6 @@ processOverrideableRules(results) {
         }
     }
 
-    // Refresh all data
     async handleRefresh() {
         try {
             await Promise.all([
@@ -650,12 +635,10 @@ processOverrideableRules(results) {
         }
     }
 
-    // Tab change handler
     handleTabChange(event) {
         this.activeTab = event.target.value;
     }
     
-    // 🔥 NEW: Override Modal Handlers
     handleOpenOverrideModal(event) {
         const resultId = event.currentTarget.dataset.resultId;
         const ruleId = event.currentTarget.dataset.ruleId;
@@ -672,7 +655,6 @@ processOverrideableRules(results) {
             currentOutcomeClass: this.getOutcomeBadgeClass(outcome)
         };
         
-        // Reset form
         this.overrideForm = {
             newOutcome: '',
             overrideType: '',
@@ -698,6 +680,7 @@ processOverrideableRules(results) {
         this.overrideForm = { ...this.overrideForm, [field]: value };
     }
     
+    // 🔥 UPDATED: Handle submit with approval email notification
     async handleSubmitOverride() {
         // Validation
         if (!this.overrideForm.newOutcome || !this.overrideForm.overrideType || !this.overrideForm.overrideReason) {
@@ -710,7 +693,6 @@ processOverrideableRules(results) {
             return;
         }
         
-        // Validate that we have a valid rule ID
         if (!this.selectedOverrideRule.ruleId) {
             this.showToast('Error', 'Invalid rule ID. Please refresh and try again.', 'error');
             console.error('Missing ruleId:', this.selectedOverrideRule);
@@ -728,7 +710,8 @@ processOverrideableRules(results) {
                 overrideType: this.overrideForm.overrideType
             });
             
-            await createManualOverride({
+            // 🔥 UPDATED: Receive response with approval info
+            const response = await createManualOverride({
                 candidateId: this.recordId,
                 ruleId: this.selectedOverrideRule.ruleId,
                 overrideReason: this.overrideForm.overrideReason,
@@ -736,7 +719,25 @@ processOverrideableRules(results) {
                 overrideType: this.overrideForm.overrideType
             });
             
-            this.showToast('Success', 'Override submitted successfully', 'success');
+            // 🔥 NEW: Show appropriate success message based on approval requirement
+            if (response.approvalRequired) {
+                if (response.emailSent) {
+                    this.showToast(
+                        'Approval Required', 
+                        `Override submitted successfully. Approval email sent to ${response.approverName || 'manager'}.`, 
+                        'warning'
+                    );
+                } else {
+                    this.showToast(
+                        'Approval Required', 
+                        'Override submitted successfully and is pending approval. Note: Email notification could not be sent.', 
+                        'warning'
+                    );
+                }
+            } else {
+                this.showToast('Success', 'Override applied successfully', 'success');
+            }
+            
             this.handleCloseOverrideModal();
             
             // Refresh data
@@ -752,7 +753,6 @@ processOverrideableRules(results) {
         }
     }
     
-    // Confidence info modal handlers
     handleShowConfidenceInfo(event) {
         event.preventDefault();
         this.showConfidenceModal = true;
@@ -787,7 +787,6 @@ processOverrideableRules(results) {
         return this.routingInfo ? this.routingInfo.level : '';
     }
     
-    // 🔥 NEW: Override computed properties
     get hasOverrideableRules() {
         return this.overrideableRules && this.overrideableRules.length > 0;
     }
@@ -800,7 +799,6 @@ processOverrideableRules(results) {
         return this.existingOverrides && this.existingOverrides.length > 0;
     }
     
-    // 🔥 NEW: Override picklist options
     get outcomeOptions() {
         return [
             { label: 'Pass', value: 'Pass' },
@@ -824,55 +822,53 @@ processOverrideableRules(results) {
         if (this.traditionalScore >= 40) return 'slds-badge slds-theme_warning score-badge-fair';
         return 'slds-badge slds-theme_error score-badge-poor';
     }
-
     get aiRecommendationBadgeClass() {
-        const rec = this.aiRecommendation;
-        if (rec === 'STRONGLY_RECOMMEND') return 'slds-badge ai-badge-strong-recommend';
-        if (rec === 'RECOMMEND') return 'slds-badge ai-badge-recommend';
-        if (rec === 'NEUTRAL') return 'slds-badge ai-badge-neutral';
-        if (rec === 'NOT_RECOMMEND') return 'slds-badge ai-badge-not-recommend';
-        if (rec === 'STRONGLY_NOT_RECOMMEND') return 'slds-badge ai-badge-reject';
-        return 'slds-badge';
-    }
+    const rec = this.aiRecommendation;
+    if (rec === 'STRONGLY_RECOMMEND') return 'slds-badge ai-badge-strong-recommend';
+    if (rec === 'RECOMMEND') return 'slds-badge ai-badge-recommend';
+    if (rec === 'NEUTRAL') return 'slds-badge ai-badge-neutral';
+    if (rec === 'NOT_RECOMMEND') return 'slds-badge ai-badge-not-recommend';
+    if (rec === 'STRONGLY_NOT_RECOMMEND') return 'slds-badge ai-badge-reject';
+    return 'slds-badge';
+}
 
-    get aiRecommendationLabel() {
-        const labels = {
-            'STRONGLY_RECOMMEND': 'STRONG RECOMMEND',
-            'RECOMMEND': 'RECOMMEND',
-            'NEUTRAL': 'NEUTRAL',
-            'NOT_RECOMMEND': 'NOT RECOMMEND',
-            'STRONGLY_NOT_RECOMMEND': 'STRONGLY NOT RECOMMEND'
-        };
-        return labels[this.aiRecommendation] || this.aiRecommendation;
-    }
-    
-    // Helper methods
-    getOutcomeBadgeClass(outcome) {
-        const classes = {
-            'Pass': 'outcome-badge outcome-badge-pass',
-            'Fail': 'outcome-badge outcome-badge-fail',
-            'Review': 'outcome-badge outcome-badge-review'
-        };
-        return classes[outcome] || 'slds-badge';
-    }
-    
-    getApprovalStatusClass(status) {
-        const classes = {
-            'Pending': 'slds-badge slds-theme_warning',
-            'Approved': 'slds-badge slds-theme_success',
-            'Rejected': 'slds-badge slds-theme_error'
-        };
-        return classes[status] || 'slds-badge';
-    }
+get aiRecommendationLabel() {
+    const labels = {
+        'STRONGLY_RECOMMEND': 'STRONG RECOMMEND',
+        'RECOMMEND': 'RECOMMEND',
+        'NEUTRAL': 'NEUTRAL',
+        'NOT_RECOMMEND': 'NOT RECOMMEND',
+        'STRONGLY_NOT_RECOMMEND': 'STRONGLY NOT RECOMMEND'
+    };
+    return labels[this.aiRecommendation] || this.aiRecommendation;
+}
 
-    showToast(title, message, variant) {
-        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
-    }
+getOutcomeBadgeClass(outcome) {
+    const classes = {
+        'Pass': 'outcome-badge outcome-badge-pass',
+        'Fail': 'outcome-badge outcome-badge-fail',
+        'Review': 'outcome-badge outcome-badge-review'
+    };
+    return classes[outcome] || 'slds-badge';
+}
 
-    extractError(error) {
-        if (error && error.body && error.body.message) {
-            return error.body.message;
-        }
-        return 'An unknown error occurred';
+getApprovalStatusClass(status) {
+    const classes = {
+        'Pending': 'slds-badge slds-theme_warning',
+        'Approved': 'slds-badge slds-theme_success',
+        'Rejected': 'slds-badge slds-theme_error'
+    };
+    return classes[status] || 'slds-badge';
+}
+
+showToast(title, message, variant) {
+    this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+}
+
+extractError(error) {
+    if (error && error.body && error.body.message) {
+        return error.body.message;
     }
+    return 'An unknown error occurred';
+}
 }

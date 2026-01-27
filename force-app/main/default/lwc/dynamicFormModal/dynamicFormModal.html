@@ -1,9 +1,9 @@
-<!-- dynamicFormModal.html -->
+<!-- dynamicFormModal.html
 <template>
     <template if:true={isOpen}>
         <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open" aria-modal="true">
             <div class="slds-modal__container" style="max-width: 600px;">
-                <!-- Modal Header -->
+                // Modal Header 
                 <header class="slds-modal__header slds-theme_shade" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
                     <lightning-button-icon
                         icon-name="utility:close"
@@ -19,7 +19,7 @@
                     </h2>
                 </header>
 
-                <!-- Modal Body -->
+                // Modal Body 
                 <div class="slds-modal__content slds-p-around_medium" style="min-height: 300px; max-height: 70vh; overflow-y: auto; overflow-x: visible;">
                     <template if:true={isLoading}>
                         <div class="slds-align_absolute-center slds-p-vertical_xx-large">
@@ -30,7 +30,7 @@
 
                     <template if:false={isLoading}>
                         <div class="form-container">
-                            <!-- Work Experience Fields -->
+                            // Work Experience Fields 
                             <template if:true={isWorkExperience}>
                                 <div class="slds-form" role="list">
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
@@ -103,7 +103,7 @@
                                 </div>
                             </template>
 
-                            <!-- Education Fields -->
+                            // Education Fields 
                             <template if:true={isEducation}>
                                 <div class="slds-form" role="list">
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
@@ -175,7 +175,7 @@
                                 </div>
                             </template>
 
-                            <!-- License/Certification Fields -->
+                            // License/Certification Fields 
                             <template if:true={isLicense}>
                                 <div class="slds-form" role="list">
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
@@ -248,7 +248,7 @@
                                 </div>
                             </template>
 
-                            <!-- Clinical Skill Fields -->
+                            // Clinical Skill Fields
                             <template if:true={isClinicalSkill}>
                                 <div class="slds-form" role="list">
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
@@ -298,7 +298,7 @@
                                 </div>
                             </template>
 
-                            <!-- Technical Skill Fields -->
+                          // Technical Skill Fields 
                             <template if:true={isTechnicalSkill}>
                                 <div class="slds-form" role="list">
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
@@ -348,7 +348,7 @@
                                 </div>
                             </template>
 
-                            <!-- Procedure Fields -->
+                           // Procedure Fields 
                             <template if:true={isProcedure}>
                                 <div class="slds-form" role="list">
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
@@ -398,7 +398,7 @@
                                 </div>
                             </template>
 
-                            <!-- Internship Fields -->
+                           // Internship Fields
                             <template if:true={isInternship}>
                                 <div class="slds-form" role="list">
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
@@ -440,7 +440,7 @@
                                 </div>
                             </template>
 
-                            <!-- Research/Publication Fields -->
+                            // Research/Publication Fields
                             <template if:true={isResearch}>
                                 <div class="slds-form" role="list">
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
@@ -501,7 +501,7 @@
                                 </div>
                             </template>
 
-                            <!-- Membership Fields -->
+                            // Membership Fields 
                             <template if:true={isMembership}>
                                 <div class="slds-form" role="list">
                                     <div class="slds-form__item slds-m-bottom_medium" role="listitem">
@@ -552,7 +552,7 @@
                             </template>
                         </div>
 
-                        <!-- Error Message -->
+                       // Error Message 
                         <template if:true={errorMessage}>
                             <div class="slds-m-top_medium">
                                 <div class="slds-notify slds-notify_alert slds-theme_error" role="alert" style="animation: slideIn 0.3s ease-out;">
@@ -565,7 +565,7 @@
                     </template>
                 </div>
 
-                <!-- Modal Footer -->
+                // Modal Footer 
                 <footer class="slds-modal__footer slds-theme_shade">
                     <lightning-button
                         label="Cancel"
@@ -584,5 +584,231 @@
             </div>
         </section>
         <div class="slds-backdrop slds-backdrop_open" style="animation: fadeIn 0.3s ease-out;"></div>
+    </template>
+</template> -->
+
+<template>
+    <template if:true={isOpen}>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+            <div class="slds-modal__container">
+                <!-- Header -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                            title="Close" 
+                            onclick={handleClose}>
+                        <lightning-icon icon-name="utility:close" size="small" alternative-text="Close"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">{modalTitle}</h2>
+                </header>
+
+                <!-- Body -->
+                <div class="slds-modal__content slds-p-around_medium">
+                    <template if:true={isLoading}>
+                        <div class="slds-align_absolute-center slds-p-vertical_large">
+                            <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template if:false={isLoading}>
+                        <lightning-record-edit-form
+                            record-id={recordId}
+                            object-api-name={objectApiName}
+                            onsuccess={handleSuccess}
+                            onerror={handleError}
+                        >
+                            <lightning-messages></lightning-messages>
+                            
+                            <!-- Work Experience Fields -->
+                            <template if:true={isWorkExperience}>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Role__c" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Organization__c" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input-field field-name="Start_Date__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input-field field-name="End_Date__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Is_Current__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Responsibilities__c"></lightning-input-field>
+                                    </div>
+                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                </div>
+                            </template>
+
+                            <!-- Education Fields -->
+                            <template if:true={isEducation}>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Institution__c" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Degree__c" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input-field field-name="Start_Year__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input-field field-name="End_Year__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Details__c"></lightning-input-field>
+                                    </div>
+                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                </div>
+                            </template>
+
+                            <!-- License Fields -->
+                            <template if:true={isLicense}>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Name" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Type__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input-field field-name="Issue_Date__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input-field field-name="Expiry_Date__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Notes__c"></lightning-input-field>
+                                    </div>
+                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                </div>
+                            </template>
+
+                            <!-- Clinical Skill Fields -->
+                            <template if:true={isClinicalSkill}>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Name" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Skill_Type__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Description__c"></lightning-input-field>
+                                    </div>
+                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                </div>
+                            </template>
+
+                            <!-- Technical Skill Fields -->
+                            <template if:true={isTechnicalSkill}>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Name" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Category__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Description__c"></lightning-input-field>
+                                    </div>
+                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                </div>
+                            </template>
+
+                            <!-- Procedure Fields -->
+                            <template if:true={isProcedure}>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Name" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Category__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Notes__c"></lightning-input-field>
+                                    </div>
+                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                </div>
+                            </template>
+
+                            <!-- Internship Fields -->
+                            <template if:true={isInternship}>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Organization__c" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input-field field-name="Start_Date__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input-field field-name="End_Date__c"></lightning-input-field>
+                                    </div>
+                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                </div>
+                            </template>
+
+                            <!-- Research Fields -->
+                            <template if:true={isResearch}>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Title__c" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Type__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Publication_Date__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Description__c"></lightning-input-field>
+                                    </div>
+                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                </div>
+                            </template>
+
+                            <!-- Membership Fields -->
+                            <template if:true={isMembership}>
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Organization_Name__c" required></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Membership_Type__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Member_Id__c"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning-input-field field-name="Member_Since__c"></lightning-input-field>
+                                    </div>
+                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                </div>
+                            </template>
+
+                            <div class="slds-m-top_medium">
+                                <lightning-button 
+                                    variant="neutral" 
+                                    label="Cancel" 
+                                    onclick={handleClose}
+                                    class="slds-m-right_small">
+                                </lightning-button>
+                                <lightning-button 
+                                    variant="brand" 
+                                    type="submit" 
+                                    label="Save">
+                                </lightning-button>
+                            </div>
+                        </lightning-record-edit-form>
+                    </template>
+                </div>
+            </div>
+        </section>
     </template>
 </template>

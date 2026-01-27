@@ -1,4 +1,4 @@
-public with sharing class CandidateProfileController {
+public without sharing class CandidateProfileController {
     
     // DTO for returning profile data
     public class ProfileDataDto {
@@ -414,4 +414,167 @@ public with sharing class CandidateProfileController {
         
         return null;
     }
+
+/**
+ * Get resume information for a candidate
+ 
+@AuraEnabled(cacheable=false)  // Changed from cacheable=true to false to always get fresh data
+public static Map<String, Object> getCandidateResumeInfo(Id candidateId) {
+    Map<String, Object> result = new Map<String, Object>();
+    
+    try {
+        System.debug('=== getCandidateResumeInfo called ===');
+        System.debug('Candidate ID: ' + candidateId);
+        
+        // Query candidate with resume fields
+        List<Candidate__c> candidates = [
+            SELECT Id, S3_Resume_URL__c, Resume_Status__c, Resume_parsing_using_ai__c,
+                   LastModifiedDate
+            FROM Candidate__c
+            WHERE Id = :candidateId
+            LIMIT 1
+        ];
+        
+        if (candidates.isEmpty()) {
+            System.debug('No candidate found');
+            result.put('hasResume', false);
+            result.put('useAiParsing', false);
+            return result;
+        }
+        
+        Candidate__c candidate = candidates[0];
+        System.debug('Candidate found: ' + candidate.Name);
+        System.debug('Resume_parsing_using_ai__c: ' + candidate.Resume_parsing_using_ai__c);
+        
+        // Check if resume exists
+        List<ContentDocumentLink> cdls = [
+            SELECT ContentDocument.LatestPublishedVersionId, 
+                   ContentDocument.Title,
+                   ContentDocument.FileExtension,
+                   ContentDocument.CreatedDate
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :candidateId
+            ORDER BY ContentDocument.CreatedDate DESC
+            LIMIT 1
+        ];
+        
+        if (cdls.isEmpty()) {
+            System.debug('No resume file found');
+            result.put('hasResume', false);
+            result.put('useAiParsing', candidate.Resume_parsing_using_ai__c != null ? candidate.Resume_parsing_using_ai__c : false);
+        } else {
+            ContentDocumentLink cdl = cdls[0];
+            System.debug('Resume file found: ' + cdl.ContentDocument.Title);
+            result.put('hasResume', true);
+            result.put('fileName', cdl.ContentDocument.Title + '.' + cdl.ContentDocument.FileExtension);
+            result.put('uploadDate', cdl.ContentDocument.CreatedDate.format('MMM dd, yyyy'));
+            result.put('s3Url', candidate.S3_Resume_URL__c);
+            result.put('useAiParsing', candidate.Resume_parsing_using_ai__c != null ? candidate.Resume_parsing_using_ai__c : false);
+        }
+        
+        System.debug('Returning result: ' + result);
+        return result;
+        
+    } catch (Exception e) {
+        System.debug('Error in getCandidateResumeInfo: ' + e.getMessage());
+        System.debug('Stack trace: ' + e.getStackTraceString());
+        throw new AuraHandledException('Error fetching resume info: ' + e.getMessage());
+    }
+}*/
+/**
+ * Get resume information for a candidate
+ * IMPORTANT: cacheable=false to always get fresh checkbox state
+ */
+@AuraEnabled(cacheable=false)
+public static Map<String, Object> getCandidateResumeInfo(Id candidateId) {
+    Map<String, Object> result = new Map<String, Object>();
+    
+    try {
+        System.debug('=== getCandidateResumeInfo called ===');
+        System.debug('Candidate ID: ' + candidateId);
+        
+        // Query candidate with resume fields
+        List<Candidate__c> candidates = [
+            SELECT Id, Name, S3_Resume_URL__c, Resume_Status__c, 
+                   Resume_parsing_using_ai__c, LastModifiedDate
+            FROM Candidate__c
+            WHERE Id = :candidateId
+            LIMIT 1
+        ];
+        
+        if (candidates.isEmpty()) {
+            System.debug('❌ No candidate found');
+            result.put('hasResume', false);
+            result.put('useAiParsing', false);
+            return result;
+        }
+        
+        Candidate__c candidate = candidates[0];
+        System.debug('✅ Candidate found: ' + candidate.Name);
+        System.debug('Resume_parsing_using_ai__c value: ' + candidate.Resume_parsing_using_ai__c);
+        
+        // Check if resume file exists
+        List<ContentDocumentLink> cdls = [
+            SELECT ContentDocument.LatestPublishedVersionId, 
+                   ContentDocument.Title,
+                   ContentDocument.FileExtension,
+                   ContentDocument.CreatedDate
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :candidateId
+            AND ContentDocument.FileExtension IN ('pdf', 'doc', 'docx')
+            ORDER BY ContentDocument.CreatedDate DESC
+            LIMIT 1
+        ];
+        
+        if (cdls.isEmpty()) {
+            System.debug('No resume file found');
+            result.put('hasResume', false);
+        } else {
+            ContentDocumentLink cdl = cdls[0];
+            System.debug('Resume file found: ' + cdl.ContentDocument.Title);
+            result.put('hasResume', true);
+            result.put('fileName', cdl.ContentDocument.Title + '.' + cdl.ContentDocument.FileExtension);
+            result.put('uploadDate', cdl.ContentDocument.CreatedDate.format('MMM dd, yyyy'));
+            result.put('s3Url', candidate.S3_Resume_URL__c);
+        }
+        
+        // CRITICAL: Explicitly set boolean value (not null)
+        Boolean aiParsingEnabled = candidate.Resume_parsing_using_ai__c == true;
+        result.put('useAiParsing', aiParsingEnabled);
+        
+        System.debug('✅ useAiParsing returned: ' + aiParsingEnabled);
+        System.debug('Full result map: ' + result);
+        
+        return result;
+        
+    } catch (Exception e) {
+        System.debug('❌ Error in getCandidateResumeInfo: ' + e.getMessage());
+        System.debug('Stack trace: ' + e.getStackTraceString());
+        throw new AuraHandledException('Error fetching resume info: ' + e.getMessage());
+    }
+}
+@AuraEnabled
+public static void uploadResumeFile(Id candidateId, String fileName, String base64Data) {
+    System.debug('=== uploadResumeFile Called ===');
+    System.debug('Candidate ID: ' + candidateId);
+    System.debug('File Name: ' + fileName);
+    
+    try {
+        // Create ContentVersion
+        ContentVersion cv = new ContentVersion();
+        cv.Title = fileName;
+        cv.PathOnClient = fileName;
+        cv.VersionData = EncodingUtil.base64Decode(base64Data);
+        cv.FirstPublishLocationId = candidateId;
+        cv.IsMajorVersion = true;
+        
+        insert cv;
+        
+        System.debug('✅ ContentVersion created: ' + cv.Id);
+        
+    } catch (Exception e) {
+        System.debug('❌ Error: ' + e.getMessage());
+        throw new AuraHandledException('Upload failed: ' + e.getMessage());
+    }
+}
 }

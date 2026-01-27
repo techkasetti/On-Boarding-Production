@@ -1,6 +1,6 @@
-/* dynamicFormModal.css */
+/* dynamicFormModal.css
 
-/* ========== Modal Animations ========== */
+/* ========== Modal Animations ========== 
 .slds-modal {
     animation: modalFadeIn 0.3s ease-out;
 }
@@ -13,7 +13,7 @@
     animation: backdropFadeIn 0.3s ease-out;
 }
 
-/* ========== Modal Header Styles ========== */
+/* ========== Modal Header Styles ========== 
 .slds-modal__header {
     position: relative;
     overflow: hidden;
@@ -29,20 +29,20 @@
     background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.6), rgba(255,255,255,0.3));
 }
 
-/* ========== Fix Combobox Dropdown Positioning ========== */
+/* ========== Fix Combobox Dropdown Positioning ========== 
 .slds-form-element {
     position: relative;
     margin-bottom: 1rem;
     z-index: 1;
 }
 
-/* Ensure combobox dropdown appears above other elements */
+/* Ensure combobox dropdown appears above other elements 
 .slds-form-element lightning-combobox {
     position: relative;
     z-index: 10;
 }
 
-/* Fix dropdown listbox positioning */
+/* Fix dropdown listbox positioning
 .slds-combobox {
     position: relative !important;
 }
@@ -62,12 +62,12 @@
     overflow-y: auto;
 }
 
-/* Ensure form elements don't overlap dropdown */
+/* Ensure form elements don't overlap dropdown 
 .slds-form-element:focus-within {
     z-index: 100;
 }
 
-/* ========== Form Container ========== */
+/* ========== Form Container ========== 
 .form-container {
     animation: formFadeIn 0.5s ease-out;
     position: relative;
@@ -76,33 +76,33 @@
 .slds-form__item {
     transition: all 0.3s ease;
     position: relative;
-    margin-bottom: 0 !important; /* Remove default margin, use slds-form-element margin */
+    margin-bottom: 0 !important; /* Remove default margin, use slds-form-element margin 
 }
 
-/* ========== Modal Content Scrolling ========== */
+/* ========== Modal Content Scrolling ========== 
 .slds-modal__content {
     position: relative;
-    overflow-y: visible !important; /* Changed from auto to visible */
+    overflow-y: visible !important; /* Changed from auto to visible 
 }
 
-/* ========== Input Field Enhancements ========== */
+/* ========== Input Field Enhancements ========== 
 lightning-input,
 lightning-textarea {
     --slds-c-input-shadow-focus: 0 0 0 2px rgba(102, 126, 234, 0.3);
 }
 
-/* ========== Loading State ========== */
+/* ========== Loading State ========== 
 .slds-align_absolute-center {
     animation: fadeIn 0.3s ease-in;
 }
 
-/* ========== Error Alert in Modal ========== */
-.slds-notify.slds-theme_error {
+/* ========== Error Alert in Modal ========== 
+.slds-notify.slds-theme_error 
     animation: slideInDown 0.4s ease-out;
     border-left: 4px solid #c23934;
 }
 
-/* ========== Footer Styles ========== */
+/* ========== Footer Styles ========== 
 .slds-modal__footer {
     background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
     border-top: 1px solid #e0e5ee;
@@ -116,7 +116,7 @@ lightning-textarea {
     transform: translateY(-1px);
 }
 
-/* ========== Custom Form Element Help Text ========== */
+/* ========== Custom Form Element Help Text ========== 
 .slds-form-element__help {
     font-size: 0.75rem;
     color: #706e6b;
@@ -124,7 +124,7 @@ lightning-textarea {
     line-height: 1.5;
 }
 
-/* ========== Custom Label Styling ========== */
+/* ========== Custom Label Styling ========== 
 .slds-form-element__label {
     display: block;
     color: #3e3e3c;
@@ -137,13 +137,13 @@ lightning-textarea {
     font-weight: 600;
 }
 
-/* ========== Combobox Control ========== */
+/* ========== Combobox Control ========== 
 .slds-form-element__control {
     position: relative;
     clear: left;
 }
 
-/* ========== Custom Animations ========== */
+/* ========== Custom Animations ========== 
 @keyframes modalFadeIn {
     from {
         opacity: 0;
@@ -204,7 +204,7 @@ lightning-textarea {
     }
 }
 
-/* ========== Responsive Modal ========== */
+/* ========== Responsive Modal ========== 
 @media (max-width: 768px) {
     .slds-modal__container {
         max-width: 95% !important;
@@ -216,13 +216,13 @@ lightning-textarea {
     }
 }
 
-/* ========== Force proper stacking context ========== */
+/* ========== Force proper stacking context ========== 
 .slds-modal__container {
     position: relative;
     z-index: 9000;
 }
 
-/* Dropdown should be on top of everything in modal */
+/* Dropdown should be on top of everything in modal 
 lightning-combobox .slds-combobox__form-element {
     position: relative;
 }
@@ -230,4 +230,246 @@ lightning-combobox .slds-combobox__form-element {
 lightning-combobox .slds-combobox_container {
     position: relative;
     z-index: 9999;
+} */
+ /* dynamicFormModal.css */
+
+/* ========== Modal Enhancements ========== */
+.slds-modal__container {
+    max-width: 50rem;
+    animation: slideUp 0.3s ease-out;
+}
+
+.slds-modal__header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.slds-modal__title {
+    color: white;
+    font-weight: 600;
+}
+
+.slds-modal__close .slds-button__icon {
+    fill: white;
+}
+
+/* ========== Form Sections ========== */
+.slds-modal__content {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.slds-form-element {
+    margin-bottom: 1rem;
+}
+
+/* ========== Field Groups ========== */
+.slds-grid {
+    gap: 1rem;
+}
+
+/* ========== Input Enhancements ========== */
+lightning-input-field {
+    display: block;
+}
+
+.slds-input,
+.slds-textarea,
+.slds-select {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.slds-input:focus,
+.slds-textarea:focus,
+.slds-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ========== Checkbox Enhancements ========== */
+.slds-checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.slds-checkbox [type="checkbox"]:checked + .slds-checkbox_faux {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+/* ========== Footer Buttons ========== */
+.slds-modal__footer {
+    padding: 1rem 1.5rem;
+    background: #f3f3f3;
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.slds-modal__footer lightning-button {
+    min-width: 120px;
+}
+
+/* ========== Loading State ========== */
+.slds-align_absolute-center {
+    padding: 3rem;
+}
+
+lightning-spinner {
+    display: inline-block;
+}
+
+/* ========== Hide Helper ========== */
+.slds-hide {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* ========== Field Labels ========== */
+.slds-form-element__label {
+    font-weight: 600;
+    color: #3e3e3c;
+    margin-bottom: 0.5rem;
+}
+
+/* ========== Required Indicator ========== */
+.slds-required {
+    color: #ea001e;
+}
+
+/* ========== Backdrop ========== */
+.slds-backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* ========== Date/Time Pickers ========== */
+.slds-datepicker,
+.slds-timepicker {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ========== Textarea ========== */
+.slds-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* ========== Animations ========== */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+    .slds-modal__container {
+        max-width: 95vw;
+        margin: 1rem;
+    }
+    
+    .slds-modal__header {
+        padding: 1rem;
+    }
+    
+    .slds-modal__footer {
+        flex-wrap: wrap;
+    }
+    
+    .slds-modal__footer lightning-button {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* ========== Success/Error Messages ========== */
+lightning-messages {
+    margin-bottom: 1rem;
+}
+
+.slds-notify {
+    border-radius: 0.25rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========== Field Help Text ========== */
+.slds-form-element__help {
+    font-size: 0.75rem;
+    color: #706e6b;
+    margin-top: 0.25rem;
+}
+
+/* ========== Combobox/Picklist ========== */
+.slds-combobox {
+    transition: all 0.2s ease;
+}
+
+.slds-combobox__input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ========== Section Dividers ========== */
+.field-section {
+    border-bottom: 1px solid #e5e5e5;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.field-section:last-child {
+    border-bottom: none;
+}
+
+/* ========== Hover States ========== */
+.slds-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+}
+
+.slds-button_brand {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.slds-button_brand:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4390 100%);
+}
+
+/* ========== Form Validation ========== */
+.slds-has-error .slds-input,
+.slds-has-error .slds-textarea,
+.slds-has-error .slds-select {
+    border-color: #ea001e;
+}
+
+.slds-has-error .slds-form-element__help {
+    color: #ea001e;
 }

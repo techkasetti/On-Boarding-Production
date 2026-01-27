@@ -582,7 +582,6 @@
 <!-- ========================================== -->
 <!-- candidateScreenStatus.html - WITH MANUAL OVERRIDE UI -->
 <!-- ========================================== -->
-
 <template>
     <lightning-card icon-name="standard:assessment">
         <!-- Dynamic Title with Menu -->
@@ -892,7 +891,7 @@
                         </div>
                     </lightning-tab>
                     
-                    <!-- 🔥 NEW: Manual Override Tab -->
+                    <!-- Manual Override Tab -->
                     <lightning-tab label="Manual Override" value="override" icon-name="utility:record_update">
                         <div class="slds-p-around_small">
                             
@@ -904,7 +903,10 @@
                                     </div>
                                     <div class="slds-media__body">
                                         <h4 class="slds-text-heading_small slds-m-bottom_x-small">Manual Override</h4>
-                                      
+                                        <p class="slds-text-body_small">
+                                            Override failed or review-required screening results. 
+                                            Some rules may require manager approval before the override is applied.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -973,24 +975,7 @@
                                 </div>
                             </template>
                             
-                            <!-- No Overrideable Rules 
-                            <template if:false={hasOverrideableRules}>
-                                <div class="slds-align_absolute-center slds-p-vertical_xx-large">
-                                    <div class="slds-text-align_center">
-                                        <lightning-icon icon-name="utility:success" size="large" 
-                                                       class="slds-m-bottom_medium"></lightning-icon>
-                                        <h3 class="slds-text-heading_medium slds-m-bottom_small">
-                                            No Overrides Needed
-                                        </h3>
-                                        <p class="slds-text-body_regular slds-text-color_weak">
-                                            All rules have passed or no rules allow manual override
-                                        </p>
-                                    </div>
-                                </div>
-                            </template>
-                             -->
-
-                             <!-- No Overrideable Rules -->
+                            <!-- No Overrideable Rules -->
                             <template if:false={hasOverrideableRules}>
                                 <div class="slds-align_absolute-center slds-p-vertical_xx-large">
                                     <div class="slds-text-align_center">
@@ -1000,14 +985,14 @@
                                             No Manual Overrides Available
                                         </h3>
                                         <p class="slds-text-body_regular slds-text-color_weak">
-                                            <!-- ✅ UPDATED MESSAGE -->
                                             Either all rules passed, or failed rules do not allow manual override.<br/>
                                             To enable override, edit the rule and check "Allow Manual Override".
                                         </p>
                                     </div>
                                 </div>
                             </template>
-                                                        <!-- Override History -->
+                            
+                            <!-- Override History -->
                             <template if:true={hasExistingOverrides}>
                                 <div class="override-history-section slds-m-top_x-large slds-m-horizontal_medium">
                                     <h4 class="override-section-heading slds-m-bottom_small">
@@ -1168,7 +1153,7 @@
         </div>
     </lightning-card>
     
-    <!-- 🔥 NEW: Override Modal -->
+    <!-- 🔥 Override Modal - UPDATED WITH APPROVAL NOTICE -->
     <template if:true={showOverrideModal}>
         <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">
@@ -1223,45 +1208,51 @@
                             onchange={handleOverrideFormChange}
                             required
                             class="slds-m-top_small">
-                        </lightning-combobox>
-                        
-                        <lightning-textarea
-                            name="overrideReason"
-                            label="Override Reason (Required)"
-                            value={overrideForm.overrideReason}
-                            placeholder="Please provide a detailed reason for this override..."
-                            onchange={handleOverrideFormChange}
-                            required
-                            maxlength="32000"
-                            class="slds-m-top_small">
-                        </lightning-textarea>
-                        
-                        <div class="override-warning slds-m-top_medium">
-                            <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+</lightning-combobox>
+<lightning-textarea
+                        name="overrideReason"
+                        label="Override Reason (Required)"
+                        value={overrideForm.overrideReason}
+                        placeholder="Please provide a detailed reason for this override..."
+                        onchange={handleOverrideFormChange}
+                        required
+                        maxlength="32000"
+                        class="slds-m-top_small">
+                    </lightning-textarea>
+                    
+                    <!-- 🔥 UPDATED: Enhanced warning with approval info -->
+                    <div class="override-warning slds-m-top_medium">
+                        <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+                        <div>
+                            <p class="slds-text-body_small slds-m-bottom_x-small">
+                                <strong>Important:</strong> This override will be recorded in the system.
+                            </p>
                             <p class="slds-text-body_small">
-                                This override will be recorded and may require approval based on the rule configuration.
+                                If this rule requires approval, an email will be sent to the assigned manager 
+                                for review. The override will be applied only after approval.
                             </p>
                         </div>
                     </div>
                 </div>
-                <footer class="slds-modal__footer">
-                    <lightning-button 
-                        label="Cancel" 
-                        onclick={handleCloseOverrideModal}>
-                    </lightning-button>
-                    <lightning-button 
-                        variant="brand" 
-                        label="Submit Override" 
-                        onclick={handleSubmitOverride}
-                        disabled={isSubmittingOverride}>
-                    </lightning-button>
-                </footer>
             </div>
-        </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
-    </template>
-    
-   
+            <footer class="slds-modal__footer">
+                <lightning-button 
+                    label="Cancel" 
+                    onclick={handleCloseOverrideModal}>
+                </lightning-button>
+                <lightning-button 
+                    variant="brand" 
+                    label="Submit Override" 
+                    onclick={handleSubmitOverride}
+                    disabled={isSubmittingOverride}>
+                </lightning-button>
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</template>
+
+<!-- Confidence Info Modal -->
 <template if:true={showConfidenceModal}>
     <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open" aria-modal="true">
         <div class="slds-modal__container">
@@ -1280,7 +1271,7 @@
                 </h2>
             </header>
             
-            <!-- Content - properly scrollable -->
+            <!-- Content -->
             <div class="slds-modal__content slds-p-around_medium" id="modal-content">
                 <div class="confidence-info-content">
                     
