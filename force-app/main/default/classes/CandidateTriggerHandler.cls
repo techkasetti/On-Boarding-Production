@@ -1,4 +1,4 @@
-public with sharing class CandidateTriggerHandler {
+public without sharing class CandidateTriggerHandler {
 
     public static void handleAfterUpdate(List<Candidate__c> newCandidates, Map<Id, Candidate__c> oldMap) {
         Set<Id> candidateIdsForS3Upload = new Set<Id>();

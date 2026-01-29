@@ -582,17 +582,18 @@
 //             this.isLoading = false;
 //         }
 //     }
+
 import { LightningElement, track, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getProfileData from '@salesforce/apex/CandidateProfileController.getProfileData';
 import getCandidateResumeInfo from '@salesforce/apex/CandidateProfileController.getCandidateResumeInfo';
+import resetResumeStatus from '@salesforce/apex/CandidateProfileController.resetResumeStatus';
 import fetchResumePreviewV2 from '@salesforce/apex/OnboardingOrchestratorV2.fetchResumePreviewV2';
 import persistStructuredResumeData from '@salesforce/apex/OnboardingOrchestratorV2.persistStructuredResumeData';
 
 /**
  * candidateProfileHub
- * UPDATED: Uses lightning-file-upload (same as chatFirstRegistration)
- * Triggers: ContentDocumentLinkTrigger → CandidateTrigger → S3UploadQueueable → S3Uploader
+ * UPDATED VERSION with Resume Preview Integration + Enhanced S3 Upload Debugging
  */
 export default class CandidateProfileHub extends LightningElement {
     _candidateId;
@@ -614,6 +615,10 @@ export default class CandidateProfileHub extends LightningElement {
     @track showResumeUpload = false;
     @track isProcessingResume = false;
     @track uploadMessage = '';
+    @track resumeStatusWasReset = false;
+    
+    // ⚡ NEW: Preview panel control
+    @track showPreview = false;
     
     @api
     get candidateId() {
@@ -635,6 +640,7 @@ export default class CandidateProfileHub extends LightningElement {
     }
     
     get currentCandidateId() {
+        console.log('📌 currentCandidateId getter called, returning:', this._candidateId);
         return this._candidateId;
     }
     
@@ -676,7 +682,11 @@ export default class CandidateProfileHub extends LightningElement {
             this.resumeUploadDate = resumeInfo.uploadDate || '';
             this.s3ResumeUrl = resumeInfo.s3Url || '';
             this.useAiParsing = resumeInfo.useAiParsing === true;
-            console.log('✅ Resume info loaded, AI parsing:', this.useAiParsing);
+            console.log('✅ Resume info loaded:');
+            console.log('   - Has Resume:', this.hasResume);
+            console.log('   - File Name:', this.resumeFileName);
+            console.log('   - S3 URL:', this.s3ResumeUrl);
+            console.log('   - AI Parsing:', this.useAiParsing);
         } catch (error) {
             console.error('Error loading resume info:', error);
         }
@@ -700,75 +710,200 @@ export default class CandidateProfileHub extends LightningElement {
     }
     
     // ========================================
-    // RESUME UPLOAD - SAME AS chatFirstRegistration
+    // RESUME UPLOAD - WITH ENHANCED DEBUGGING
     // ========================================
     
-    handleUploadResume() {
-        this.showResumeUpload = true;
-    }
-    
-    handleChangeResume() {
-        this.showResumeUpload = true;
-    }
-    
-    handleCancelUpload() {
-        this.showResumeUpload = false;
-    }
-    
-    /**
-     * CRITICAL: Uses lightning-file-upload (same as chatFirstRegistration)
-     * Automatically triggers: ContentDocumentLinkTrigger → S3 upload
-     */
-    async handleUploadFinished(event) {
-        console.log('=== Upload Finished (chatFirstRegistration flow) ===');
+    async handleUploadResume() {
+        console.log('=== 🚀 handleUploadResume Called ===');
+        console.log('Candidate ID:', this._candidateId);
         
-        const uploadedFiles = event.detail.files;
-        if (!uploadedFiles || uploadedFiles.length === 0) {
-            this.showResumeUpload = false;
+        if (!this._candidateId) {
+            console.error('❌ ERROR: Candidate ID is null or undefined!');
+            this.showToast('Error', 'Candidate ID is missing. Cannot upload resume.', 'error');
             return;
         }
         
-        console.log('✅ File uploaded to Salesforce');
-        console.log('✅ Triggers will fire automatically');
+        // Reset status before upload
+        try {
+            console.log('⏳ Resetting Resume_Status__c to false...');
+            await resetResumeStatus({ candidateId: this._candidateId });
+            console.log('✅ Resume_Status__c reset to false before upload');
+            this.resumeStatusWasReset = true;
+        } catch (error) {
+            console.error('❌ Error resetting resume status:', error);
+            this.resumeStatusWasReset = false;
+        }
+        
+        this.showResumeUpload = true;
+        console.log('✅ Upload UI displayed');
+    }
+    
+    async handleChangeResume() {
+        console.log('=== 🔄 handleChangeResume Called ===');
+        console.log('Candidate ID:', this._candidateId);
+        
+        if (!this._candidateId) {
+            console.error('❌ ERROR: Candidate ID is null or undefined!');
+            this.showToast('Error', 'Candidate ID is missing. Cannot change resume.', 'error');
+            return;
+        }
+        
+        // Reset status before replacing
+        try {
+            console.log('⏳ Resetting Resume_Status__c to false...');
+            await resetResumeStatus({ candidateId: this._candidateId });
+            console.log('✅ Resume_Status__c reset to false before replacing resume');
+            this.resumeStatusWasReset = true;
+        } catch (error) {
+            console.error('❌ Error resetting resume status:', error);
+            this.resumeStatusWasReset = false;
+        }
+        
+        this.showResumeUpload = true;
+        console.log('✅ Upload UI displayed');
+    }
+    
+    handleCancelUpload() {
+        console.log('=== ❌ Upload Cancelled ===');
+        this.showResumeUpload = false;
+        this.resumeStatusWasReset = false;
+    }
+    
+    /**
+     * ⚡ CRITICAL: This method handles the file upload completion
+     * Flow:
+     * 1. File uploads to Salesforce Files (ContentVersion created)
+     * 2. ContentDocumentLink created (linking file to Candidate record)
+     * 3. ContentDocumentLinkTrigger fires → sets Resume_Status__c = true
+     * 4. CandidateTrigger fires (detects false → true change) → enqueues S3UploadQueueable
+     * 5. S3UploadQueueable → calls S3Uploader.uploadToS3 (@future)
+     * 6. S3Uploader uploads to S3 and updates S3_Resume_URL__c
+     */
+    async handleUploadFinished(event) {
+        console.log('=== 📤 Upload Finished Event ===');
+        console.log('🔍 Debugging Info:');
+        console.log('   - Candidate ID:', this._candidateId);
+        console.log('   - currentCandidateId:', this.currentCandidateId);
+        console.log('   - Resume Status Was Reset:', this.resumeStatusWasReset);
+        
+        const uploadedFiles = event.detail.files;
+        console.log('   - Uploaded Files:', uploadedFiles);
+        
+        if (!uploadedFiles || uploadedFiles.length === 0) {
+            console.log('⚠️ No files uploaded');
+            this.showResumeUpload = false;
+            this.resumeStatusWasReset = false;
+            return;
+        }
+        
+        const uploadedFile = uploadedFiles[0];
+        console.log('✅ File uploaded successfully:');
+        console.log('   - Name:', uploadedFile.name);
+        console.log('   - ContentVersionId:', uploadedFile.contentVersionId);
+        console.log('   - DocumentId:', uploadedFile.documentId);
+        
+        console.log('');
+        console.log('📋 Expected Trigger Chain:');
+        console.log('1. ✅ File uploaded to Salesforce Files');
+        console.log('2. ⏳ ContentDocumentLink created (linking to Candidate:', this._candidateId + ')');
+        console.log('3. ⏳ ContentDocumentLinkTrigger will fire');
+        console.log('4. ⏳ Resume_Status__c will be set to TRUE');
+        console.log('5. ⏳ CandidateTrigger will detect FALSE → TRUE change');
+        console.log('6. ⏳ S3UploadQueueable will be enqueued');
+        console.log('7. ⏳ S3Uploader.uploadToS3 will execute (@future)');
+        console.log('8. ⏳ File will be uploaded to S3');
+        console.log('9. ⏳ S3_Resume_URL__c will be updated');
+        console.log('');
         
         this.isProcessingResume = true;
         this.uploadMessage = 'Resume uploaded! Processing in background...';
-        this.showToast('Success', 'Resume uploaded. S3 upload processing in background.', 'success');
         
-        // Wait for S3 upload (background job takes ~10 seconds)
-        await this.delay(10000);
+        // Reset the flag
+        this.resumeStatusWasReset = false;
         
-        // AI Processing (if enabled)
-        if (this.useAiParsing) {
-            try {
-                console.log('AI Parsing enabled - processing resume');
-                this.uploadMessage = 'Processing with AI...';
-                await this.processWithAI();
-                this.showToast('Success', 'Resume processed and profile updated!', 'success');
-            } catch (error) {
-                console.error('AI processing error:', error);
-                this.showToast('Warning', 'Resume uploaded but AI processing failed.', 'warning');
-            }
+        // Wait for S3 upload (background queueable + future takes ~12-15 seconds)
+        console.log('⏳ Waiting 15 seconds for S3 upload to complete...');
+        console.log('   (S3UploadQueueable → S3Uploader @future → S3 upload)');
+        await this.delay(15000);
+        
+        console.log('✅ Wait complete. Checking if S3 upload succeeded...');
+        
+        // Refresh to check if S3 URL was populated
+        await this.loadResumeInfo();
+        
+        if (this.s3ResumeUrl) {
+            console.log('✅ SUCCESS! S3 URL found:', this.s3ResumeUrl);
+        } else {
+            console.log('⚠️ WARNING: S3 URL not found yet. Upload may still be processing.');
+            console.log('   Check Debug Logs for:');
+            console.log('   - ContentDocumentLinkTrigger execution');
+            console.log('   - CandidateTrigger execution');
+            console.log('   - S3UploadQueueable execution');
+            console.log('   - S3Uploader.uploadToS3 execution');
         }
         
-        // Refresh
-        this.isProcessingResume = false;
-        this.showResumeUpload = false;
-        await this.loadResumeInfo();
-        await this.loadProfileData();
+        // ⚡ Show preview panel if AI parsing is enabled
+        if (this.useAiParsing) {
+            console.log('🤖 AI Parsing enabled - fetching resume data...');
+            this.uploadMessage = 'Analyzing resume with AI...';
+            await this.delay(3000); // Additional wait for S3 URL
+            
+            this.isProcessingResume = false;
+            this.showResumeUpload = false;
+            this.showPreview = true;
+            console.log('✅ Showing resume preview panel');
+        } else {
+            console.log('ℹ️ AI Parsing disabled - skipping preview');
+            this.isProcessingResume = false;
+            this.showResumeUpload = false;
+            this.showToast('Success', 'Resume uploaded successfully!', 'success');
+            await this.loadResumeInfo();
+            await this.loadProfileData();
+        }
+        
+        console.log('=== 📤 Upload Finished Event Complete ===');
     }
     
-    async processWithAI() {
-        await this.delay(5000); // Extra wait for S3 URL
-        const jsonString = await fetchResumePreviewV2({ candidateId: this._candidateId });
+    /**
+     * ⚡ Handle user confirming edited resume data
+     */
+    async handleResumeConfirmed(event) {
+        console.log('=== ✅ Resume Confirmed ===');
+        const detail = event.detail;
+        console.log('Received data:', detail);
         
-        if (!jsonString || jsonString.trim() === '') {
-            throw new Error('AI service returned empty response');
+        this.showPreview = false;
+        this.isLoading = true;
+        
+        try {
+            console.log('💾 Saving structured resume data...');
+            await persistStructuredResumeData({ jsonData: JSON.stringify(detail) });
+            
+            console.log('✅ Resume data persisted successfully');
+            this.showToast('Success', 'Resume processed and profile updated!', 'success');
+            
+            // Refresh the profile
+            console.log('🔄 Refreshing profile data...');
+            await this.loadResumeInfo();
+            await this.loadProfileData();
+            console.log('✅ Profile refreshed');
+            
+        } catch (error) {
+            console.error('❌ Error saving resume data:', error);
+            console.error('Error details:', JSON.stringify(error));
+            this.showToast('Error', 'Failed to save resume data: ' + (error.body?.message || error.message), 'error');
+        } finally {
+            this.isLoading = false;
         }
-        
-        const parsedData = JSON.parse(jsonString);
-        const dataWithId = { candidateId: this._candidateId, ...parsedData };
-        await persistStructuredResumeData({ jsonData: JSON.stringify(dataWithId) });
+    }
+    
+    /**
+     * ⚡ Handle user cancelling resume preview
+     */
+    handleResumeCancelled() {
+        console.log('=== ❌ Resume Preview Cancelled ===');
+        this.showPreview = false;
+        this.showToast('Info', 'You can upload another resume when ready.', 'info');
     }
     
     // ========================================

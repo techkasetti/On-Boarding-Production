@@ -34,7 +34,8 @@
 //         }
 //     }
 // }
-public with sharing class S3UploadQueueable implements Queueable, Database.AllowsCallouts {
+
+public without sharing class S3UploadQueueable implements Queueable, Database.AllowsCallouts {
     private Set<Id> candidateIds;
 
     public S3UploadQueueable(Set<Id> candidateIds) {

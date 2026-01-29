@@ -59,7 +59,8 @@
 //         }
 //     }
 // }
-public with sharing class S3Uploader {
+
+public without sharing class S3Uploader {
     private static final String S3_NAMED_CREDENTIAL = 'S3_Upload';
     private static final String BUCKET_NAME = 'snowflake-onboarding-p';
     private static final String REGION = 'ap-south-1';

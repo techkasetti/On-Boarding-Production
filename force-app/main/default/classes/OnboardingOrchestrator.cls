@@ -29,105 +29,105 @@ public with sharing class OnboardingOrchestrator {
 
  
 
-   @AuraEnabled(cacheable = false)
-    public static ResumeWebhookService.ResumePayload fetchResumePreview(Id candidateId) {
-        try {
-            // 1) Callout first (NO DML before callout)
-            ResumeWebhookService.ResumePayload payload = ResumeWebhookService.callWebhookAndParse();
+//    @AuraEnabled(cacheable = false)
+//     public static ResumeWebhookService.ResumePayload fetchResumePreview(Id candidateId) {
+//         try {
+//             // 1) Callout first (NO DML before callout)
+//             ResumeWebhookService.ResumePayload payload = ResumeWebhookService.callWebhookAndParse();
 
-            // 2) Best-effort audit AFTER callout
-            try {
-                Onb_ActivationAuditWriter.write(
-                    'RESUME_PREVIEW_REQUESTED', 'Preview requested from UI', candidateId
-                );
-            } catch (Exception logEx) {
-                Onb_ErrorLogService.logError(
-                    'OnboardingOrchestrator.fetchResumePreview.audit', logEx
-                );
-            }
-            return payload;
-        } catch (ResumeWebhookService.CalloutException ex) {
-            Onb_ErrorLogService.logError(
-                'OnboardingOrchestrator.fetchResumePreview', ex
-            );
-            throw new AuraHandledException(ex.getMessage());
-        } catch (Exception ex) {
-            Onb_ErrorLogService.logError(
-                'OnboardingOrchestrator.fetchResumePreview', ex
-            );
-            throw new AuraHandledException(ex.getMessage());
-        }
-    }
+//             // 2) Best-effort audit AFTER callout
+//             try {
+//                 Onb_ActivationAuditWriter.write(
+//                     'RESUME_PREVIEW_REQUESTED', 'Preview requested from UI', candidateId
+//                 );
+//             } catch (Exception logEx) {
+//                 Onb_ErrorLogService.logError(
+//                     'OnboardingOrchestrator.fetchResumePreview.audit', logEx
+//                 );
+//             }
+//             return payload;
+//         } catch (ResumeWebhookService.CalloutException ex) {
+//             Onb_ErrorLogService.logError(
+//                 'OnboardingOrchestrator.fetchResumePreview', ex
+//             );
+//             throw new AuraHandledException(ex.getMessage());
+//         } catch (Exception ex) {
+//             Onb_ErrorLogService.logError(
+//                 'OnboardingOrchestrator.fetchResumePreview', ex
+//             );
+//             throw new AuraHandledException(ex.getMessage());
+//         }
+//     }
 
 
    
- @AuraEnabled
-    public static void persistVerifiedData(Id candidateId, String firstName, String lastName, String location, String email, String phone, String yearsExperience, String skills) {
-        // Your existing, correct logic for merging skills into the Skills__c field
-        // This method does not need to change.
-        System.debug('persistVerifiedData called for candidateId: ' + candidateId);
-        System.debug('New skills to add: ' + skills);
+//  @AuraEnabled
+//     public static void persistVerifiedData(Id candidateId, String firstName, String lastName, String location, String email, String phone, String yearsExperience, String skills) {
+//         // Your existing, correct logic for merging skills into the Skills__c field
+//         // This method does not need to change.
+//         System.debug('persistVerifiedData called for candidateId: ' + candidateId);
+//         System.debug('New skills to add: ' + skills);
 
-        List<Candidate__c> candidates = [
-            SELECT Id, Name, Email__c, Phone__c, Location__c, Years_of_Experience__c, Raw_Resume_Payload__c, Skills__c
-            FROM Candidate__c
-            WHERE Id = :candidateId
-            LIMIT 1
-        ];
+//         List<Candidate__c> candidates = [
+//             SELECT Id, Name, Email__c, Phone__c, Location__c, Years_of_Experience__c, Raw_Resume_Payload__c, Skills__c
+//             FROM Candidate__c
+//             WHERE Id = :candidateId
+//             LIMIT 1
+//         ];
 
-        if (candidates.isEmpty()) {
-            System.debug('FATAL: No Candidate__c record found with Id: ' + candidateId);
-            throw new AuraHandledException('Candidate not found.');
-        }
+//         if (candidates.isEmpty()) {
+//             System.debug('FATAL: No Candidate__c record found with Id: ' + candidateId);
+//             throw new AuraHandledException('Candidate not found.');
+//         }
 
-        Candidate__c candidateToUpdate = candidates[0];
-        candidateToUpdate.Name = firstName + ' ' + lastName;
-        candidateToUpdate.Email__c = email;
-        candidateToUpdate.Phone__c = phone;
-        candidateToUpdate.Location__c = location;
+//         Candidate__c candidateToUpdate = candidates[0];
+//         candidateToUpdate.Name = firstName + ' ' + lastName;
+//         candidateToUpdate.Email__c = email;
+//         candidateToUpdate.Phone__c = phone;
+//         candidateToUpdate.Location__c = location;
 
-        if (String.isNotBlank(yearsExperience)) {
-            try {
-                candidateToUpdate.Years_of_Experience__c = Decimal.valueOf(yearsExperience);
-            } catch (Exception e) {
-                System.debug('Could not parse yearsExperience: ' + yearsExperience);
-            }
-        }
+//         if (String.isNotBlank(yearsExperience)) {
+//             try {
+//                 candidateToUpdate.Years_of_Experience__c = Decimal.valueOf(yearsExperience);
+//             } catch (Exception e) {
+//                 System.debug('Could not parse yearsExperience: ' + yearsExperience);
+//             }
+//         }
 
-        ResumeWebhookService.ResumePayload payload = ResumeWebhookService.callWebhookAndParse();
-        candidateToUpdate.Raw_Resume_Payload__c = JSON.serialize(payload);
+//         ResumeWebhookService.ResumePayload payload = ResumeWebhookService.callWebhookAndParse();
+//         candidateToUpdate.Raw_Resume_Payload__c = JSON.serialize(payload);
 
-        Set<String> allSkills = new Set<String>();
-        String existingSkillsString = candidateToUpdate.Skills__c;
-        if (String.isNotBlank(existingSkillsString)) {
-            for(String skill : existingSkillsString.split('\\s*,\\s*')) {
-                if(String.isNotBlank(skill)) {
-                    allSkills.add(skill.trim());
-                }
-            }
-        }
+//         Set<String> allSkills = new Set<String>();
+//         String existingSkillsString = candidateToUpdate.Skills__c;
+//         if (String.isNotBlank(existingSkillsString)) {
+//             for(String skill : existingSkillsString.split('\\s*,\\s*')) {
+//                 if(String.isNotBlank(skill)) {
+//                     allSkills.add(skill.trim());
+//                 }
+//             }
+//         }
 
-        if (String.isNotBlank(skills)) {
-            for(String skill : skills.split('\\s*,\\s*')) {
-                if(String.isNotBlank(skill)) {
-                    allSkills.add(skill.trim());
-                }
-            }
-        }
+//         if (String.isNotBlank(skills)) {
+//             for(String skill : skills.split('\\s*,\\s*')) {
+//                 if(String.isNotBlank(skill)) {
+//                     allSkills.add(skill.trim());
+//                 }
+//             }
+//         }
 
-        List<String> sortedSkills = new List<String>(allSkills);
-        sortedSkills.sort();
-        candidateToUpdate.Skills__c = String.join(sortedSkills, ', ');
+//         List<String> sortedSkills = new List<String>(allSkills);
+//         sortedSkills.sort();
+//         candidateToUpdate.Skills__c = String.join(sortedSkills, ', ');
         
-        try {
-            update candidateToUpdate;
-            Onb_ActivationAuditWriter.write('RESUME_DATA_PERSISTED', 'Verified resume data and skills were updated.', candidateId);
-        } catch (Exception ex) {
-            System.debug('DML Exception in persistVerifiedData: ' + ex.getMessage() + ' at line ' + ex.getLineNumber());
-            Onb_ErrorLogService.logError('OnboardingOrchestrator.persistVerifiedData', ex);
-            throw new AuraHandledException('Failed to save candidate data: ' + ex.getMessage());
-        }
-    }
+//         try {
+//             update candidateToUpdate;
+//             Onb_ActivationAuditWriter.write('RESUME_DATA_PERSISTED', 'Verified resume data and skills were updated.', candidateId);
+//         } catch (Exception ex) {
+//             System.debug('DML Exception in persistVerifiedData: ' + ex.getMessage() + ' at line ' + ex.getLineNumber());
+//             Onb_ErrorLogService.logError('OnboardingOrchestrator.persistVerifiedData', ex);
+//             throw new AuraHandledException('Failed to save candidate data: ' + ex.getMessage());
+//         }
+//     }
     
     
    

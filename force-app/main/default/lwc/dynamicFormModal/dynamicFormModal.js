@@ -421,11 +421,15 @@
 //         return true;
 //     }
 // }
-
-import { LightningElement, api, track } from 'lwc';
+// dynamicFormModal.js - FIXED VERSION (No Separate Upload Modal)
+import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { NavigationMixin } from 'lightning/navigation';
+import getLicenseDocuments from '@salesforce/apex/CandidateProfileController.getLicenseDocuments';
+import deleteLicenseDocument from '@salesforce/apex/CandidateProfileController.deleteLicenseDocument';
+import { refreshApex } from '@salesforce/apex';
 
-export default class DynamicFormModal extends LightningElement {
+export default class DynamicFormModal extends NavigationMixin(LightningElement) {
     @api candidateId;
     
     @track isOpen = false;
@@ -434,6 +438,9 @@ export default class DynamicFormModal extends LightningElement {
     @track objectApiName = '';
     @track recordType = '';
     @track modalTitle = '';
+    @track existingDocuments = [];
+    
+    wiredDocumentsResult;
 
     // Type Configuration
     typeConfig = {
@@ -475,6 +482,21 @@ export default class DynamicFormModal extends LightningElement {
         }
     };
 
+    @wire(getLicenseDocuments, { licenseId: '$recordId' })
+    wiredDocuments(result) {
+        this.wiredDocumentsResult = result;
+        if (result.data && this.isLicense) {
+            console.log('✅ Documents loaded:', result.data);
+            this.existingDocuments = result.data.map(doc => ({
+                ...doc,
+                iconName: this.getFileIcon(doc.FileExtension),
+                formattedDate: this.formatDate(doc.CreatedDate)
+            }));
+        } else if (result.error) {
+            console.error('Error loading documents:', result.error);
+        }
+    }
+
     @api
     openModal(type, recordId = null, recordData = null) {
         console.log('=== openModal Called ===');
@@ -496,6 +518,11 @@ export default class DynamicFormModal extends LightningElement {
         
         this.isOpen = true;
         
+        // Load documents if editing a license
+        if (this.isLicense && recordId) {
+            this.loadDocuments();
+        }
+        
         console.log('Modal opened successfully');
     }
 
@@ -505,35 +532,54 @@ export default class DynamicFormModal extends LightningElement {
         this.recordId = null;
         this.objectApiName = '';
         this.recordType = '';
+        this.existingDocuments = [];
     }
 
-    handleSuccess(event) {
+    async handleSuccess(event) {
         console.log('=== Record Saved Successfully ===');
         console.log('Record ID:', event.detail.id);
         
-        this.isOpen = false;
+        const savedRecordId = event.detail.id;
+        const isNewRecord = !this.recordId;
         
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title: 'Success',
-                message: 'Record saved successfully',
-                variant: 'success'
-            })
-        );
+        // ✅ FIX: Keep modal open after save for licenses
+        if (this.isLicense && isNewRecord) {
+            // Update the recordId so document upload becomes available
+            this.recordId = savedRecordId;
+            
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Success',
+                    message: 'License saved! You can now upload documents below.',
+                    variant: 'success'
+                })
+            );
+            
+            // Don't close modal - let user upload documents
+            // Refresh the form to show upload section
+            await this.loadDocuments();
+            
+        } else {
+            // Close modal for other record types
+            this.isOpen = false;
+            
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Success',
+                    message: 'Record saved successfully',
+                    variant: 'success'
+                })
+            );
+        }
         
         // Notify parent component
         this.dispatchEvent(new CustomEvent('save', {
             detail: {
-                recordId: event.detail.id,
+                recordId: savedRecordId,
                 recordType: this.recordType,
-                action: this.recordId ? 'update' : 'create'
+                action: isNewRecord ? 'create' : 'update'
             }
         }));
-        
-        // Reset
-        this.recordId = null;
-        this.objectApiName = '';
-        this.recordType = '';
     }
 
     handleError(event) {
@@ -557,40 +603,141 @@ export default class DynamicFormModal extends LightningElement {
         );
     }
 
-    // Computed properties for template conditionals
-    get isWorkExperience() {
-        return this.recordType === 'workExperience';
+    async handleLicenseUploadFinished(event) {
+        console.log('=== License Document Upload Finished ===');
+        const uploadedFiles = event.detail.files;
+        
+        if (!uploadedFiles || uploadedFiles.length === 0) {
+            console.log('No files uploaded');
+            return;
+        }
+        
+        console.log(`✅ ${uploadedFiles.length} document(s) uploaded`);
+        
+        // Log each uploaded file
+        uploadedFiles.forEach(file => {
+            console.log('   - ' + file.name);
+        });
+        
+        // Show success toast
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title: 'Success',
+                message: `${uploadedFiles.length} document(s) uploaded successfully!`,
+                variant: 'success',
+                mode: 'dismissable'
+            })
+        );
+        
+        // Wait for files to be processed, then refresh documents
+        await this.delay(1500);
+        await this.loadDocuments();
+        
+        console.log('✅ Documents refreshed');
     }
 
-    get isEducation() {
-        return this.recordType === 'education';
+    async handleDeleteDocument(event) {
+        console.log('=== Delete Document Clicked ===');
+        
+        event.stopPropagation();
+        event.preventDefault();
+        
+        const documentId = event.currentTarget.dataset.docId;
+        console.log('Document ID to delete:', documentId);
+        
+        if (!documentId) {
+            console.error('No document ID found');
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to delete this document?')) {
+            console.log('Delete cancelled by user');
+            return;
+        }
+        
+        try {
+            console.log('Deleting document...');
+            await deleteLicenseDocument({ documentId: documentId });
+            
+            console.log('✅ Document deleted successfully');
+            
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Success',
+                    message: 'Document deleted successfully',
+                    variant: 'success'
+                })
+            );
+            
+            await this.loadDocuments();
+            
+        } catch (error) {
+            console.error('❌ Error deleting document:', error);
+            
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error',
+                    message: 'Failed to delete document: ' + (error.body?.message || error.message),
+                    variant: 'error'
+                })
+            );
+        }
     }
 
-    get isLicense() {
-        return this.recordType === 'license';
+    async loadDocuments() {
+        if (!this.recordId || !this.isLicense) return;
+        
+        try {
+            await refreshApex(this.wiredDocumentsResult);
+        } catch (error) {
+            console.error('Error refreshing documents:', error);
+        }
     }
 
-    get isClinicalSkill() {
-        return this.recordType === 'clinicalSkill';
+    getFileIcon(fileExtension) {
+        const ext = fileExtension?.toLowerCase();
+        
+        const iconMap = {
+            'pdf': 'doctype:pdf',
+            'doc': 'doctype:word',
+            'docx': 'doctype:word',
+            'jpg': 'doctype:image',
+            'jpeg': 'doctype:image',
+            'png': 'doctype:image'
+        };
+        
+        return iconMap[ext] || 'doctype:attachment';
     }
 
-    get isTechnicalSkill() {
-        return this.recordType === 'technicalSkill';
+    formatDate(dateValue) {
+        if (!dateValue) return '';
+        
+        try {
+            const date = new Date(dateValue);
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return '';
+        }
     }
 
-    get isProcedure() {
-        return this.recordType === 'procedure';
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    get isInternship() {
-        return this.recordType === 'internship';
-    }
-
-    get isResearch() {
-        return this.recordType === 'research';
-    }
-
-    get isMembership() {
-        return this.recordType === 'membership';
+    // Computed properties
+    get isWorkExperience() { return this.recordType === 'workExperience'; }
+    get isEducation() { return this.recordType === 'education'; }
+    get isLicense() { return this.recordType === 'license'; }
+    get isClinicalSkill() { return this.recordType === 'clinicalSkill'; }
+    get isTechnicalSkill() { return this.recordType === 'technicalSkill'; }
+    get isProcedure() { return this.recordType === 'procedure'; }
+    get isInternship() { return this.recordType === 'internship'; }
+    get isResearch() { return this.recordType === 'research'; }
+    get isMembership() { return this.recordType === 'membership'; }
+    
+    get hasExistingDocuments() {
+        return this.existingDocuments && this.existingDocuments.length > 0;
     }
 }

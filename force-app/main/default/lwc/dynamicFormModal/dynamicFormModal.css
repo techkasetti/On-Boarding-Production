@@ -231,245 +231,133 @@ lightning-combobox .slds-combobox_container {
     position: relative;
     z-index: 9999;
 } */
- /* dynamicFormModal.css */
+/* dynamicFormModal.css - ENHANCED VERSION */
 
-/* ========== Modal Enhancements ========== */
 .slds-modal__container {
     max-width: 50rem;
-    animation: slideUp 0.3s ease-out;
 }
 
-.slds-modal__header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 0.5rem 0.5rem 0 0;
+.slds-hide {
+    display: none !important;
 }
 
-.slds-modal__title {
-    color: white;
-    font-weight: 600;
-}
-
-.slds-modal__close .slds-button__icon {
-    fill: white;
-}
-
-/* ========== Form Sections ========== */
-.slds-modal__content {
-    max-height: 70vh;
+/* Document Management Section */
+.documents-list {
+    max-height: 300px;
     overflow-y: auto;
+    margin-top: 0.75rem;
 }
 
-.slds-form-element {
-    margin-bottom: 1rem;
+.existing-doc-item {
+    background: white;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e5e5;
+    transition: all 0.2s ease;
 }
 
-/* ========== Field Groups ========== */
-.slds-grid {
-    gap: 1rem;
+.existing-doc-item:hover {
+    border-color: #0070d2;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* ========== Input Enhancements ========== */
-lightning-input-field {
-    display: block;
+.delete-doc-btn {
+    opacity: 0.6;
+    transition: all 0.2s ease;
 }
 
-.slds-input,
-.slds-textarea,
-.slds-select {
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+.delete-doc-btn:hover {
+    opacity: 1;
+    color: #c23934 !important;
+    transform: scale(1.1);
 }
 
-.slds-input:focus,
-.slds-textarea:focus,
-.slds-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+/* Upload Section Styling */
+.slds-theme_shade {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dddbda;
 }
 
-/* ========== Checkbox Enhancements ========== */
-.slds-checkbox {
-    display: flex;
+/* Make document titles bold */
+.slds-text-title_bold {
+    font-weight: 600;
+    color: #080707;
+}
+
+/* Scrollbar styling for documents list */
+.documents-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.documents-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.documents-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.documents-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Ensure proper spacing */
+.slds-grid_vertical-align-center {
     align-items: center;
 }
 
-.slds-checkbox [type="checkbox"]:checked + .slds-checkbox_faux {
-    background-color: #667eea;
-    border-color: #667eea;
+/* Animation for document items */
+@keyframes slideInDoc {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-/* ========== Footer Buttons ========== */
-.slds-modal__footer {
-    padding: 1rem 1.5rem;
+.existing-doc-item {
+    animation: slideInDoc 0.3s ease-out;
+}
+
+/* Upload Success Styling */
+.upload-success-container {
+    text-align: center;
+}
+
+.uploaded-files-list {
+    text-align: left;
+    background: white;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e5e5;
+}
+
+.uploaded-file-item {
     background: #f3f3f3;
-    border-radius: 0 0 0.5rem 0.5rem;
-}
-
-.slds-modal__footer lightning-button {
-    min-width: 120px;
-}
-
-/* ========== Loading State ========== */
-.slds-align_absolute-center {
-    padding: 3rem;
-}
-
-lightning-spinner {
-    display: inline-block;
-}
-
-/* ========== Hide Helper ========== */
-.slds-hide {
-    display: none !important;
-    visibility: hidden !important;
-}
-
-/* ========== Field Labels ========== */
-.slds-form-element__label {
-    font-weight: 600;
-    color: #3e3e3c;
-    margin-bottom: 0.5rem;
-}
-
-/* ========== Required Indicator ========== */
-.slds-required {
-    color: #ea001e;
-}
-
-/* ========== Backdrop ========== */
-.slds-backdrop {
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(2px);
-    animation: fadeIn 0.2s ease-out;
-}
-
-/* ========== Date/Time Pickers ========== */
-.slds-datepicker,
-.slds-timepicker {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* ========== Textarea ========== */
-.slds-textarea {
-    min-height: 100px;
-    resize: vertical;
-}
-
-/* ========== Animations ========== */
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(40px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-/* ========== Responsive ========== */
-@media (max-width: 768px) {
-    .slds-modal__container {
-        max-width: 95vw;
-        margin: 1rem;
-    }
-    
-    .slds-modal__header {
-        padding: 1rem;
-    }
-    
-    .slds-modal__footer {
-        flex-wrap: wrap;
-    }
-    
-    .slds-modal__footer lightning-button {
-        width: 100%;
-        margin-bottom: 0.5rem;
-    }
-}
-
-/* ========== Success/Error Messages ========== */
-lightning-messages {
-    margin-bottom: 1rem;
-}
-
-.slds-notify {
     border-radius: 0.25rem;
-    animation: slideDown 0.3s ease-out;
+    transition: background 0.2s ease;
 }
 
-@keyframes slideDown {
+.uploaded-file-item:hover {
+    background: #e9ecef;
+}
+
+/* Success Icon Animation */
+@keyframes scaleIn {
     from {
+        transform: scale(0);
         opacity: 0;
-        transform: translateY(-10px);
     }
     to {
+        transform: scale(1);
         opacity: 1;
-        transform: translateY(0);
     }
 }
 
-/* ========== Field Help Text ========== */
-.slds-form-element__help {
-    font-size: 0.75rem;
-    color: #706e6b;
-    margin-top: 0.25rem;
-}
-
-/* ========== Combobox/Picklist ========== */
-.slds-combobox {
-    transition: all 0.2s ease;
-}
-
-.slds-combobox__input:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-/* ========== Section Dividers ========== */
-.field-section {
-    border-bottom: 1px solid #e5e5e5;
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-}
-
-.field-section:last-child {
-    border-bottom: none;
-}
-
-/* ========== Hover States ========== */
-.slds-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease;
-}
-
-.slds-button_brand {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-}
-
-.slds-button_brand:hover {
-    background: linear-gradient(135deg, #5a6fd8 0%, #6a4390 100%);
-}
-
-/* ========== Form Validation ========== */
-.slds-has-error .slds-input,
-.slds-has-error .slds-textarea,
-.slds-has-error .slds-select {
-    border-color: #ea001e;
-}
-
-.slds-has-error .slds-form-element__help {
-    color: #ea001e;
+.upload-success-container lightning-icon {
+    animation: scaleIn 0.4s ease-out;
 }
