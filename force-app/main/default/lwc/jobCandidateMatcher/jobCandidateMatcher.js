@@ -8,7 +8,7 @@ export default class JobCandidateMatcher extends LightningElement {
 
     columns = [
     { label: 'Candidate Name', fieldName: 'candidateName' },
-    { label: 'Match Score (%)', fieldName: 'score', type: 'percent' },
+    { label: 'Match Score (%)', fieldName: 'score', type: 'number' },
     { label: 'Fit Level', fieldName: 'scoreLabel' }
 ];
     @wire(getMatchedCandidates, { jobPostingId: '$recordId' })

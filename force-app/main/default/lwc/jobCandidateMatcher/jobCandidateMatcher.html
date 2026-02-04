@@ -1,4 +1,24 @@
 <template>
+    <lightning-accordion allow-multiple-sections-open>
+        <lightning-accordion-section name="info" label="How Matching Works">
+            <p><b>Mandatory:</b></p>
+            <ul class="slds-list_dotted slds-m-left_medium">
+                <li>Matching Work Experience role</li>
+                <li>All required licenses must be Active</li>
+                <li>Exact license name match required</li>
+            </ul>
+
+            <p class="slds-m-top_small"><b>Score Weights:</b></p>
+            <ul class="slds-list_dotted slds-m-left_medium">
+                <li>Role – 20%</li>
+                <li>Experience – 15%</li>
+                <li>License – 25%</li>
+                <li>Skills – 25%</li>
+                <li>Procedures – 15%</li>
+            </ul>
+        </lightning-accordion-section>
+    </lightning-accordion>
+
     <lightning-card title="Best Matched Candidates">
         <template if:true={candidates}>
             <lightning-datatable
