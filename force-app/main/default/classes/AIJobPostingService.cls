@@ -1,13 +1,17 @@
 public class AIJobPostingService {
-    
+
     public static Map<String, Object> processNLPInput(String userInput) {
         try {
             String systemPrompt = buildSystemPrompt();
             String userPrompt = buildJobPostingPrompt(userInput);
             
+            // COMBINE PROMPTS
+            String combinedPrompt = systemPrompt + '\n\n' + userPrompt;
+            
+            // Call Gemini with specific model
             GeminiAPIService.GeminiResponse aiResponse = GeminiAPIService.callGeminiAPI(
-                systemPrompt, 
-                userPrompt
+                combinedPrompt, 
+                'gemini-2.0-flash' 
             );
             
             if (!aiResponse.success) {
@@ -22,6 +26,29 @@ public class AIJobPostingService {
             throw e;
         }
     }
+    
+    // public static Map<String, Object> processNLPInput(String userInput) {
+    //     try {
+    //         String systemPrompt = buildSystemPrompt();
+    //         String userPrompt = buildJobPostingPrompt(userInput);
+            
+    //         GeminiAPIService.GeminiResponse aiResponse = GeminiAPIService.callGeminiAPI(
+    //             systemPrompt, 
+    //             userPrompt
+    //         );
+            
+    //         if (!aiResponse.success) {
+    //             throw new CalloutException('Gemini API Error: ' + aiResponse.errorMessage);
+    //         }
+            
+    //         String responseText = GeminiAPIService.extractContent(aiResponse);
+    //         return parseAIResponse(responseText);
+            
+    //     } catch (Exception e) {
+    //         System.debug('Error in processNLPInput: ' + e.getMessage());
+    //         throw e;
+    //     }
+    // }
     
     private static String buildSystemPrompt() {
         return 'You are a job posting assistant that extracts structured data from natural language descriptions. ' +

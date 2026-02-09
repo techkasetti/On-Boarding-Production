@@ -38,13 +38,14 @@ public without sharing class ContactTriggerHandler {
 
         /* ------------------------------------------------------
            Step 3: Prevent duplicate Candidate__c creation
-           (Contact → Candidate__c already exists)
+           (Contact -> Candidate__c already exists)
         ------------------------------------------------------ */
         Set<Id> contactIds = new Set<Id>();
         for (Contact c : newContacts) {
             contactIds.add(c.Id);
         }
 
+        // Check if candidates already exist for these contacts
         Map<Id, Candidate__c> existingCandidatesByContact = new Map<Id, Candidate__c>();
         for (Candidate__c cand : [
             SELECT Id, Contact__c
@@ -61,18 +62,27 @@ public without sharing class ContactTriggerHandler {
 
         for (Contact c : newContacts) {
 
+            // Ensure Contact belongs to 'Candidates' Account and doesn't already have a Candidate record
             if (
                 c.AccountId != null &&
                 candidateAccounts.containsKey(c.AccountId) &&
                 !existingCandidatesByContact.containsKey(c.Id)
             ) {
-                Candidate__c candidate = new Candidate__c(
-                    Name        = c.FirstName != null
-                                  ? c.FirstName + ' ' + c.LastName
-                                  : c.LastName,
-                    Email__c    = c.Email,
-                    Contact__c  = c.Id
-                );
+                Candidate__c candidate = new Candidate__c();
+                
+                // MAPPING UPDATES BASED ON PDF MODEL:
+                
+                // 1. Name is Auto-Number (CAND-{0000}), so we map to Full_Name__c instead 
+                candidate.Full_Name__c = (c.FirstName != null ? c.FirstName + ' ' : '') + c.LastName;
+                
+                // 2. Map Email to Email__c 
+                candidate.Email__c = c.Email;
+                
+                // 3. Map Phone to Phone__c (New field in model) 
+                candidate.Phone__c = c.Phone;
+                
+                // 4. Link back to Contact (Assumed field based on your original code)
+                candidate.Contact__c = c.Id;
 
                 candidatesToInsert.add(candidate);
             }

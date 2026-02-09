@@ -1,3 +1,197 @@
+public class GeminiAPIService {
+    
+    // Base URL using Named Credential
+    private static final String API_BASE_URL = 'callout:Gemini_API/v1beta';
+
+    /**
+     * List available models
+     */
+    public static String listAvailableModels() {
+        try {
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint(API_BASE_URL + '/models');
+            req.setMethod('GET');
+            req.setTimeout(120000);
+            
+            Http http = new Http();
+            HttpResponse res = http.send(req);
+            
+            if (res.getStatusCode() == 200) {
+                Map<String, Object> response = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+                List<Object> models = (List<Object>) response.get('models');
+                List<String> modelNames = new List<String>();
+                for (Object modelObj : models) {
+                    Map<String, Object> model = (Map<String, Object>) modelObj;
+                    List<Object> methods = (List<Object>) model.get('supportedGenerationMethods');
+                    if (methods != null && methods.contains('generateContent')) {
+                        modelNames.add(((String)model.get('name')).substringAfter('models/'));
+                    }
+                }
+                return 'Available models: ' + String.join(modelNames, ', ');
+            } else {
+                return 'ERROR: ' + res.getStatusCode() + ' - ' + res.getBody();
+            }
+        } catch (Exception e) {
+            return 'ERROR: ' + e.getMessage();
+        }
+    }
+
+    /* ----------------------- Request/Response Models -------------------------- */
+
+    public class GeminiRequest {
+        public List<Content> contents;
+        public GenerationConfig generationConfig;
+        
+        public GeminiRequest() {
+            this.contents = new List<Content>();
+            this.generationConfig = new GenerationConfig();
+        }
+    }
+    
+    public class Content {
+        public List<Part> parts;
+        public Content() { this.parts = new List<Part>(); }
+    }
+    
+    public class Part {
+        public String text;
+        public Part(String text) { this.text = text; }
+    }
+    
+    public class GenerationConfig {
+        public Decimal temperature;
+        public Integer maxOutputTokens;
+        public GenerationConfig() {
+            this.temperature = 0.7;
+            this.maxOutputTokens = 8192; // Increased for Gemini 2.0
+        }
+    }
+
+    public class GeminiResponse {
+        public List<Candidate> candidates;
+        public UsageMetadata usageMetadata;
+        public Boolean success;
+        public String errorMessage;
+        public GeminiResponse() { this.success = false; }
+    }
+    
+    public class Candidate {
+        public Content content;
+        public String finishReason;
+    }
+    
+    public class UsageMetadata {
+        public Integer totalTokenCount;
+    }
+
+    /* ----------------------- API Call Methods -------------------------- */
+
+    /**
+     * Call Gemini with a specific Prompt and Model Name
+     */
+    public static GeminiResponse callGeminiAPI(String prompt, String modelName) {
+        GeminiRequest request = new GeminiRequest();
+        
+        Content userContent = new Content();
+        userContent.parts.add(new Part(prompt));
+        request.contents.add(userContent);
+        
+        return sendRequest(request, modelName);
+    }
+
+    /**
+     * Overload: Call Gemini with Prompt only (Auto-retries models)
+     * Useful if you don't care which model answers, just want an answer.
+     */
+    public static GeminiResponse callGeminiAPI(String prompt) {
+        String[] modelsToTry = new String[] {
+            'gemini-2.0-flash',      // Latest Flash
+            'gemini-2.0-flash-exp',  // Experimental
+            'gemini-1.5-flash',      // Fallback
+            'gemini-1.5-pro'         // Fallback Pro
+        };
+        
+        GeminiResponse lastResponse = null;
+        
+        for (String model : modelsToTry) {
+            System.debug('Trying model: ' + model);
+            lastResponse = callGeminiAPI(prompt, model);
+            
+            if (lastResponse.success) {
+                System.debug('Success with model: ' + model);
+                return lastResponse;
+            }
+        }
+        return lastResponse;
+    }
+
+    /**
+     * Send HTTP Request
+     */
+    private static GeminiResponse sendRequest(GeminiRequest request, String modelName) {
+        GeminiResponse response = new GeminiResponse();
+        
+        try {
+            HttpRequest req = new HttpRequest();
+            String endpoint = API_BASE_URL + '/models/' + modelName + ':generateContent';
+            
+            req.setEndpoint(endpoint);
+            req.setMethod('POST');
+            req.setHeader('Content-Type', 'application/json');
+            req.setTimeout(120000);
+            req.setBody(JSON.serialize(request, true));
+            
+            Http http = new Http();
+            HttpResponse res = http.send(req);
+            
+            if (res.getStatusCode() == 200) {
+                response = (GeminiResponse) JSON.deserialize(res.getBody(), GeminiResponse.class);
+                response.success = true;
+            } else {
+                response.success = false;
+                response.errorMessage = 'HTTP ' + res.getStatusCode() + ': ' + res.getBody();
+            }
+        } catch (Exception e) {
+            response.success = false;
+            response.errorMessage = e.getMessage();
+        }
+        return response;
+    }
+
+    /**
+     * Utility: Extract text from response
+     */
+    public static String extractContent(GeminiResponse response) {
+        if (response != null && response.success && response.candidates != null && !response.candidates.isEmpty()) {
+            Candidate c = response.candidates[0];
+            if (c.content != null && c.content.parts != null && !c.content.parts.isEmpty()) {
+                return c.content.parts[0].text;
+            }
+        }
+        return null;
+    }
+
+    public static String testConnection() {
+        GeminiResponse res = callGeminiAPI('Say "Hello World!"', 'gemini-2.0-flash');
+        return res.success ? extractContent(res) : 'Error: ' + res.errorMessage;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // public class GeminiAPIService {
     
 //     // Use v1beta API with correct model naming
@@ -241,253 +435,253 @@
 //     }
 // }
 
-public class GeminiAPIService {
+// public class GeminiAPIService {
     
-    // =====================================================
-    // UPDATED FOR NAMED CREDENTIALS (ONLY CHANGE MADE)
-    // =====================================================
-    // Old:
-    // private static final String API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
-    // private static final String API_KEY = 'your old key';
+//     // =====================================================
+//     // UPDATED FOR NAMED CREDENTIALS (ONLY CHANGE MADE)
+//     // =====================================================
+//     // Old:
+//     // private static final String API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+//     // private static final String API_KEY = 'your old key';
 
-    // New (base path only)
-    private static final String API_BASE_URL = 'callout:Gemini_API/v1beta';
+//     // New (base path only)
+//     private static final String API_BASE_URL = 'callout:Gemini_API/v1beta';
 
-    /**
-     * List all available models to find the right one
-     */
-    public static String listAvailableModels() {
-        try {
-            HttpRequest req = new HttpRequest();
+//     /**
+//      * List all available models to find the right one
+//      */
+//     public static String listAvailableModels() {
+//         try {
+//             HttpRequest req = new HttpRequest();
             
-            // OLD:
-            // req.setEndpoint(API_BASE_URL + '/models?key=' + API_KEY);
+//             // OLD:
+//             // req.setEndpoint(API_BASE_URL + '/models?key=' + API_KEY);
 
-            // NEW (Named Credential automatically injects x-goog-api-key header)
-            req.setEndpoint(API_BASE_URL + '/models');
+//             // NEW (Named Credential automatically injects x-goog-api-key header)
+//             req.setEndpoint(API_BASE_URL + '/models');
 
-            req.setMethod('GET');
-            req.setTimeout(120000);
+//             req.setMethod('GET');
+//             req.setTimeout(120000);
             
-            Http http = new Http();
-            HttpResponse res = http.send(req);
+//             Http http = new Http();
+//             HttpResponse res = http.send(req);
             
-            System.debug('=== LIST MODELS RESPONSE ===');
-            System.debug('Status: ' + res.getStatusCode());
-            System.debug('Body: ' + res.getBody());
+//             System.debug('=== LIST MODELS RESPONSE ===');
+//             System.debug('Status: ' + res.getStatusCode());
+//             System.debug('Body: ' + res.getBody());
             
-            if (res.getStatusCode() == 200) {
-                Map<String, Object> response = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-                List<Object> models = (List<Object>) response.get('models');
+//             if (res.getStatusCode() == 200) {
+//                 Map<String, Object> response = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+//                 List<Object> models = (List<Object>) response.get('models');
                 
-                List<String> modelNames = new List<String>();
-                for (Object modelObj : models) {
-                    Map<String, Object> model = (Map<String, Object>) modelObj;
-                    String modelName = (String) model.get('name');
-                    List<Object> methods = (List<Object>) model.get('supportedGenerationMethods');
+//                 List<String> modelNames = new List<String>();
+//                 for (Object modelObj : models) {
+//                     Map<String, Object> model = (Map<String, Object>) modelObj;
+//                     String modelName = (String) model.get('name');
+//                     List<Object> methods = (List<Object>) model.get('supportedGenerationMethods');
                     
-                    if (methods != null && methods.contains('generateContent')) {
-                        String modelId = modelName.substringAfter('models/');
-                        modelNames.add(modelId);
-                    }
-                }
+//                     if (methods != null && methods.contains('generateContent')) {
+//                         String modelId = modelName.substringAfter('models/');
+//                         modelNames.add(modelId);
+//                     }
+//                 }
                 
-                return 'Available models: ' + String.join(modelNames, ', ');
-            } else {
-                return 'ERROR: ' + res.getStatusCode() + ' - ' + res.getBody();
-            }
-        } catch (Exception e) {
-            return 'ERROR: ' + e.getMessage();
-        }
-    }
+//                 return 'Available models: ' + String.join(modelNames, ', ');
+//             } else {
+//                 return 'ERROR: ' + res.getStatusCode() + ' - ' + res.getBody();
+//             }
+//         } catch (Exception e) {
+//             return 'ERROR: ' + e.getMessage();
+//         }
+//     }
 
-    /* ----------------------- Request Models -------------------------- */
+//     /* ----------------------- Request Models -------------------------- */
 
-    public class GeminiRequest {
-        public List<Content> contents;
-        public GenerationConfig generationConfig;
+//     public class GeminiRequest {
+//         public List<Content> contents;
+//         public GenerationConfig generationConfig;
         
-        public GeminiRequest() {
-            this.contents = new List<Content>();
-            this.generationConfig = new GenerationConfig();
-        }
-    }
+//         public GeminiRequest() {
+//             this.contents = new List<Content>();
+//             this.generationConfig = new GenerationConfig();
+//         }
+//     }
     
-    public class Content {
-        public List<Part> parts;
+//     public class Content {
+//         public List<Part> parts;
         
-        public Content() {
-            this.parts = new List<Part>();
-        }
-    }
+//         public Content() {
+//             this.parts = new List<Part>();
+//         }
+//     }
     
-    public class Part {
-        public String text;
+//     public class Part {
+//         public String text;
         
-        public Part(String text) {
-            this.text = text;
-        }
-    }
+//         public Part(String text) {
+//             this.text = text;
+//         }
+//     }
     
-    public class GenerationConfig {
-        public Decimal temperature;
-        public Integer maxOutputTokens;
+//     public class GenerationConfig {
+//         public Decimal temperature;
+//         public Integer maxOutputTokens;
         
-        public GenerationConfig() {
-            this.temperature = 0.7;
-            this.maxOutputTokens = 4000;
-        }
-    }
+//         public GenerationConfig() {
+//             this.temperature = 0.7;
+//             this.maxOutputTokens = 4000;
+//         }
+//     }
 
-    /* ----------------------- Response Models -------------------------- */
+//     /* ----------------------- Response Models -------------------------- */
 
-    public class GeminiResponse {
-        public List<Candidate> candidates;
-        public UsageMetadata usageMetadata;
-        public Boolean success;
-        public String errorMessage;
+//     public class GeminiResponse {
+//         public List<Candidate> candidates;
+//         public UsageMetadata usageMetadata;
+//         public Boolean success;
+//         public String errorMessage;
         
-        public GeminiResponse() {
-            this.success = false;
-        }
-    }
+//         public GeminiResponse() {
+//             this.success = false;
+//         }
+//     }
     
-    public class Candidate {
-        public Content content;
-        public String finishReason;
-    }
+//     public class Candidate {
+//         public Content content;
+//         public String finishReason;
+//     }
     
-    public class UsageMetadata {
-        public Integer promptTokenCount;
-        public Integer candidatesTokenCount;
-        public Integer totalTokenCount;
-    }
+//     public class UsageMetadata {
+//         public Integer promptTokenCount;
+//         public Integer candidatesTokenCount;
+//         public Integer totalTokenCount;
+//     }
 
-    /**
-     * Main Gemini call
-     */
-    public static GeminiResponse callGeminiAPI(String systemPrompt, String userPrompt, String modelName) {
-        GeminiRequest request = new GeminiRequest();
+//     /**
+//      * Main Gemini call
+//      */
+//     public static GeminiResponse callGeminiAPI(String systemPrompt, String userPrompt, String modelName) {
+//         GeminiRequest request = new GeminiRequest();
         
-        String combinedPrompt = systemPrompt + '\n\n' + userPrompt;
+//         String combinedPrompt = systemPrompt + '\n\n' + userPrompt;
         
-        Content userContent = new Content();
-        userContent.parts.add(new Part(combinedPrompt));
-        request.contents.add(userContent);
+//         Content userContent = new Content();
+//         userContent.parts.add(new Part(combinedPrompt));
+//         request.contents.add(userContent);
         
-        return sendRequest(request, modelName);
-    }
+//         return sendRequest(request, modelName);
+//     }
 
-    public static GeminiResponse callGeminiAPI(String systemPrompt, String userPrompt) {
-        String[] modelsToTry = new String[] {
-            'gemini-2.5-flash',
-            'gemini-2.5-pro',
-            'gemini-2.0-flash-exp',
-            'gemini-2.0-flash',
-            'gemini-1.5-flash',
-            'gemini-1.5-pro'
-        };
+//     public static GeminiResponse callGeminiAPI(String systemPrompt, String userPrompt) {
+//         String[] modelsToTry = new String[] {
+//             'gemini-2.5-flash',
+//             'gemini-2.5-pro',
+//             'gemini-2.0-flash-exp',
+//             'gemini-2.0-flash',
+//             'gemini-1.5-flash',
+//             'gemini-1.5-pro'
+//         };
         
-        GeminiResponse lastResponse = null;
+//         GeminiResponse lastResponse = null;
         
-        for (String model : modelsToTry) {
-            System.debug('Trying model: ' + model);
-            lastResponse = callGeminiAPI(systemPrompt, userPrompt, model);
+//         for (String model : modelsToTry) {
+//             System.debug('Trying model: ' + model);
+//             lastResponse = callGeminiAPI(systemPrompt, userPrompt, model);
             
-            if (lastResponse.success) {
-                System.debug('Success with model: ' + model);
-                return lastResponse;
-            }
+//             if (lastResponse.success) {
+//                 System.debug('Success with model: ' + model);
+//                 return lastResponse;
+//             }
             
-            System.debug('Failed with model ' + model + ': ' + lastResponse.errorMessage);
-        }
+//             System.debug('Failed with model ' + model + ': ' + lastResponse.errorMessage);
+//         }
         
-        return lastResponse;
-    }
+//         return lastResponse;
+//     }
 
-    /**
-     * Send request to Gemini
-     */
-    private static GeminiResponse sendRequest(GeminiRequest request, String modelName) {
-        GeminiResponse response = new GeminiResponse();
+//     /**
+//      * Send request to Gemini
+//      */
+//     private static GeminiResponse sendRequest(GeminiRequest request, String modelName) {
+//         GeminiResponse response = new GeminiResponse();
         
-        try {
-            HttpRequest req = new HttpRequest();
+//         try {
+//             HttpRequest req = new HttpRequest();
 
-            // OLD:
-            // String endpoint = API_BASE_URL + '/models/' + modelName + ':generateContent?key=' + API_KEY;
+//             // OLD:
+//             // String endpoint = API_BASE_URL + '/models/' + modelName + ':generateContent?key=' + API_KEY;
 
-            // NEW (Named Credential takes care of API key)
-            String endpoint = API_BASE_URL + '/models/' + modelName + ':generateContent';
+//             // NEW (Named Credential takes care of API key)
+//             String endpoint = API_BASE_URL + '/models/' + modelName + ':generateContent';
             
-            req.setEndpoint(endpoint);
-            req.setMethod('POST');
-            req.setHeader('Content-Type', 'application/json');
-            req.setTimeout(120000);
-            req.setBody(JSON.serialize(request, true));
+//             req.setEndpoint(endpoint);
+//             req.setMethod('POST');
+//             req.setHeader('Content-Type', 'application/json');
+//             req.setTimeout(120000);
+//             req.setBody(JSON.serialize(request, true));
             
-            System.debug('=== GEMINI API REQUEST ===');
-            System.debug('Model: ' + modelName);
-            System.debug('Endpoint: ' + endpoint);
+//             System.debug('=== GEMINI API REQUEST ===');
+//             System.debug('Model: ' + modelName);
+//             System.debug('Endpoint: ' + endpoint);
             
-            Http http = new Http();
-            HttpResponse res = http.send(req);
+//             Http http = new Http();
+//             HttpResponse res = http.send(req);
             
-            System.debug('=== GEMINI API RESPONSE ===');
-            System.debug('Status: ' + res.getStatusCode());
-            System.debug('Body: ' + res.getBody());
+//             System.debug('=== GEMINI API RESPONSE ===');
+//             System.debug('Status: ' + res.getStatusCode());
+//             System.debug('Body: ' + res.getBody());
             
-            if (res.getStatusCode() == 200) {
-                response = (GeminiResponse) JSON.deserialize(res.getBody(), GeminiResponse.class);
-                response.success = true;
-            } else {
-                response.success = false;
-                response.errorMessage = 'HTTP ' + res.getStatusCode() + ': ' + res.getBody();
-            }
+//             if (res.getStatusCode() == 200) {
+//                 response = (GeminiResponse) JSON.deserialize(res.getBody(), GeminiResponse.class);
+//                 response.success = true;
+//             } else {
+//                 response.success = false;
+//                 response.errorMessage = 'HTTP ' + res.getStatusCode() + ': ' + res.getBody();
+//             }
             
-        } catch (Exception e) {
-            response.success = false;
-            response.errorMessage = e.getMessage();
-            System.debug('ERROR in Gemini API call: ' + e.getMessage());
-        }
+//         } catch (Exception e) {
+//             response.success = false;
+//             response.errorMessage = e.getMessage();
+//             System.debug('ERROR in Gemini API call: ' + e.getMessage());
+//         }
         
-        return response;
-    }
+//         return response;
+//     }
 
-    /**
-     * Extract text
-     */
-    public static String extractContent(GeminiResponse response) {
-        if (response == null || !response.success || response.candidates == null || response.candidates.isEmpty()) {
-            return null;
-        }
+//     /**
+//      * Extract text
+//      */
+//     public static String extractContent(GeminiResponse response) {
+//         if (response == null || !response.success || response.candidates == null || response.candidates.isEmpty()) {
+//             return null;
+//         }
         
-        Candidate candidate = response.candidates[0];
-        if (candidate.content == null || candidate.content.parts == null || candidate.content.parts.isEmpty()) {
-            return null;
-        }
+//         Candidate candidate = response.candidates[0];
+//         if (candidate.content == null || candidate.content.parts == null || candidate.content.parts.isEmpty()) {
+//             return null;
+//         }
         
-        return candidate.content.parts[0].text;
-    }
+//         return candidate.content.parts[0].text;
+//     }
 
-    /**
-     * Test connection
-     */
-    public static String testConnection() {
-        String modelsList = listAvailableModels();
-        System.debug('Available Models: ' + modelsList);
+//     /**
+//      * Test connection
+//      */
+//     public static String testConnection() {
+//         String modelsList = listAvailableModels();
+//         System.debug('Available Models: ' + modelsList);
         
-        GeminiResponse response = callGeminiAPI(
-            'You are a helpful assistant.',
-            'Say "Hello from Gemini!" if you can hear me.'
-        );
+//         GeminiResponse response = callGeminiAPI(
+//             'You are a helpful assistant.',
+//             'Say "Hello from Gemini!" if you can hear me.'
+//         );
         
-        if (response.success) {
-            return extractContent(response);
-        } else {
-            return 'ERROR: ' + response.errorMessage;
-        }
-    }
-}
+//         if (response.success) {
+//             return extractContent(response);
+//         } else {
+//             return 'ERROR: ' + response.errorMessage;
+//         }
+//     }
+// }
 
 
