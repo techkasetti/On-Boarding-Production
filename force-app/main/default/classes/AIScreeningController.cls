@@ -561,9 +561,13 @@ public with sharing class AIScreeningController {
             System.debug('=== AI SCREENING STARTED ===');
             System.debug('Candidate: ' + candidate.Name);
             System.debug('Rules to consider: ' + rules.size());
-            
+            // COMBINE PROMPTS
+            String combinedPrompt = systemPrompt + '\n\n' + userPrompt;
             // Call Gemini API
-            GeminiAPIService.GeminiResponse apiResponse = GeminiAPIService.callGeminiAPI(systemPrompt, userPrompt);
+            GeminiAPIService.GeminiResponse apiResponse = GeminiAPIService.callGeminiAPI(
+                combinedPrompt, 
+                'gemini-2.0-flash-exp'
+            );
             
             if (!apiResponse.success) {
                 result.message = 'API call failed: ' + apiResponse.errorMessage;
