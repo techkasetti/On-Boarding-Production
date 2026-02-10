@@ -1,17 +1,17 @@
+// AIJobPostingService.cls - COMPREHENSIVE VERSION WITH ALL CHILD OBJECTS
 public class AIJobPostingService {
-
+    
+    /**
+     * Process natural language input and extract structured job posting data
+     */
     public static Map<String, Object> processNLPInput(String userInput) {
         try {
             String systemPrompt = buildSystemPrompt();
-            String userPrompt = buildJobPostingPrompt(userInput);
+            String userPrompt = buildComprehensiveJobPostingPrompt(userInput);
             
-            // COMBINE PROMPTS
-            String combinedPrompt = systemPrompt + '\n\n' + userPrompt;
-            
-            // Call Gemini with specific model
             GeminiAPIService.GeminiResponse aiResponse = GeminiAPIService.callGeminiAPI(
-                combinedPrompt, 
-                'gemini-2.0-flash' 
+                systemPrompt, 
+                userPrompt
             );
             
             if (!aiResponse.success) {
@@ -27,35 +27,93 @@ public class AIJobPostingService {
         }
     }
     
-    // public static Map<String, Object> processNLPInput(String userInput) {
-    //     try {
-    //         String systemPrompt = buildSystemPrompt();
-    //         String userPrompt = buildJobPostingPrompt(userInput);
-            
-    //         GeminiAPIService.GeminiResponse aiResponse = GeminiAPIService.callGeminiAPI(
-    //             systemPrompt, 
-    //             userPrompt
-    //         );
-            
-    //         if (!aiResponse.success) {
-    //             throw new CalloutException('Gemini API Error: ' + aiResponse.errorMessage);
-    //         }
-            
-    //         String responseText = GeminiAPIService.extractContent(aiResponse);
-    //         return parseAIResponse(responseText);
-            
-    //     } catch (Exception e) {
-    //         System.debug('Error in processNLPInput: ' + e.getMessage());
-    //         throw e;
-    //     }
-    // }
+private static String buildSystemPrompt() {
+    return 'You are a precise data extraction assistant. ' +
+           'Extract ONLY the information explicitly stated in the user input. ' +
+           'Do NOT infer, assume, or add any information that is not clearly mentioned. ' +
+           'Respond with ONLY a valid JSON object. ' +
+           'No markdown formatting, no explanations, no additional text.';
+}
+
+private static String buildComprehensiveJobPostingPrompt(String userInput) {
+    Map<String, List<String>> picklistValues = getPicklistValues();
     
-    private static String buildSystemPrompt() {
-        return 'You are a job posting assistant that extracts structured data from natural language descriptions. ' +
-               'You must respond with ONLY a valid JSON object, no additional text, explanations, or markdown formatting. ' +
-               'CRITICAL: Only extract dates if they are explicitly mentioned in the user input. If dates are NOT mentioned, set them to null.';
-    }
+    String prompt = 'Extract job posting details from user input. ONLY extract what is EXPLICITLY mentioned. DO NOT infer or add anything not stated.\n\n';
+    prompt += 'Required JSON format:\n';
+    prompt += '{\n';
+    prompt += '  "jobPosting": {\n';
+    prompt += '    "Job_Title__c": "exact job title mentioned OR null",\n';
+    prompt += '    "Description__c": "description if provided OR null",\n';
+    prompt += '    "Category__c": "Medical" (always set this),\n';
+    prompt += '    "Role_Type__c": "MUST BE ONE OF: ' + String.join(picklistValues.get('Role_Type__c'), ', ') + ' OR null",\n';
+    prompt += '    "Department__c": "MUST BE ONE OF: ' + String.join(picklistValues.get('Department__c'), ', ') + ' OR null",\n';
+    prompt += '    "Employment_Type__c": "Full-time" (default if not mentioned),\n';
+    prompt += '    "Shift_Type__c": "MUST BE ONE OF: ' + String.join(picklistValues.get('Shift_Type__c'), ', ') + ' OR null",\n';
+    prompt += '    "Min_Experience_Years__c": number (extract minimum years) OR null,\n';
+    prompt += '    "Max_Experience_Years__c": number (extract maximum years) OR null,\n';
+    prompt += '    "Start_Date__c": "YYYY-MM-DD" (only if date mentioned) OR null,\n';
+    prompt += '    "End_Date__c": "YYYY-MM-DD" (only if date mentioned) OR null,\n';
+    prompt += '    "Facility_Name__c": "exact facility name" OR null,\n';
+    prompt += '    "City__c": "exact city name" OR null,\n';
+    prompt += '    "State__c": "exact state/province" OR null,\n';
+    prompt += '    "Country__c": "exact country" OR null,\n';
+    prompt += '    "Credentialing_Required__c": true (if mentioned) OR null,\n';
+    prompt += '    "Privilege_Scope__c": "privileges description" (if mentioned) OR null\n';
+    prompt += '  },\n';
+    prompt += '  "educationRequirements": [\n';
+    prompt += '    {"Degree_Name__c": "exact degree name", "Mandatory__c": true}\n';
+    prompt += '    // ONLY include degrees explicitly mentioned in input\n';
+    prompt += '  ],\n';
+    prompt += '  "licenseRequirements": [\n';
+    prompt += '    {\n';
+    prompt += '      "License_Name__c": "exact license name",\n';
+    prompt += '      "Issuing_Authority__c": "authority if mentioned OR reasonable authority based on country",\n';
+    prompt += '      "Active_Required__c": true,\n';
+    prompt += '      "Expiry_Check_Required__c": true\n';
+    prompt += '    }\n';
+    prompt += '    // ONLY include licenses/registrations explicitly mentioned\n';
+    prompt += '  ],\n';
+    prompt += '  "certificationRequirements": [\n';
+    prompt += '    {"Certification_Name__c": "exact certification", "Mandatory__c": true}\n';
+    prompt += '    // ONLY include certifications explicitly mentioned (BLS, ACLS, etc.)\n';
+    prompt += '  ],\n';
+    prompt += '  "clinicalSkills": [\n';
+    prompt += '    {\n';
+    prompt += '      "Skill_Name__c": "exact skill name",\n';
     
+    // CRITICAL FIX: Use exact picklist values from Salesforce
+    prompt += '      "Skill_Level__c": "MUST BE EXACTLY ONE OF: Basic, Intermediate, Advanced (map Expert→Advanced)",\n';
+    
+    prompt += '      "Mandatory__c": true\n';
+    prompt += '    }\n';
+    prompt += '    // ONLY include skills explicitly mentioned\n';
+    prompt += '  ],\n';
+    prompt += '  "procedureRequirements": [\n';
+    prompt += '    {"Procedure_Name__c": "exact procedure", "Critical__c": true}\n';
+    prompt += '    // ONLY include procedures explicitly mentioned (IV Cannulation, Wound Suturing, etc.)\n';
+    prompt += '  ],\n';
+    prompt += '  "complianceRequirements": [\n';
+    prompt += '    {"Compliance_Name__c": "exact compliance", "Mandatory__c": true}\n';
+    prompt += '    // ONLY include compliance explicitly mentioned (HIPAA, etc.)\n';
+    prompt += '  ]\n';
+    prompt += '}\n\n';
+    prompt += '=== STRICT RULES ===\n';
+    prompt += '1. Extract ONLY what is explicitly stated in the input\n';
+    prompt += '2. Use null for any field not mentioned\n';
+    prompt += '3. Use empty arrays [] if no requirements mentioned\n';
+    prompt += '4. For "valid Medical Council Registration" or similar phrases, create a license requirement\n';
+    prompt += '5. Match picklist values exactly (case-sensitive)\n';
+    
+    // CRITICAL FIX: Add skill level mapping rule
+    prompt += '6. For Skill_Level__c: ONLY use "Basic", "Intermediate", or "Advanced". Map any "Expert" or "Proficient" to "Advanced"\n';
+    
+    prompt += '7. For experience "2-10 years", set Min_Experience_Years__c: 2, Max_Experience_Years__c: 10\n';
+    prompt += '8. Return ONLY valid JSON - no markdown, no explanations, no extra text\n';
+    prompt += '9. If you cannot parse something, use null rather than guessing\n\n';
+    prompt += 'User Input:\n' + userInput;
+    
+    return prompt;
+}
     private static Map<String, List<String>> getPicklistValues() {
         Map<String, List<String>> picklistMap = new Map<String, List<String>>();
         
@@ -64,7 +122,7 @@ public class AIJobPostingService {
             Map<String, Schema.SObjectField> fieldMap = jobPostingDescribe.fields.getMap();
             
             List<String> picklistFields = new List<String>{
-                'Category__c', 'Experience_Level__c', 'Specialization__c', 'Status__c'
+                'Category__c', 'Role_Type__c', 'Department__c', 'Employment_Type__c', 'Shift_Type__c'
             };
             
             for (String fieldName : picklistFields) {
@@ -84,41 +142,15 @@ public class AIJobPostingService {
             }
         } catch (Exception e) {
             System.debug('Error getting picklist values: ' + e.getMessage());
-            picklistMap.put('Category__c', new List<String>{'Technology', 'Healthcare', 'Finance', 'Marketing', 'Sales', 'Operations', 'HR', 'Legal', 'Other'});
-            picklistMap.put('Experience_Level__c', new List<String>{'Entry Level', 'Mid Level', 'Senior Level', 'Executive'});
-            picklistMap.put('Specialization__c', new List<String>{'Psychiatrist', 'Dermatologist', 'Cardiologist', 'General Nurse', 'Radiologist'});
-            picklistMap.put('Status__c', new List<String>{'Open', 'Closed'});
+            // Fallback values
+            picklistMap.put('Category__c', new List<String>{'Medical'});
+            picklistMap.put('Role_Type__c', new List<String>{'Doctor', 'Nurse', 'Technician', 'Paramedic'});
+            picklistMap.put('Department__c', new List<String>{'Emergency', 'ICU', 'OPD', 'Surgery', 'Radiology'});
+            picklistMap.put('Employment_Type__c', new List<String>{'Full-time', 'Part-time', 'Contract'});
+            picklistMap.put('Shift_Type__c', new List<String>{'Day', 'Night', 'Rotational', 'Emergency'});
         }
         
         return picklistMap;
-    }
-    
-    private static String buildJobPostingPrompt(String userInput) {
-        Map<String, List<String>> picklistValues = getPicklistValues();
-        
-        String prompt = 'Extract job posting details from the following text and return ONLY a valid JSON object.\n\n';
-        prompt += 'Required JSON format:\n';
-        prompt += '{\n';
-        prompt += '  "name": "job posting name/title (max 80 characters)",\n';
-        prompt += '  "category": "MUST BE EXACTLY ONE OF: ' + String.join(picklistValues.get('Category__c'), ', ') + '",\n';
-        prompt += '  "location": "city, state or remote (max 255 characters)",\n';
-        prompt += '  "experienceLevel": "MUST BE EXACTLY ONE OF: ' + String.join(picklistValues.get('Experience_Level__c'), ', ') + '",\n';
-        prompt += '  "specialization": "MUST BE EXACTLY ONE OF: ' + String.join(picklistValues.get('Specialization__c'), ', ') + ' (ONLY for healthcare, otherwise null)",\n';
-        prompt += '  "description": "full detailed job description",\n';
-        prompt += '  "status": "MUST BE EXACTLY ONE OF: ' + String.join(picklistValues.get('Status__c'), ', ') + '",\n';
-        prompt += '  "startDate": "YYYY-MM-DD format OR null if not mentioned",\n';
-        prompt += '  "endDate": "YYYY-MM-DD format OR null if not mentioned"\n';
-        prompt += '}\n\n';
-        prompt += 'CRITICAL RULES:\n';
-        prompt += '- Category: Match user input to ONE of the valid values\n';
-        prompt += '- Experience Level: Match to ONE of the valid values\n';
-        prompt += '- Specialization: ONLY for healthcare category\n';
-        prompt += '- Status: Match to ONE of the valid values\n';
-        prompt += '- **DATES: ONLY extract if explicitly mentioned (e.g., "starts on Feb 1" or "from 2026-02-01"). If NOT mentioned, set to null**\n';
-        prompt += '- Return ONLY the JSON object, no markdown, no explanations\n\n';
-        prompt += 'User Input:\n' + userInput;
-        
-        return prompt;
     }
     
     private static Map<String, Object> parseAIResponse(String aiResponse) {
@@ -128,6 +160,7 @@ public class AIJobPostingService {
             
             String cleanJson = aiResponse.trim();
             
+            // Remove markdown code blocks if present
             if (cleanJson.startsWith('```json')) {
                 cleanJson = cleanJson.substring(7);
             }
@@ -144,10 +177,7 @@ public class AIJobPostingService {
             
             Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(cleanJson);
             
-            System.debug('Parsed JSON Map:');
-            for (String key : result.keySet()) {
-                System.debug('  ' + key + ' = ' + result.get(key));
-            }
+            System.debug('Parsed JSON Map - Keys: ' + result.keySet());
             
             return result;
             
@@ -158,164 +188,248 @@ public class AIJobPostingService {
         }
     }
     
-    private static Map<String, Object> validatePicklistValues(Map<String, Object> jobData) {
-        Map<String, List<String>> validPicklists = getPicklistValues();
+    /**
+     * Create comprehensive job posting with all child records
+     */
+   public static String createComprehensiveJobPosting(Map<String, Object> aiData) {
+    Savepoint sp = Database.setSavepoint();
+    
+    try {
+        System.debug('===== CREATING COMPREHENSIVE JOB POSTING =====');
+        System.debug('AI Data: ' + JSON.serializePretty(aiData));
         
-        String category = getString(jobData, 'category');
-        if (String.isNotBlank(category)) {
-            String validCategory = findClosestMatch(category, validPicklists.get('Category__c'));
-            if (validCategory != null) {
-                jobData.put('category', validCategory);
-            } else {
-                jobData.put('category', validPicklists.get('Category__c')[0]);
-            }
+        // Extract main job posting data
+        Map<String, Object> jobPostingData = (Map<String, Object>) aiData.get('jobPosting');
+        
+        // Create main Job Posting record
+        Job_Posting__c jp = new Job_Posting__c();
+        
+        // Required fields with validation
+        jp.Job_Title__c = getString(jobPostingData, 'Job_Title__c');
+        if (String.isBlank(jp.Job_Title__c)) {
+            throw new CalloutException('Job Title is required but not found in input');
         }
         
-        String expLevel = getString(jobData, 'experienceLevel');
-        if (String.isNotBlank(expLevel)) {
-            String validExpLevel = findClosestMatch(expLevel, validPicklists.get('Experience_Level__c'));
-            if (validExpLevel != null) {
-                jobData.put('experienceLevel', validExpLevel);
-            } else {
-                jobData.put('experienceLevel', validPicklists.get('Experience_Level__c')[0]);
-            }
+        jp.Category__c = getString(jobPostingData, 'Category__c');
+        if (String.isBlank(jp.Category__c)) {
+            jp.Category__c = 'Medical'; // Default
         }
         
-        String specialization = getString(jobData, 'specialization');
-        if (String.isNotBlank(specialization)) {
-            String validSpecialization = findClosestMatch(specialization, validPicklists.get('Specialization__c'));
-            if (validSpecialization != null) {
-                jobData.put('specialization', validSpecialization);
-            } else {
-                jobData.put('specialization', null);
-            }
+        jp.Role_Type__c = getString(jobPostingData, 'Role_Type__c');
+        if (String.isBlank(jp.Role_Type__c)) {
+            throw new CalloutException('Role Type is required but not found in input');
         }
         
-        String status = getString(jobData, 'status');
-        if (String.isNotBlank(status)) {
-            String validStatus = findClosestMatch(status, validPicklists.get('Status__c'));
-            if (validStatus != null) {
-                jobData.put('status', validStatus);
-            } else {
-                jobData.put('status', validPicklists.get('Status__c')[0]);
-            }
+        jp.Employment_Type__c = getString(jobPostingData, 'Employment_Type__c');
+        if (String.isBlank(jp.Employment_Type__c)) {
+            jp.Employment_Type__c = 'Full-time'; // Default
         }
         
-        return jobData;
+        jp.Facility_Name__c = getString(jobPostingData, 'Facility_Name__c');
+        if (String.isBlank(jp.Facility_Name__c)) {
+            throw new CalloutException('Facility Name is required but not found in input');
+        }
+        
+        jp.City__c = getString(jobPostingData, 'City__c');
+        if (String.isBlank(jp.City__c)) {
+            throw new CalloutException('City is required but not found in input');
+        }
+        
+        jp.State__c = getString(jobPostingData, 'State__c');
+        if (String.isBlank(jp.State__c)) {
+            throw new CalloutException('State is required but not found in input');
+        }
+        
+        jp.Country__c = getString(jobPostingData, 'Country__c');
+        if (String.isBlank(jp.Country__c)) {
+            throw new CalloutException('Country is required but not found in input');
+        }
+        
+        jp.Start_Date__c = getDate(jobPostingData, 'Start_Date__c');
+        if (jp.Start_Date__c == null) {
+            jp.Start_Date__c = Date.today().addDays(30); // Default to 30 days from today
+        }
+        
+        // Optional fields
+        jp.Description__c = getString(jobPostingData, 'Description__c');
+        jp.Department__c = getString(jobPostingData, 'Department__c');
+        jp.Shift_Type__c = getString(jobPostingData, 'Shift_Type__c');
+        jp.End_Date__c = getDate(jobPostingData, 'End_Date__c');
+        jp.Privilege_Scope__c = getString(jobPostingData, 'Privilege_Scope__c');
+        
+        // Numeric fields
+        if (jobPostingData.containsKey('Min_Experience_Years__c')) {
+            jp.Min_Experience_Years__c = getDecimal(jobPostingData, 'Min_Experience_Years__c');
+        }
+        if (jobPostingData.containsKey('Max_Experience_Years__c')) {
+            jp.Max_Experience_Years__c = getDecimal(jobPostingData, 'Max_Experience_Years__c');
+        }
+        
+        // Boolean fields
+        jp.Credentialing_Required__c = getBoolean(jobPostingData, 'Credentialing_Required__c', false);
+        
+        System.debug('Job Posting to insert: ' + jp);
+        insert jp;
+        System.debug('Job Posting created with ID: ' + jp.Id);
+        
+        // Create child records ONLY if data exists
+        createEducationRequirements(jp.Id, aiData);
+        createLicenseRequirements(jp.Id, aiData);
+        createCertificationRequirements(jp.Id, aiData);
+        createClinicalSkills(jp.Id, aiData);
+        createProcedureRequirements(jp.Id, aiData);
+        createComplianceRequirements(jp.Id, aiData);
+        
+        return jp.Id;
+        
+    } catch (Exception e) {
+        Database.rollback(sp);
+        System.debug('Error creating comprehensive job posting: ' + e.getMessage());
+        System.debug('Stack trace: ' + e.getStackTraceString());
+        throw e;
+    }
+}
+    // ==================== CHILD RECORD CREATION METHODS ====================
+    
+    private static void createEducationRequirements(Id jobPostingId, Map<String, Object> aiData) {
+        List<Object> eduList = (List<Object>) aiData.get('educationRequirements');
+        if (eduList == null || eduList.isEmpty()) return;
+        
+        List<Job_Education_Requirement__c> records = new List<Job_Education_Requirement__c>();
+        
+        for (Object obj : eduList) {
+            Map<String, Object> eduMap = (Map<String, Object>) obj;
+            Job_Education_Requirement__c edu = new Job_Education_Requirement__c();
+            edu.Job_Posting__c = jobPostingId;
+            edu.Degree_Name__c = getString(eduMap, 'Degree_Name__c');
+            edu.Mandatory__c = getBoolean(eduMap, 'Mandatory__c', false);
+            records.add(edu);
+        }
+        
+        if (!records.isEmpty()) {
+            insert records;
+            System.debug('Created ' + records.size() + ' education requirements');
+        }
     }
     
-    private static String findClosestMatch(String value, List<String> validValues) {
-        if (String.isBlank(value) || validValues == null || validValues.isEmpty()) {
-            return null;
+    private static void createLicenseRequirements(Id jobPostingId, Map<String, Object> aiData) {
+        List<Object> licList = (List<Object>) aiData.get('licenseRequirements');
+        if (licList == null || licList.isEmpty()) return;
+        
+        List<Job_License_Requirement__c> records = new List<Job_License_Requirement__c>();
+        
+        for (Object obj : licList) {
+            Map<String, Object> licMap = (Map<String, Object>) obj;
+            Job_License_Requirement__c lic = new Job_License_Requirement__c();
+            lic.Job_Posting__c = jobPostingId;
+            lic.License_Name__c = getString(licMap, 'License_Name__c');
+            lic.Issuing_Authority__c = getString(licMap, 'Issuing_Authority__c');
+            lic.Active_Required__c = getBoolean(licMap, 'Active_Required__c', false);
+            lic.Expiry_Check_Required__c = getBoolean(licMap, 'Expiry_Check_Required__c', false);
+            records.add(lic);
         }
         
-        String normalized = value.trim().toLowerCase();
-        
-        for (String validValue : validValues) {
-            if (validValue.toLowerCase() == normalized) {
-                return validValue;
-            }
+        if (!records.isEmpty()) {
+            insert records;
+            System.debug('Created ' + records.size() + ' license requirements');
         }
-        
-        String normalizedStripped = normalized.replaceAll('[^a-z0-9]', '');
-        
-        for (String validValue : validValues) {
-            String validStripped = validValue.toLowerCase().replaceAll('[^a-z0-9]', '');
-            if (validStripped == normalizedStripped) {
-                return validValue;
-            }
-        }
-        
-        for (String validValue : validValues) {
-            if (validValue.toLowerCase().contains(normalized) || normalized.contains(validValue.toLowerCase())) {
-                return validValue;
-            }
-        }
-        
-        return null;
     }
     
-    public static String createJobPosting(Map<String, Object> jobData) {
-        try {
-            System.debug('===== CREATING JOB POSTING =====');
-            System.debug('Raw jobData: ' + JSON.serializePretty(jobData));
-            
-            jobData = validatePicklistValues(jobData);
-            
-            Job_Posting__c jp = new Job_Posting__c();
-            
-            String jobName = getString(jobData, 'name');
-            if (String.isBlank(jobName)) {
-                jobName = 'Job Posting - ' + DateTime.now().format('yyyy-MM-dd HH:mm');
-            }
-            jp.Name = jobName.length() > 80 ? jobName.substring(0, 80) : jobName;
-            
-            String category = getString(jobData, 'category');
-            if (String.isNotBlank(category)) {
-                jp.Category__c = category;
-            }
-            
-            String location = getString(jobData, 'location');
-            if (String.isNotBlank(location)) {
-                jp.Location__c = location.length() > 255 ? location.substring(0, 255) : location;
-            }
-            
-            String expLevel = getString(jobData, 'experienceLevel');
-            if (String.isNotBlank(expLevel)) {
-                jp.Experience_Level__c = expLevel;
-            }
-            
-            String specialization = getString(jobData, 'specialization');
-            if (String.isNotBlank(specialization)) {
-                jp.Specialization__c = specialization;
-            }
-            
-            String description = getString(jobData, 'description');
-            if (String.isNotBlank(description)) {
-                jp.Description__c = description.length() > 32768 ? description.substring(0, 32768) : description;
-            }
-            
-            String status = getString(jobData, 'status');
-            jp.Status__c = String.isNotBlank(status) ? status : 'Open';
-            
-            Date startDate = getDate(jobData, 'startDate');
-            if (startDate != null) {
-                jp.Start_Date__c = startDate;
-                System.debug('Setting Start Date: ' + startDate);
-            } else {
-                System.debug('No start date provided - leaving blank');
-            }
-            
-            Date endDate = getDate(jobData, 'endDate');
-            if (endDate != null) {
-                jp.End_Date__c = endDate;
-                System.debug('Setting End Date: ' + endDate);
-            } else {
-                System.debug('No end date provided - leaving blank');
-            }
-            
-            System.debug('Final Job Object: Name=' + jp.Name + ', Category=' + jp.Category__c + 
-                        ', Start=' + jp.Start_Date__c + ', End=' + jp.End_Date__c);
-            
-            insert jp;
-            
-            System.debug('Job Posting created with ID: ' + jp.Id);
-            return jp.Id;
-            
-        } catch (Exception e) {
-            System.debug('Error creating job posting: ' + e.getMessage());
-            System.debug('Stack trace: ' + e.getStackTraceString());
-            throw e;
+    private static void createCertificationRequirements(Id jobPostingId, Map<String, Object> aiData) {
+        List<Object> certList = (List<Object>) aiData.get('certificationRequirements');
+        if (certList == null || certList.isEmpty()) return;
+        
+        List<Job_Certification_Requirement__c> records = new List<Job_Certification_Requirement__c>();
+        
+        for (Object obj : certList) {
+            Map<String, Object> certMap = (Map<String, Object>) obj;
+            Job_Certification_Requirement__c cert = new Job_Certification_Requirement__c();
+            cert.Job_Posting__c = jobPostingId;
+            cert.Certification_Name__c = getString(certMap, 'Certification_Name__c');
+            cert.Mandatory__c = getBoolean(certMap, 'Mandatory__c', false);
+            records.add(cert);
+        }
+        
+        if (!records.isEmpty()) {
+            insert records;
+            System.debug('Created ' + records.size() + ' certification requirements');
         }
     }
-    private static String getString(Map<String, Object> data, String key) {
+    
+    private static void createClinicalSkills(Id jobPostingId, Map<String, Object> aiData) {
+        List<Object> skillList = (List<Object>) aiData.get('clinicalSkills');
+        if (skillList == null || skillList.isEmpty()) return;
+        
+        List<Job_Clinical_Skill__c> records = new List<Job_Clinical_Skill__c>();
+        
+        for (Object obj : skillList) {
+            Map<String, Object> skillMap = (Map<String, Object>) obj;
+            Job_Clinical_Skill__c skill = new Job_Clinical_Skill__c();
+            skill.Job_Posting__c = jobPostingId;
+            skill.Skill_Name__c = getString(skillMap, 'Skill_Name__c');
+            skill.Skill_Level__c = getString(skillMap, 'Skill_Level__c');
+            skill.Mandatory__c = getBoolean(skillMap, 'Mandatory__c', false);
+            records.add(skill);
+        }
+        
+        if (!records.isEmpty()) {
+            insert records;
+            System.debug('Created ' + records.size() + ' clinical skills');
+        }
+    }
+    
+    private static void createProcedureRequirements(Id jobPostingId, Map<String, Object> aiData) {
+        List<Object> procList = (List<Object>) aiData.get('procedureRequirements');
+        if (procList == null || procList.isEmpty()) return;
+        
+        List<Job_Procedure_Requirement__c> records = new List<Job_Procedure_Requirement__c>();
+        
+        for (Object obj : procList) {
+            Map<String, Object> procMap = (Map<String, Object>) obj;
+            Job_Procedure_Requirement__c proc = new Job_Procedure_Requirement__c();
+            proc.Job_Posting__c = jobPostingId;
+            proc.Procedure_Name__c = getString(procMap, 'Procedure_Name__c');
+            proc.Critical__c = getBoolean(procMap, 'Critical__c', false);
+            records.add(proc);
+        }
+        
+        if (!records.isEmpty()) {
+            insert records;
+            System.debug('Created ' + records.size() + ' procedure requirements');
+        }
+    }
+    
+    private static void createComplianceRequirements(Id jobPostingId, Map<String, Object> aiData) {
+        List<Object> compList = (List<Object>) aiData.get('complianceRequirements');
+        if (compList == null || compList.isEmpty()) return;
+        
+        List<Job_Compliance_Requirement__c> records = new List<Job_Compliance_Requirement__c>();
+        
+        for (Object obj : compList) {
+            Map<String, Object> compMap = (Map<String, Object>) obj;
+            Job_Compliance_Requirement__c comp = new Job_Compliance_Requirement__c();
+            comp.Job_Posting__c = jobPostingId;
+            comp.Compliance_Name__c = getString(compMap, 'Compliance_Name__c');
+            comp.Mandatory__c = getBoolean(compMap, 'Mandatory__c', false);
+            records.add(comp);
+        }
+        
+        if (!records.isEmpty()) {
+            insert records;
+            System.debug('Created ' + records.size() + ' compliance requirements');
+        }
+    }
+    
+    // ==================== HELPER METHODS ====================
+    
+    public static String getString(Map<String, Object> data, String key) {
         Object value = data.get(key);
         if (value == null || value == 'null') return null;
         String strValue = String.valueOf(value).trim();
         return String.isBlank(strValue) || strValue == 'null' ? null : strValue;
     }
     
-    private static Date getDate(Map<String, Object> data, String key) {
+    public static Date getDate(Map<String, Object> data, String key) {
         Object value = data.get(key);
         if (value == null || value == 'null') return null;
         
@@ -332,10 +446,40 @@ public class AIJobPostingService {
                 );
             }
         } catch (Exception e) {
-            System.debug('Error parsing date: ' + e.getMessage());
+            System.debug('Error parsing date for key ' + key + ': ' + e.getMessage());
         }
         
         return null;
+    }
+    
+    public static Decimal getDecimal(Map<String, Object> data, String key) {
+        Object value = data.get(key);
+        if (value == null) return null;
+        
+        try {
+            return Decimal.valueOf(String.valueOf(value));
+        } catch (Exception e) {
+            System.debug('Error parsing decimal for key ' + key + ': ' + e.getMessage());
+            return null;
+        }
+    }
+    
+    public static Boolean getBoolean(Map<String, Object> data, String key, Boolean defaultValue) {
+        Object value = data.get(key);
+        if (value == null) return defaultValue;
+        
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
+        
+        String strValue = String.valueOf(value).toLowerCase();
+        if (strValue == 'true' || strValue == '1' || strValue == 'yes') {
+            return true;
+        } else if (strValue == 'false' || strValue == '0' || strValue == 'no') {
+            return false;
+        }
+        
+        return defaultValue;
     }
     
     public static String testGeminiConnection() {
