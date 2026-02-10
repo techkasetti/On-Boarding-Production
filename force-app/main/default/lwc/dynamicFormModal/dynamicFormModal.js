@@ -1,429 +1,5 @@
-// // dynamicFormModal.js
-// import { LightningElement, api, track } from 'lwc';
-// import saveRecord from '@salesforce/apex/CandidateProfileController.saveRecord';
-
-// export default class DynamicFormModal extends LightningElement {
-//     @api candidateId;
-//     @track isOpen = false;
-//     @track isLoading = false;
-//     @track errorMessage = '';
-//     @track formData = {};
-    
-//     recordType = '';
-//     recordId = null;
-//     isEditMode = false;
-
-//     // Picklist options
-//     licenseTypeOptions = [
-//         { label: 'License', value: 'License' },
-//         { label: 'Certification', value: 'Certification' },
-//         { label: 'Registration', value: 'Registration' },
-//         { label: 'Other', value: 'Other' }
-//     ];
-
-//     clinicalSkillTypeOptions = [
-//         { label: 'Clinical', value: 'Clinical' },
-//         { label: 'Diagnostic', value: 'Diagnostic' },
-//         { label: 'Therapeutic', value: 'Therapeutic' },
-//         { label: 'Emergency', value: 'Emergency' },
-//         { label: 'Soft Skill', value: 'Soft Skill' },
-//         { label: 'Other', value: 'Other' }
-//     ];
-
-//     technicalSkillCategoryOptions = [
-//         { label: 'EMR/EHR', value: 'EMR/EHR' },
-//         { label: 'PACS', value: 'PACS' },
-//         { label: 'Office Software', value: 'Office Software' },
-//         { label: 'Hospital Information Systems', value: 'Hospital Information Systems' },
-//         { label: 'Medical Imaging', value: 'Medical Imaging' },
-//         { label: 'Laboratory Systems', value: 'Laboratory Systems' },
-//         { label: 'Other', value: 'Other' }
-//     ];
-
-//     procedureCategoryOptions = [
-//         { label: 'Minor', value: 'Minor' },
-//         { label: 'Emergency', value: 'Emergency' },
-//         { label: 'Diagnostic', value: 'Diagnostic' },
-//         { label: 'Therapeutic', value: 'Therapeutic' },
-//         { label: 'Life Support', value: 'Life Support' },
-//         { label: 'Other', value: 'Other' }
-//     ];
-
-//     researchTypeOptions = [
-//         { label: 'Poster', value: 'Poster' },
-//         { label: 'Case Study', value: 'Case Study' },
-//         { label: 'CME', value: 'CME' },
-//         { label: 'Conference', value: 'Conference' },
-//         { label: 'Journal Article', value: 'Journal Article' },
-//         { label: 'Research Paper', value: 'Research Paper' },
-//         { label: 'Other', value: 'Other' }
-//     ];
-
-//     @api
-//     openModal(type, recordId = null, recordData = null) {
-//         this.recordType = type;
-//         this.recordId = recordId;
-//         this.isEditMode = recordId != null;
-//         this.isOpen = true;
-//         this.errorMessage = '';
-        
-//         if (this.isEditMode && recordData) {
-//             this.formData = { ...recordData };
-//             // Convert dates if needed
-//             this.formatDatesForEdit(recordData);
-//         } else {
-//             this.formData = this.getEmptyFormData(type);
-//         }
-//     }
-
-//     formatDatesForEdit(recordData) {
-//         // Ensure date fields are in YYYY-MM-DD format for lightning-input type="date"
-//         const dateFields = ['Start_Date__c', 'End_Date__c', 'Issue_Date__c', 'Expiry_Date__c', 'Publication_Date__c', 'Member_Since__c'];
-//         dateFields.forEach(field => {
-//             if (recordData[field]) {
-//                 this.formData[field] = recordData[field];
-//             }
-//         });
-
-//         // Convert year fields to plain numbers (no formatting)
-//         if (recordData.Start_Year__c) {
-//             this.formData.Start_Year__c = String(Math.floor(recordData.Start_Year__c));
-//         }
-//         if (recordData.End_Year__c) {
-//             this.formData.End_Year__c = String(Math.floor(recordData.End_Year__c));
-//         }
-//     }
-
-//     getEmptyFormData(type) {
-//         const baseData = { Candidate__c: this.candidateId };
-        
-//         switch(type) {
-//             case 'workExperience':
-//                 return { 
-//                     ...baseData, 
-//                     Role__c: '', 
-//                     Organization__c: '', 
-//                     Start_Date__c: '',
-//                     End_Date__c: '',
-//                     Is_Current__c: false,
-//                     Responsibilities__c: '' 
-//                 };
-//             case 'education':
-//                 return { 
-//                     ...baseData, 
-//                     Institution__c: '', 
-//                     Degree__c: '', 
-//                     Start_Year__c: '',
-//                     End_Year__c: '',
-//                     Details__c: '' 
-//                 };
-//             case 'license':
-//                 return { 
-//                     ...baseData, 
-//                     Name: '', 
-//                     Type__c: '',
-//                     Issue_Date__c: '',
-//                     Expiry_Date__c: '',
-//                     Notes__c: '' 
-//                 };
-//             case 'clinicalSkill':
-//                 return { 
-//                     ...baseData, 
-//                     Name: '', 
-//                     Skill_Type__c: '', 
-//                     Description__c: '' 
-//                 };
-//             case 'technicalSkill':
-//                 return { 
-//                     ...baseData, 
-//                     Name: '', 
-//                     Category__c: '', 
-//                     Description__c: '' 
-//                 };
-//             case 'procedure':
-//                 return {
-//                     ...baseData,
-//                     Name: '',
-//                     Category__c: '',
-//                     Notes__c: ''
-//                 };
-//             case 'internship':
-//                 return {
-//                     ...baseData,
-//                     Organization__c: '',
-//                     Start_Date__c: '',
-//                     End_Date__c: ''
-//                 };
-//             case 'research':
-//                 return {
-//                     ...baseData,
-//                     Title__c: '',
-//                     Type__c: '',
-//                     Publication_Date__c: '',
-//                     Description__c: ''
-//                 };
-//             case 'membership':
-//                 return {
-//                     ...baseData,
-//                     Organization_Name__c: '',
-//                     Membership_Type__c: '',
-//                     Member_Id__c: '',
-//                     Member_Since__c: ''
-//                 };
-//             default:
-//                 return baseData;
-//         }
-//     }
-
-//     get modalTitle() {
-//         const action = this.isEditMode ? 'Edit' : 'Add New';
-//         const typeMap = {
-//             'workExperience': 'Work Experience',
-//             'education': 'Education',
-//             'license': 'License / Certification',
-//             'clinicalSkill': 'Clinical Skill',
-//             'technicalSkill': 'Technical Skill',
-//             'procedure': 'Procedure',
-//             'internship': 'Internship',
-//             'research': 'Research / Publication',
-//             'membership': 'Professional Membership'
-//         };
-//         return `${action} ${typeMap[this.recordType] || 'Record'}`;
-//     }
-
-//     get modalIcon() {
-//         const iconMap = {
-//             'workExperience': 'standard:work_order',
-//             'education': 'standard:education',
-//             'license': 'standard:certificate',
-//             'clinicalSkill': 'standard:skill',
-//             'technicalSkill': 'standard:apex',
-//             'procedure': 'standard:service_report',
-//             'internship': 'standard:entity',
-//             'research': 'standard:article',
-//             'membership': 'standard:groups'
-//         };
-//         return iconMap[this.recordType] || 'standard:record';
-//     }
-
-//     get saveButtonLabel() {
-//         return this.isEditMode ? 'Save Changes' : 'Add';
-//     }
-
-//     get isWorkExperience() { return this.recordType === 'workExperience'; }
-//     get isEducation() { return this.recordType === 'education'; }
-//     get isLicense() { return this.recordType === 'license'; }
-//     get isClinicalSkill() { return this.recordType === 'clinicalSkill'; }
-//     get isTechnicalSkill() { return this.recordType === 'technicalSkill'; }
-//     get isProcedure() { return this.recordType === 'procedure'; }
-//     get isInternship() { return this.recordType === 'internship'; }
-//     get isResearch() { return this.recordType === 'research'; }
-//     get isMembership() { return this.recordType === 'membership'; }
-
-//     handleFieldChange(event) {
-//         const field = event.target.dataset.field;
-//         let value = event.target.value;
-
-//         this.formData[field] = value;
-        
-//         // Clear end date if "Currently Working Here" is checked
-//         if (field === 'Is_Current__c' && value === true) {
-//             this.formData.End_Date__c = '';
-//         }
-        
-//         if (this.errorMessage) {
-//             this.errorMessage = '';
-//         }
-//     }
-
-//     handleYearChange(event) {
-//         const field = event.target.dataset.field;
-//         let value = event.target.value;
-
-//         // Remove any non-digit characters
-//         value = value.replace(/\D/g, '');
-
-//         // Limit to 4 digits
-//         if (value.length > 4) {
-//             value = value.substring(0, 4);
-//         }
-
-//         // Convert to number for validation
-//         const yearNum = value ? parseInt(value, 10) : null;
-
-//         // Validate year range
-//         if (yearNum !== null && (yearNum < 1950 || yearNum > 2099)) {
-//             event.target.setCustomValidity('Year must be between 1950 and 2099');
-//             event.target.reportValidity();
-//         } else {
-//             event.target.setCustomValidity('');
-//         }
-
-//         // Store as number
-//         this.formData[field] = yearNum;
-
-//         // Update input value to clean version
-//         event.target.value = value;
-        
-//         if (this.errorMessage) {
-//             this.errorMessage = '';
-//         }
-//     }
-
-//     handleCheckboxChange(event) {
-//         const field = event.target.dataset.field;
-//         this.formData[field] = event.target.checked;
-        
-//         // Clear end date if currently working
-//         if (field === 'Is_Current__c' && event.target.checked) {
-//             this.formData.End_Date__c = '';
-//         }
-        
-//         if (this.errorMessage) {
-//             this.errorMessage = '';
-//         }
-//     }
-
-//     handlePicklistChange(event) {
-//         const field = event.target.dataset.field;
-//         this.formData[field] = event.detail.value;
-        
-//         if (this.errorMessage) {
-//             this.errorMessage = '';
-//         }
-//     }
-
-//     handleClose() {
-//         this.isOpen = false;
-//         this.formData = {};
-//         this.errorMessage = '';
-//         this.isLoading = false;
-        
-//         this.dispatchEvent(new CustomEvent('modalclose', {
-//             bubbles: true,
-//             composed: true
-//         }));
-//     }
-
-//     async handleSave() {
-//         if (!this.validateForm()) {
-//             return;
-//         }
-
-//         // Additional custom validations
-//         if (!this.validateCustomRules()) {
-//             return;
-//         }
-
-//         this.isLoading = true;
-//         this.errorMessage = '';
-
-//         try {
-//             const recordToSave = {
-//                 ...this.formData,
-//                 Id: this.recordId,
-//                 Candidate__c: this.candidateId
-//             };
-
-//             const savedId = await saveRecord({
-//                 recordData: JSON.stringify(recordToSave),
-//                 recordType: this.recordType
-//             });
-
-//             this.dispatchEvent(new CustomEvent('save', {
-//                 detail: { 
-//                     recordType: this.recordType,
-//                     recordId: savedId,
-//                     action: this.isEditMode ? 'update' : 'create'
-//                 },
-//                 bubbles: true,
-//                 composed: true
-//             }));
-
-//             this.handleClose();
-
-//         } catch (error) {
-//             this.errorMessage = error.body?.message || error.message || 'An error occurred while saving. Please try again.';
-//             console.error('Save Error:', JSON.parse(JSON.stringify(error)));
-            
-//             this.dispatchEvent(new CustomEvent('saveerror', {
-//                 detail: { 
-//                     error: this.errorMessage,
-//                     recordType: this.recordType
-//                 },
-//                 bubbles: true,
-//                 composed: true
-//             }));
-            
-//         } finally {
-//             this.isLoading = false;
-//         }
-//     }
-
-//     validateForm() {
-//         const inputs = this.template.querySelectorAll('lightning-input, lightning-textarea, lightning-combobox');
-//         let isValid = true;
-//         let firstInvalidField = null;
-
-//         inputs.forEach(input => {
-//             if (input.required && !input.value) {
-//                 input.reportValidity();
-//                 isValid = false;
-//                 if (!firstInvalidField) {
-//                     firstInvalidField = input;
-//                 }
-//             }
-//         });
-
-//         if (!isValid) {
-//             this.errorMessage = 'Please fill in all required fields marked with *';
-//             if (firstInvalidField) {
-//                 firstInvalidField.focus();
-//             }
-//         }
-
-//         return isValid;
-//     }
-
-//     validateCustomRules() {
-//         // Validate date ranges for Work Experience
-//         if (this.recordType === 'workExperience' && this.formData.Start_Date__c && this.formData.End_Date__c) {
-//             if (new Date(this.formData.Start_Date__c) > new Date(this.formData.End_Date__c)) {
-//                 this.errorMessage = 'End Date cannot be before Start Date';
-//                 return false;
-//             }
-//         }
-
-//         // Validate year ranges for Education
-//         if (this.recordType === 'education' && this.formData.Start_Year__c && this.formData.End_Year__c) {
-//             if (this.formData.Start_Year__c > this.formData.End_Year__c) {
-//                 this.errorMessage = 'End Year cannot be before Start Year';
-//                 return false;
-//             }
-//         }
-
-//         // Validate date ranges for Internship
-//         if (this.recordType === 'internship' && this.formData.Start_Date__c && this.formData.End_Date__c) {
-//             if (new Date(this.formData.Start_Date__c) > new Date(this.formData.End_Date__c)) {
-//                 this.errorMessage = 'End Date cannot be before Start Date';
-//                 return false;
-//             }
-//         }
-
-//         // Validate expiry date for licenses
-//         if (this.recordType === 'license' && this.formData.Issue_Date__c && this.formData.Expiry_Date__c) {
-//             if (new Date(this.formData.Issue_Date__c) > new Date(this.formData.Expiry_Date__c)) {
-//                 this.errorMessage = 'Expiry Date cannot be before Issue Date';
-//                 return false;
-//             }
-//         }
-
-//         return true;
-//     }
-// }
-// dynamicFormModal.js - FIXED VERSION (No Separate Upload Modal)
+// dynamicFormModal.js - AGGRESSIVE Z-INDEX FIX WITH MUTATION OBSERVER
 import { LightningElement, api, track, wire } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import getLicenseDocuments from '@salesforce/apex/CandidateProfileController.getLicenseDocuments';
 import deleteLicenseDocument from '@salesforce/apex/CandidateProfileController.deleteLicenseDocument';
@@ -440,7 +16,15 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
     @track modalTitle = '';
     @track existingDocuments = [];
     
+    // INLINE NOTIFICATION PROPERTIES
+    @track showNotification = false;
+    @track notificationTitle = '';
+    @track notificationMessage = '';
+    @track notificationVariant = 'info';
+    notificationTimeout;
+    
     wiredDocumentsResult;
+    mutationObserver = null;
 
     // Type Configuration
     typeConfig = {
@@ -523,64 +107,83 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
             this.loadDocuments();
         }
         
+        // Start monitoring for upload modals
+        this.startMonitoringForUploadModal();
+        
         console.log('Modal opened successfully');
     }
 
     handleClose() {
-        console.log('Modal closed');
+        console.log('=== Modal Closed by User ===');
+        this.closeModal();
+    }
+
+    closeModal() {
+        console.log('🔒 Closing modal and clearing state');
+        
+        // Stop monitoring
+        this.stopMonitoringForUploadModal();
+        
         this.isOpen = false;
         this.recordId = null;
         this.objectApiName = '';
         this.recordType = '';
         this.existingDocuments = [];
+        console.log('✅ Modal state cleared');
     }
 
     async handleSuccess(event) {
-        console.log('=== Record Saved Successfully ===');
-        console.log('Record ID:', event.detail.id);
+    console.log('=== Record Saved Successfully ===');
+    console.log('Record ID:', event.detail.id);
+    
+    const savedRecordId = event.detail.id;
+    const isNewRecord = !this.recordId;
+    
+    const config = this.typeConfig[this.recordType];
+    const actionText = isNewRecord ? 'added' : 'updated';
+    
+    // ✅ CRITICAL: For new licenses, update recordId and keep modal open for upload
+    if (this.isLicense && isNewRecord) {
+        console.log('📌 New License saved - updating recordId and keeping modal open for upload');
         
-        const savedRecordId = event.detail.id;
-        const isNewRecord = !this.recordId;
+        this.recordId = savedRecordId;
+        this.modalTitle = `Edit ${config.title}`;
         
-        // ✅ FIX: Keep modal open after save for licenses
-        if (this.isLicense && isNewRecord) {
-            // Update the recordId so document upload becomes available
-            this.recordId = savedRecordId;
-            
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Success',
-                    message: 'License saved! You can now upload documents below.',
-                    variant: 'success'
-                })
-            );
-            
-            // Don't close modal - let user upload documents
-            // Refresh the form to show upload section
-            await this.loadDocuments();
-            
-        } else {
-            // Close modal for other record types
-            this.isOpen = false;
-            
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Success',
-                    message: 'Record saved successfully',
-                    variant: 'success'
-                })
-            );
-        }
+        this.displayNotification(
+            'Success',
+            `${config.title} saved! You can now upload documents.`,
+            'success'
+        );
         
-        // Notify parent component
-        this.dispatchEvent(new CustomEvent('save', {
-            detail: {
-                recordId: savedRecordId,
-                recordType: this.recordType,
-                action: isNewRecord ? 'create' : 'update'
-            }
-        }));
+        // Load documents (will be empty initially)
+        await this.loadDocuments();
+        
+        console.log('✅ Modal kept open for document upload');
+        return; // Keep modal open
     }
+    
+    // For all other cases, close modal
+    this.displayNotification(
+        'Success',
+        `${config.title} ${actionText} successfully`,
+        'success'
+    );
+    
+    console.log('📌 Closing modal after save');
+    this.closeModal();
+    
+    this.dispatchEvent(new CustomEvent('save', {
+        detail: {
+            recordId: savedRecordId,
+            recordType: this.recordType,
+            action: isNewRecord ? 'create' : 'update'
+        },
+        bubbles: true,
+        composed: true
+    }));
+    
+    console.log('✅ Save event dispatched to parent');
+}
 
     handleError(event) {
         console.error('=== Save Error ===');
@@ -594,13 +197,152 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
             errorMessage = event.detail.message;
         }
         
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title: 'Error',
-                message: errorMessage,
-                variant: 'error'
-            })
-        );
+        this.displayNotification('Error', errorMessage, 'error');
+    }
+
+    // ========================================
+    // 🔥 AGGRESSIVE FIX: MUTATION OBSERVER
+    // ========================================
+    
+    connectedCallback() {
+        console.log('🔌 Component connected');
+    }
+
+    disconnectedCallback() {
+        console.log('🔌 Component disconnected');
+        this.stopMonitoringForUploadModal();
+    }
+
+    renderedCallback() {
+        if (this.isOpen) {
+            // Apply z-index fix immediately on each render
+            this.forceUploadModalZIndex();
+        }
+    }
+
+    /**
+     * Start monitoring DOM for upload modal appearance
+     */
+    startMonitoringForUploadModal() {
+        console.log('👁️ Starting mutation observer for upload modal');
+        
+        // Stop any existing observer
+        this.stopMonitoringForUploadModal();
+        
+        // Create mutation observer to watch for new modals
+        this.mutationObserver = new MutationObserver((mutations) => {
+            this.forceUploadModalZIndex();
+        });
+        
+        // Observe the entire document body for modal additions
+        this.mutationObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'style']
+        });
+        
+        // Also run the fix immediately
+        this.forceUploadModalZIndex();
+    }
+
+    /**
+     * Stop mutation observer
+     */
+    stopMonitoringForUploadModal() {
+        if (this.mutationObserver) {
+            console.log('🛑 Stopping mutation observer');
+            this.mutationObserver.disconnect();
+            this.mutationObserver = null;
+        }
+    }
+
+    /**
+     * 🔥 AGGRESSIVE: Force upload modal to highest z-index
+     */
+    forceUploadModalZIndex() {
+        try {
+            // Find our edit modal first and set it lower
+            const ourModal = this.template.querySelector('.modal-container');
+            const ourBackdrop = this.template.querySelector('.modal-backdrop');
+            
+            if (ourModal) {
+                ourModal.style.zIndex = '8001';
+                console.log('📌 Set our edit modal to z-index: 8001');
+            }
+            
+            if (ourBackdrop) {
+                ourBackdrop.style.zIndex = '8000';
+                console.log('📌 Set our backdrop to z-index: 8000');
+            }
+            
+            // Find ALL modals in the entire document
+            const allModals = document.querySelectorAll('section[role="dialog"].slds-modal');
+            const allBackdrops = document.querySelectorAll('.slds-backdrop');
+            
+            console.log(`🔍 Found ${allModals.length} total modals in DOM`);
+            
+            allModals.forEach((modal, index) => {
+                // Skip our own modal
+                if (modal.classList.contains('modal-container')) {
+                    console.log(`   ⏭️ Modal ${index}: Skipping (our edit modal)`);
+                    return;
+                }
+                
+                // Check if this is an upload modal
+                const modalHeader = modal.querySelector('.slds-modal__header h2, .slds-modal__title');
+                const headerText = modalHeader ? modalHeader.textContent : '';
+                
+                console.log(`   🔍 Modal ${index}: "${headerText}"`);
+                
+                // If it contains "Upload Files" or "Done" button, it's the upload modal
+                if (headerText.includes('Upload Files') || headerText.includes('Upload')) {
+                    console.log(`   🎯 FOUND UPLOAD MODAL! Setting to z-index: 20004`);
+                    modal.style.setProperty('z-index', '20004', 'important');
+                    modal.style.setProperty('position', 'fixed', 'important');
+                    
+                    // 🔥 NEW: Reduce modal width
+                    const modalContainer = modal.querySelector('.slds-modal__container');
+                    if (modalContainer) {
+                        modalContainer.style.setProperty('max-width', '40rem', 'important');
+                        modalContainer.style.setProperty('width', '90%', 'important');
+                        console.log(`   📏 Reduced upload modal width to 40rem`);
+                    }
+                    
+                    // Find its backdrop
+                    allBackdrops.forEach(backdrop => {
+                        if (!backdrop.classList.contains('modal-backdrop')) {
+                            backdrop.style.setProperty('z-index', '20003', 'important');
+                            backdrop.style.setProperty('position', 'fixed', 'important');
+                            console.log(`   🎯 Set upload backdrop to z-index: 20003`);
+                        }
+                    });
+                }
+            });
+            
+            // Also target by DOM traversal - find modals that are children of body
+            const bodyChildren = Array.from(document.body.children);
+            bodyChildren.forEach(child => {
+                if (child.tagName === 'SECTION' && child.getAttribute('role') === 'dialog') {
+                    if (!child.classList.contains('modal-container')) {
+                        console.log('🎯 Found modal as direct body child - setting high z-index');
+                        child.style.setProperty('z-index', '20005', 'important');
+                        child.style.setProperty('position', 'fixed', 'important');
+                        
+                        // Reduce width for this modal too
+                        const container = child.querySelector('.slds-modal__container');
+                        if (container) {
+                            container.style.setProperty('max-width', '40rem', 'important');
+                            container.style.setProperty('width', '90%', 'important');
+                            console.log(`   📏 Reduced modal width to 40rem`);
+                        }
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('❌ Error in forceUploadModalZIndex:', error);
+        }
     }
 
     async handleLicenseUploadFinished(event) {
@@ -614,22 +356,16 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
         
         console.log(`✅ ${uploadedFiles.length} document(s) uploaded`);
         
-        // Log each uploaded file
         uploadedFiles.forEach(file => {
             console.log('   - ' + file.name);
         });
         
-        // Show success toast
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title: 'Success',
-                message: `${uploadedFiles.length} document(s) uploaded successfully!`,
-                variant: 'success',
-                mode: 'dismissable'
-            })
+        this.displayNotification(
+            'Success',
+            `${uploadedFiles.length} document(s) uploaded successfully!`,
+            'success'
         );
         
-        // Wait for files to be processed, then refresh documents
         await this.delay(1500);
         await this.loadDocuments();
         
@@ -661,12 +397,10 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
             
             console.log('✅ Document deleted successfully');
             
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Success',
-                    message: 'Document deleted successfully',
-                    variant: 'success'
-                })
+            this.displayNotification(
+                'Success',
+                'Document deleted successfully',
+                'success'
             );
             
             await this.loadDocuments();
@@ -674,12 +408,10 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
         } catch (error) {
             console.error('❌ Error deleting document:', error);
             
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: 'Failed to delete document: ' + (error.body?.message || error.message),
-                    variant: 'error'
-                })
+            this.displayNotification(
+                'Error',
+                'Failed to delete document: ' + (error.body?.message || error.message),
+                'error'
             );
         }
     }
@@ -692,6 +424,49 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
         } catch (error) {
             console.error('Error refreshing documents:', error);
         }
+    }
+
+    // ========================================
+    // INLINE NOTIFICATION METHODS
+    // ========================================
+    displayNotification(title, message, variant) {
+        if (this.notificationTimeout) {
+            clearTimeout(this.notificationTimeout);
+        }
+        
+        this.notificationTitle = title;
+        this.notificationMessage = message;
+        this.notificationVariant = variant;
+        this.showNotification = true;
+        
+        console.log(`📢 Notification: ${title} - ${message} (${variant})`);
+        
+        this.notificationTimeout = setTimeout(() => {
+            this.closeNotification();
+        }, 3000);
+    }
+
+    closeNotification() {
+        this.showNotification = false;
+        if (this.notificationTimeout) {
+            clearTimeout(this.notificationTimeout);
+        }
+    }
+
+    get notificationClass() {
+        const baseClass = 'custom-notification slds-notify slds-notify_alert';
+        const variantClass = `slds-theme_${this.notificationVariant}`;
+        return `${baseClass} ${variantClass}`;
+    }
+
+    get notificationIcon() {
+        const iconMap = {
+            'success': 'utility:success',
+            'error': 'utility:error',
+            'warning': 'utility:warning',
+            'info': 'utility:info'
+        };
+        return iconMap[this.notificationVariant] || 'utility:info';
     }
 
     getFileIcon(fileExtension) {

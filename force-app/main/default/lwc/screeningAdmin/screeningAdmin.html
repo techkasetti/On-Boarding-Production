@@ -469,6 +469,40 @@
                         </lightning-tab>
 
                         <!-- Manual Override Tab -->
+                        <!-- <lightning-tab label="Manual Override" value="override">
+                            <div class="slds-grid slds-gutters_small slds-wrap slds-m-top_small">
+                                <div class="slds-col slds-size_1-of-1">
+                                    <lightning-input 
+                                        type="checkbox" 
+                                        label="Allow Manual Override" 
+                                        data-field="Allow_Manual_Override__c" 
+                                        checked={newRule.Allow_Manual_Override__c} 
+                                        onchange={handleNewRuleChange}>
+                                    </lightning-input>
+                                </div>
+                                <template if:true={newRule.Allow_Manual_Override__c}>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input 
+                                            type="checkbox" 
+                                            label="Override Reason Required" 
+                                            data-field="Override_Reason_Required__c" 
+                                            checked={newRule.Override_Reason_Required__c} 
+                                            onchange={handleNewRuleChange}>
+                                        </lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning-input 
+                                            type="checkbox" 
+                                            label="Override Approval Required" 
+                                            data-field="Override_Approval_Required__c" 
+                                            checked={newRule.Override_Approval_Required__c} 
+                                            onchange={handleNewRuleChange}>
+                                        </lightning-input>
+                                    </div>
+                                </template>
+                            </div>
+                        </lightning-tab> -->
+                        <!-- Manual Override Tab -->
                         <lightning-tab label="Manual Override" value="override">
                             <div class="slds-grid slds-gutters_small slds-wrap slds-m-top_small">
                                 <div class="slds-col slds-size_1-of-1">
@@ -499,6 +533,24 @@
                                             onchange={handleNewRuleChange}>
                                         </lightning-input>
                                     </div>
+                                    
+                                    <!-- 🔥 NEW: Email field appears when approval is required -->
+                                    <template if:true={newRule.Override_Approval_Required__c}>
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <lightning-input 
+                                                type="email"
+                                                label="Approver Email Address" 
+                                                data-field="Override_Approver_Email__c" 
+                                                value={newRule.Override_Approver_Email__c} 
+                                                onchange={handleNewRuleChange}
+                                                placeholder="manager@company.com"
+                                                required>
+                                            </lightning-input>
+                                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                                                Email address where approval requests will be sent
+                                            </p>
+                                        </div>
+                                    </template>
                                 </template>
                             </div>
                         </lightning-tab>

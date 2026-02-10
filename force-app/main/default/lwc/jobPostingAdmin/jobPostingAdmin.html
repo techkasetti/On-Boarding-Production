@@ -11,21 +11,30 @@
                                     <lightning-icon icon-name="standard:work_order" size="large"></lightning-icon>
                                 </div>
                                 <div class="slds-media__body">
-                                    <h1 class="slds-text-heading_large">Job Posting Management</h1>
+                                    <h1 class="slds-text-heading_large">Medical Job Posting Management</h1>
                                     <p class="slds-text-body_small slds-text-color_weak">
-                                        Manage and organize all job postings
+                                        Manage and organize all healthcare job postings
                                     </p>
                                 </div>
                             </div>
                         </div>
                         <div class="slds-col slds-no-flex">
-                            <lightning-button 
-                                label="New Job Posting" 
-                                variant="brand" 
-                                icon-name="utility:add"
-                                onclick={handleNew}
-                                class="new-job-button">
-                            </lightning-button>
+                            <div class="slds-button-group" role="group">
+                                <lightning-button 
+                                    label="AI Console" 
+                                    variant="neutral" 
+                                    icon-name="utility:sparkles"
+                                    onclick={handleNavigateToAIConsole}
+                                    class="ai-console-button">
+                                </lightning-button>
+                                <lightning-button 
+                                    label="New Job Posting" 
+                                    variant="brand" 
+                                    icon-name="utility:add"
+                                    onclick={handleNew}
+                                    class="new-job-button">
+                                </lightning-button>
+                            </div>
                         </div>
                     </div>
 
@@ -53,6 +62,7 @@
             </lightning-card>
         </div>
 
+        
         <!-- Data Table Section -->
         <div class="slds-m-top_medium">
             <lightning-card>
@@ -93,7 +103,8 @@
             </lightning-card>
         </div>
 
-        <!-- Edit/Create Modal -->
+     
+        <!-- Comprehensive Edit/Create Modal -->
         <template if:true={isModalOpen}>
             <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
                 <div class="slds-modal__container">
@@ -107,121 +118,626 @@
                         <h2 class="slds-modal__title slds-hyphenate">{modalTitle}</h2>
                     </header>
 
-                    <div class="slds-modal__content slds-p-around_medium">
-                        <div class="slds-grid slds-wrap slds-gutters">
-                            <!-- Job Title -->
-                            <div class="slds-col slds-size_1-of-1">
-                                <lightning-input 
-                                    label="Job Title" 
-                                    value={currentJob.Name} 
-                                    onchange={handleChange} 
-                                    data-field="Name" 
-                                    required
-                                    placeholder="Enter job title">
-                                </lightning-input>
-                            </div>
+                    <div class="slds-modal__content slds-p-around_medium" style="max-height: 70vh; overflow-y: auto;">
+                        <!-- Tab Navigation -->
+                        <lightning-tabset active-tab-value={activeTab} onactive={handleTabChange}>
+                            
+                            <!-- 1. Basic Information Tab -->
+                            <lightning-tab label="📋 Basic Info" value="basic">
+                                <div class="slds-p-around_small">
+                                    <div class="slds-grid slds-wrap slds-gutters">
+                                        
+                                        <!-- Job Title -->
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <lightning-input 
+                                                label="Job Title" 
+                                                value={currentJob.Job_Title__c} 
+                                                onchange={handleChange} 
+                                                data-field="Job_Title__c" 
+                                                required
+                                                placeholder="e.g., Duty Doctor - Emergency">
+                                            </lightning-input>
+                                        </div>
 
-                            <!-- Category -->
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                                <lightning-combobox
-                                    name="category"
-                                    label="Category"
-                                    value={currentJob.Category__c}
-                                    placeholder="Select Category"
-                                    options={categoryOptions}
-                                    onchange={handleChange}
-                                    data-field="Category__c">
-                                </lightning-combobox>
-                            </div>
+                                        <!-- Category -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-combobox
+                                                name="category"
+                                                label="Category"
+                                                value={currentJob.Category__c}
+                                                placeholder="Select Category"
+                                                options={categoryOptions}
+                                                onchange={handleChange}
+                                                data-field="Category__c"
+                                                required>
+                                            </lightning-combobox>
+                                        </div>
 
-                            <!-- Specialization -->
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                                <lightning-combobox
-                                    name="specialization"
-                                    label="Specialization"
-                                    value={currentJob.Specialization__c}
-                                    placeholder="Select Specialization"
-                                    options={specializationOptions}
-                                    onchange={handleChange}
-                                    data-field="Specialization__c">
-                                </lightning-combobox>
-                            </div>
+                                        <!-- Role Type -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-combobox
+                                                name="roleType"
+                                                label="Role Type"
+                                                value={currentJob.Role_Type__c}
+                                                placeholder="Select Role Type"
+                                                options={roleTypeOptions}
+                                                onchange={handleChange}
+                                                data-field="Role_Type__c"
+                                                required>
+                                            </lightning-combobox>
+                                        </div>
 
-                            <!-- Location -->
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                                <lightning-input 
-                                    label="Location" 
-                                    value={currentJob.Location__c} 
-                                    onchange={handleChange} 
-                                    data-field="Location__c"
-                                    placeholder="e.g., San Francisco, CA">
-                                </lightning-input>
-                            </div>
+                                        <!-- Department -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-combobox
+                                                name="department"
+                                                label="Department"
+                                                value={currentJob.Department__c}
+                                                placeholder="Select Department"
+                                                options={departmentOptions}
+                                                onchange={handleChange}
+                                                data-field="Department__c">
+                                            </lightning-combobox>
+                                        </div>
 
-                            <!-- Experience Level -->
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                                <lightning-combobox
-                                    name="experience"
-                                    label="Experience Level"
-                                    value={currentJob.Experience_Level__c}
-                                    placeholder="Select Experience Level"
-                                    options={experienceOptions}
-                                    onchange={handleChange}
-                                    data-field="Experience_Level__c">
-                                </lightning-combobox>
-                            </div>
+                                        <!-- Employment Type -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-combobox
+                                                name="employmentType"
+                                                label="Employment Type"
+                                                value={currentJob.Employment_Type__c}
+                                                placeholder="Select Employment Type"
+                                                options={employmentTypeOptions}
+                                                onchange={handleChange}
+                                                data-field="Employment_Type__c"
+                                                required>
+                                            </lightning-combobox>
+                                        </div>
 
-                            <!-- Start Date -->
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                                <lightning-input 
-                                    type="date"
-                                    label="Start Date" 
-                                    value={currentJob.Start_Date__c} 
-                                    onchange={handleChange} 
-                                    data-field="Start_Date__c"
-                                    placeholder="Select start date">
-                                </lightning-input>
-                            </div>
+                                        <!-- Shift Type -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-combobox
+                                                name="shiftType"
+                                                label="Shift Type"
+                                                value={currentJob.Shift_Type__c}
+                                                placeholder="Select Shift Type"
+                                                options={shiftTypeOptions}
+                                                onchange={handleChange}
+                                                data-field="Shift_Type__c">
+                                            </lightning-combobox>
+                                        </div>
 
-                            <!-- End Date -->
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                                <lightning-input 
-                                    type="date"
-                                    label="End Date" 
-                                    value={currentJob.End_Date__c} 
-                                    onchange={handleChange} 
-                                    data-field="End_Date__c"
-                                    min={currentJob.Start_Date__c}
-                                    placeholder="Select end date">
-                                </lightning-input>
-                            </div>
+                                        <!-- Experience Range -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-input 
+                                                type="number"
+                                                label="Minimum Experience (Years)" 
+                                                value={currentJob.Min_Experience_Years__c} 
+                                                onchange={handleChange} 
+                                                data-field="Min_Experience_Years__c"
+                                                min="0"
+                                                step="1">
+                                            </lightning-input>
+                                        </div>
 
-                            <!-- Status -->
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                                <lightning-combobox
-                                    name="status"
-                                    label="Status"
-                                    value={currentJob.Status__c}
-                                    placeholder="Select Status"
-                                    options={statusOptions}
-                                    onchange={handleChange}
-                                    data-field="Status__c"
-                                    required>
-                                </lightning-combobox>
-                            </div>
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-input 
+                                                type="number"
+                                                label="Maximum Experience (Years)" 
+                                                value={currentJob.Max_Experience_Years__c} 
+                                                onchange={handleChange} 
+                                                data-field="Max_Experience_Years__c"
+                                                min={currentJob.Min_Experience_Years__c}
+                                                step="1">
+                                            </lightning-input>
+                                        </div>
 
-                            <!-- Description -->
-                            <div class="slds-col slds-size_1-of-1">
-                                <lightning-textarea 
-                                    label="Job Description" 
-                                    value={currentJob.Description__c} 
-                                    onchange={handleChange} 
-                                    data-field="Description__c"
-                                    placeholder="Enter detailed job description..."
-                                    rows="6">
-                                </lightning-textarea>
-                            </div>
-                        </div>
+                                        <!-- Job Dates -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-input 
+                                                type="date"
+                                                label="Start Date" 
+                                                value={currentJob.Start_Date__c} 
+                                                onchange={handleChange} 
+                                                data-field="Start_Date__c"
+                                                required>
+                                            </lightning-input>
+                                        </div>
+
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-input 
+                                                type="date"
+                                                label="End Date" 
+                                                value={currentJob.End_Date__c} 
+                                                onchange={handleChange} 
+                                                data-field="End_Date__c"
+                                                min={currentJob.Start_Date__c}>
+                                            </lightning-input>
+                                        </div>
+                                        
+                                        <!-- Description -->
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <lightning-textarea 
+                                                label="Job Description" 
+                                                value={currentJob.Description__c} 
+                                                onchange={handleChange} 
+                                                data-field="Description__c"
+                                                placeholder="Enter detailed job description, responsibilities, and day-to-day duties..."
+                                                rows="6">
+                                            </lightning-textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </lightning-tab>
+
+                            <!-- 2. Location & Facility Tab -->
+                            <lightning-tab label="📍 Location" value="location">
+                                <div class="slds-p-around_small">
+                                    <div class="slds-grid slds-wrap slds-gutters">
+                                        
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <div class="section-header">
+                                                <lightning-icon icon-name="standard:location" size="small"></lightning-icon>
+                                                <h3 class="slds-text-heading_small">Facility & Location Details</h3>
+                                            </div>
+                                        </div>
+
+                                        <!-- Facility Name -->
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <lightning-input 
+                                                label="Facility Name" 
+                                                value={currentJob.Facility_Name__c} 
+                                                onchange={handleChange} 
+                                                data-field="Facility_Name__c"
+                                                placeholder="e.g., City General Hospital"
+                                                required>
+                                            </lightning-input>
+                                        </div>
+
+                                        <!-- City -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-input 
+                                                label="City" 
+                                                value={currentJob.City__c} 
+                                                onchange={handleChange} 
+                                                data-field="City__c"
+                                                placeholder="e.g., Chennai"
+                                                required>
+                                            </lightning-input>
+                                        </div>
+
+                                        <!-- State -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-input 
+                                                label="State" 
+                                                value={currentJob.State__c} 
+                                                onchange={handleChange} 
+                                                data-field="State__c"
+                                                placeholder="e.g., Tamil Nadu"
+                                                required>
+                                            </lightning-input>
+                                        </div>
+
+                                        <!-- Country -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <lightning-input 
+                                                label="Country" 
+                                                value={currentJob.Country__c} 
+                                                onchange={handleChange} 
+                                                data-field="Country__c"
+                                                placeholder="e.g., India"
+                                                required>
+                                            </lightning-input>
+                                        </div>
+                                    </div>
+                                </div>
+                            </lightning-tab>
+
+                            <!-- 3. Medical Controls Tab -->
+                            <lightning-tab label="🏥 Medical Controls" value="medical">
+                                <div class="slds-p-around_small">
+                                    <div class="slds-grid slds-wrap slds-gutters">
+                                        
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <div class="section-header">
+                                                <lightning-icon icon-name="standard:health_care_facility" size="small"></lightning-icon>
+                                                <h3 class="slds-text-heading_small">Credentialing & Privileges</h3>
+                                            </div>
+                                        </div>
+
+                                        <!-- Credentialing Required -->
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <lightning-input 
+                                                type="checkbox"
+                                                label="Credentialing Required" 
+                                                checked={currentJob.Credentialing_Required__c} 
+                                                onchange={handleChange} 
+                                                data-field="Credentialing_Required__c">
+                                            </lightning-input>
+                                        </div>
+
+                                        <!-- Privilege Scope -->
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <lightning-textarea 
+                                                label="Privilege Scope" 
+                                                value={currentJob.Privilege_Scope__c} 
+                                                onchange={handleChange} 
+                                                data-field="Privilege_Scope__c"
+                                                placeholder="e.g., Emergency OPD, Stabilization & Basic Procedures"
+                                                rows="4">
+                                            </lightning-textarea>
+                                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
+                                                Define the scope of clinical privileges for this role
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </lightning-tab>
+
+                            <!-- 4. Education Requirements Tab -->
+                            <lightning-tab label="🎓 Education" value="education">
+                                <div class="slds-p-around_small">
+                                    
+                                    <div class="section-header slds-m-bottom_small">
+                                        <lightning-icon icon-name="standard:education" size="small"></lightning-icon>
+                                        <h3 class="slds-text-heading_small">Education Requirements</h3>
+                                    </div>
+
+                                    <!-- Education Requirements List -->
+                                    <template for:each={educationRequirements} for:item="edu" for:index="index">
+                                        <div key={edu.key} class="requirement-item slds-box slds-m-bottom_small">
+                                            <div class="slds-grid slds-gutters">
+                                                <div class="slds-col slds-size_3-of-4">
+                                                    <lightning-input 
+                                                        label="Degree Name" 
+                                                        value={edu.Degree_Name__c} 
+                                                        onchange={handleEducationChange}
+                                                        data-index={index}
+                                                        data-field="Degree_Name__c"
+                                                        placeholder="e.g., MBBS, MD, DO">
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning-input 
+                                                        type="checkbox"
+                                                        label="Mandatory" 
+                                                        checked={edu.Mandatory__c}
+                                                        onchange={handleEducationChange}
+                                                        data-index={index}
+                                                        data-field="Mandatory__c">
+                                                    </lightning-input>
+                                                    <lightning-button-icon 
+                                                        icon-name="utility:delete" 
+                                                        variant="bare"
+                                                        alternative-text="Remove"
+                                                        title="Remove"
+                                                        onclick={handleRemoveEducation}
+                                                        data-index={index}
+                                                        class="slds-float_right">
+                                                    </lightning-button-icon>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <lightning-button 
+                                        label="Add Education Requirement" 
+                                        icon-name="utility:add"
+                                        onclick={handleAddEducation}
+                                        class="slds-m-top_small">
+                                    </lightning-button>
+                                </div>
+                            </lightning-tab>
+
+                            <!-- 5. Licenses Tab -->
+                            <lightning-tab label="📜 Licenses" value="licenses">
+                                <div class="slds-p-around_small">
+                                    
+                                    <div class="section-header slds-m-bottom_small">
+                                        <lightning-icon icon-name="standard:record" size="small"></lightning-icon>
+                                        <h3 class="slds-text-heading_small">License Requirements</h3>
+                                    </div>
+
+                                    <!-- License Requirements List -->
+                                    <template for:each={licenseRequirements} for:item="lic" for:index="index">
+                                        <div key={lic.key} class="requirement-item slds-box slds-m-bottom_small">
+                                            <div class="slds-grid slds-wrap slds-gutters">
+                                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                                    <lightning-input 
+                                                        label="License Name" 
+                                                        value={lic.License_Name__c} 
+                                                        onchange={handleLicenseChange}
+                                                        data-index={index}
+                                                        data-field="License_Name__c"
+                                                        placeholder="e.g., Medical Council Registration">
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                                    <lightning-input 
+                                                        label="Issuing Authority" 
+                                                        value={lic.Issuing_Authority__c} 
+                                                        onchange={handleLicenseChange}
+                                                        data-index={index}
+                                                        data-field="Issuing_Authority__c"
+                                                        placeholder="e.g., National Medical Council">
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                                    <lightning-input 
+                                                        type="checkbox"
+                                                        label="Active Required" 
+                                                        checked={lic.Active_Required__c}
+                                                        onchange={handleLicenseChange}
+                                                        data-index={index}
+                                                        data-field="Active_Required__c">
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                                    <lightning-input 
+                                                        type="checkbox"
+                                                        label="Expiry Check Required" 
+                                                        checked={lic.Expiry_Check_Required__c}
+                                                        onchange={handleLicenseChange}
+                                                        data-index={index}
+                                                        data-field="Expiry_Check_Required__c">
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                                    <lightning-button-icon 
+                                                        icon-name="utility:delete" 
+                                                        variant="bare"
+                                                        alternative-text="Remove"
+                                                        title="Remove"
+                                                        onclick={handleRemoveLicense}
+                                                        data-index={index}
+                                                        class="slds-float_right slds-m-top_medium">
+                                                    </lightning-button-icon>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <lightning-button 
+                                        label="Add License Requirement" 
+                                        icon-name="utility:add"
+                                        onclick={handleAddLicense}
+                                        class="slds-m-top_small">
+                                    </lightning-button>
+                                </div>
+                            </lightning-tab>
+
+                            <!-- 6. Certifications Tab -->
+                            <lightning-tab label="📄 Certifications" value="certifications">
+                                <div class="slds-p-around_small">
+                                    
+                                    <div class="section-header slds-m-bottom_small">
+                                        <lightning-icon icon-name="standard:endorsement" size="small"></lightning-icon>
+                                        <h3 class="slds-text-heading_small">Certification Requirements</h3>
+                                    </div>
+
+                                    <!-- Certification Requirements List -->
+                                    <template for:each={certificationRequirements} for:item="cert" for:index="index">
+                                        <div key={cert.key} class="requirement-item slds-box slds-m-bottom_small">
+                                            <div class="slds-grid slds-gutters">
+                                                <div class="slds-col slds-size_3-of-4">
+                                                    <lightning-input 
+                                                        label="Certification Name" 
+                                                        value={cert.Certification_Name__c} 
+                                                        onchange={handleCertificationChange}
+                                                        data-index={index}
+                                                        data-field="Certification_Name__c"
+                                                        placeholder="e.g., BLS, ACLS">
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning-input 
+                                                        type="checkbox"
+                                                        label="Mandatory" 
+                                                        checked={cert.Mandatory__c}
+                                                        onchange={handleCertificationChange}
+                                                        data-index={index}
+                                                        data-field="Mandatory__c">
+                                                    </lightning-input>
+                                                    <lightning-button-icon 
+                                                        icon-name="utility:delete" 
+                                                        variant="bare"
+                                                        alternative-text="Remove"
+                                                        title="Remove"
+                                                        onclick={handleRemoveCertification}
+                                                        data-index={index}
+                                                        class="slds-float_right">
+                                                    </lightning-button-icon>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <lightning-button 
+                                        label="Add Certification Requirement" 
+                                        icon-name="utility:add"
+                                        onclick={handleAddCertification}
+                                        class="slds-m-top_small">
+                                    </lightning-button>
+                                </div>
+                            </lightning-tab>
+
+                            <!-- 7. Clinical Skills Tab -->
+                            <lightning-tab label="🩺 Clinical Skills" value="skills">
+                                <div class="slds-p-around_small">
+                                    
+                                    <div class="section-header slds-m-bottom_small">
+                                        <lightning-icon icon-name="standard:skill" size="small"></lightning-icon>
+                                        <h3 class="slds-text-heading_small">Clinical Skills Required</h3>
+                                    </div>
+
+                                    <!-- Clinical Skills List -->
+                                    <template for:each={clinicalSkills} for:item="skill" for:index="index">
+                                        <div key={skill.key} class="requirement-item slds-box slds-m-bottom_small">
+                                            <div class="slds-grid slds-wrap slds-gutters">
+                                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                                    <lightning-input 
+                                                        label="Skill Name" 
+                                                        value={skill.Skill_Name__c} 
+                                                        onchange={handleSkillChange}
+                                                        data-index={index}
+                                                        data-field="Skill_Name__c"
+                                                        placeholder="e.g., Patient Assessment">
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
+                                                    <lightning-combobox
+                                                        label="Skill Level"
+                                                        value={skill.Skill_Level__c}
+                                                        placeholder="Select Level"
+                                                        options={skillLevelOptions}
+                                                        onchange={handleSkillChange}
+                                                        data-index={index}
+                                                        data-field="Skill_Level__c">
+                                                    </lightning-combobox>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
+                                                    <lightning-input 
+                                                        type="checkbox"
+                                                        label="Mandatory" 
+                                                        checked={skill.Mandatory__c}
+                                                        onchange={handleSkillChange}
+                                                        data-index={index}
+                                                        data-field="Mandatory__c">
+                                                    </lightning-input>
+                                                    <lightning-button-icon 
+                                                        icon-name="utility:delete" 
+                                                        variant="bare"
+                                                        alternative-text="Remove"
+                                                        title="Remove"
+                                                        onclick={handleRemoveSkill}
+                                                        data-index={index}
+                                                        class="slds-float_right">
+                                                    </lightning-button-icon>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <lightning-button 
+                                        label="Add Clinical Skill" 
+                                        icon-name="utility:add"
+                                        onclick={handleAddSkill}
+                                        class="slds-m-top_small">
+                                    </lightning-button>
+                                </div>
+                            </lightning-tab>
+
+                            <!-- 8. Procedures Tab -->
+                            <lightning-tab label="💉 Procedures" value="procedures">
+                                <div class="slds-p-around_small">
+                                    
+                                    <div class="section-header slds-m-bottom_small">
+                                        <lightning-icon icon-name="standard:work_type" size="small"></lightning-icon>
+                                        <h3 class="slds-text-heading_small">Procedure Requirements</h3>
+                                    </div>
+
+                                    <!-- Procedure Requirements List -->
+                                    <template for:each={procedureRequirements} for:item="proc" for:index="index">
+                                        <div key={proc.key} class="requirement-item slds-box slds-m-bottom_small">
+                                            <div class="slds-grid slds-gutters">
+                                                <div class="slds-col slds-size_3-of-4">
+                                                    <lightning-input 
+                                                        label="Procedure Name" 
+                                                        value={proc.Procedure_Name__c} 
+                                                        onchange={handleProcedureChange}
+                                                        data-index={index}
+                                                        data-field="Procedure_Name__c"
+                                                        placeholder="e.g., IV Cannulation">
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning-input 
+                                                        type="checkbox"
+                                                        label="Critical" 
+                                                        checked={proc.Critical__c}
+                                                        onchange={handleProcedureChange}
+                                                        data-index={index}
+                                                        data-field="Critical__c">
+                                                    </lightning-input>
+                                                    <lightning-button-icon 
+                                                        icon-name="utility:delete" 
+                                                        variant="bare"
+                                                        alternative-text="Remove"
+                                                        title="Remove"
+                                                        onclick={handleRemoveProcedure}
+                                                        data-index={index}
+                                                        class="slds-float_right">
+                                                    </lightning-button-icon>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <lightning-button 
+                                        label="Add Procedure Requirement" 
+                                        icon-name="utility:add"
+                                        onclick={handleAddProcedure}
+                                        class="slds-m-top_small">
+                                    </lightning-button>
+                                </div>
+                            </lightning-tab>
+
+                            <!-- 9. Compliance Tab -->
+                            <lightning-tab label="✅ Compliance" value="compliance">
+                                <div class="slds-p-around_small">
+                                    
+                                    <div class="section-header slds-m-bottom_small">
+                                        <lightning-icon icon-name="standard:case" size="small"></lightning-icon>
+                                        <h3 class="slds-text-heading_small">Compliance Requirements</h3>
+                                    </div>
+
+                                    <!-- Compliance Requirements List -->
+                                    <template for:each={complianceRequirements} for:item="comp" for:index="index">
+                                        <div key={comp.key} class="requirement-item slds-box slds-m-bottom_small">
+                                            <div class="slds-grid slds-gutters">
+                                                <div class="slds-col slds-size_3-of-4">
+                                                    <lightning-input 
+                                                        label="Compliance Name" 
+                                                        value={comp.Compliance_Name__c} 
+                                                        onchange={handleComplianceChange}
+                                                        data-index={index}
+                                                        data-field="Compliance_Name__c"
+                                                        placeholder="e.g., HIPAA, Infection Control">
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning-input 
+                                                        type="checkbox"
+                                                        label="Mandatory" 
+                                                        checked={comp.Mandatory__c}
+                                                        onchange={handleComplianceChange}
+                                                        data-index={index}
+                                                        data-field="Mandatory__c">
+                                                    </lightning-input>
+                                                    <lightning-button-icon 
+                                                        icon-name="utility:delete" 
+                                                        variant="bare"
+                                                        alternative-text="Remove"
+                                                        title="Remove"
+                                                        onclick={handleRemoveCompliance}
+                                                        data-index={index}
+                                                        class="slds-float_right">
+                                                    </lightning-button-icon>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <lightning-button 
+                                        label="Add Compliance Requirement" 
+                                        icon-name="utility:add"
+                                        onclick={handleAddCompliance}
+                                        class="slds-m-top_small">
+                                    </lightning-button>
+                                </div>
+                            </lightning-tab>
+
+                        </lightning-tabset>
                     </div>
 
                     <footer class="slds-modal__footer">
@@ -230,7 +746,7 @@
                             onclick={closeModal}>
                         </lightning-button>
                         <lightning-button 
-                            label="Save" 
+                            label="Save Job Posting" 
                             variant="brand" 
                             onclick={handleSave}
                             disabled={isLoading}>
@@ -256,10 +772,10 @@
                                 Are you sure you want to delete this job posting?
                             </p>
                             <p class="slds-text-body_regular slds-text-color_weak">
-                                <strong>{jobToDelete.Name}</strong>
+                                <strong>{jobToDelete.Job_Title__c}</strong>
                             </p>
                             <p class="slds-text-body_small slds-text-color_weak slds-m-top_small">
-                                This action cannot be undone.
+                                This action cannot be undone and will delete all associated requirements.
                             </p>
                         </div>
                     </div>

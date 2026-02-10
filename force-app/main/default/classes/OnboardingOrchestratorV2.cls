@@ -243,7 +243,7 @@
 public without sharing class OnboardingOrchestratorV2 {
 
     private static final String WEBHOOK_URL =
-        'https://webhook.site/7e35cac0-d1d6-4e4b-aec1-baa055ee7963';
+        'https://webhook.site/d6d018ab-db1f-4d17-9bf9-b1aadc182f1b';
 
     @AuraEnabled(cacheable=false)
     public static String fetchResumePreviewV2(Id candidateId) {

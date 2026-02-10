@@ -725,25 +725,49 @@ export default class ScreeningAdmin extends LightningElement {
         }
     }
 
-    async handleSaveNewRule() {
-        if (!this.newRule.Name || !this.newRule.Priority__c || !this.newRule.Applied_Role__c) {
-            this.showToast('Error', 'Rule Name, Priority, and Job Posting are required', 'error');
-            return;
-        }
-        this.isLoading = true;
-        try {
-            await saveNewRule({ newRule: this.newRule });
-            const action = this.isEditMode ? 'updated (new version created)' : 'created';
-            this.showToast('Success', `Rule ${action} successfully`, 'success');
-            this.isModalOpen = false;
-            await this.loadRules();
-        } catch (error) {
-            this.showToast('Error saving rule', this.getErrorMessage(error), 'error');
-        } finally {
-            this.isLoading = false;
-        }
+    // async handleSaveNewRule() {
+    //     if (!this.newRule.Name || !this.newRule.Priority__c || !this.newRule.Applied_Role__c) {
+    //         this.showToast('Error', 'Rule Name, Priority, and Job Posting are required', 'error');
+    //         return;
+    //     }
+    //     this.isLoading = true;
+    //     try {
+    //         await saveNewRule({ newRule: this.newRule });
+    //         const action = this.isEditMode ? 'updated (new version created)' : 'created';
+    //         this.showToast('Success', `Rule ${action} successfully`, 'success');
+    //         this.isModalOpen = false;
+    //         await this.loadRules();
+    //     } catch (error) {
+    //         this.showToast('Error saving rule', this.getErrorMessage(error), 'error');
+    //     } finally {
+    //         this.isLoading = false;
+    //     }
+    // }
+async handleSaveNewRule() {
+    if (!this.newRule.Name || !this.newRule.Priority__c || !this.newRule.Applied_Role__c) {
+        this.showToast('Error', 'Rule Name, Priority, and Job Posting are required', 'error');
+        return;
     }
-
+    
+    // 🔥 NEW: Validate email if approval required
+    if (this.newRule.Override_Approval_Required__c && !this.newRule.Override_Approver_Email__c) {
+        this.showToast('Error', 'Approver Email is required when approval is enabled', 'error');
+        return;
+    }
+    
+    this.isLoading = true;
+    try {
+        await saveNewRule({ newRule: this.newRule });
+        const action = this.isEditMode ? 'updated (new version created)' : 'created';
+        this.showToast('Success', `Rule ${action} successfully`, 'success');
+        this.isModalOpen = false;
+        await this.loadRules();
+    } catch (error) {
+        this.showToast('Error saving rule', this.getErrorMessage(error), 'error');
+    } finally {
+        this.isLoading = false;
+    }
+}
     // Version history - NO manual create button
     async handleShowVersionHistory(row) {
         this.selectedRuleForVersion = row;

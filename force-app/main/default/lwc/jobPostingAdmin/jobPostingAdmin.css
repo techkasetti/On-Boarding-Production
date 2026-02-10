@@ -1,18 +1,21 @@
+/* jobPostingAdmin.css - COMPREHENSIVE MEDICAL THEME */
+
 .admin-container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 1.5rem;
-    background: #f3f3f3;
+    background: #f3f7f9;
     min-height: 100vh;
 }
 
-/* Header Styling */
+/* ========== MEDICAL THEME - Header Styling ========== */
 .admin-header {
     margin-bottom: 1.5rem;
 }
 
 .admin-header lightning-card {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 12px rgba(14, 165, 165, 0.15);
+    border-top: 4px solid #0ea5a5;
 }
 
 .admin-header h1 {
@@ -22,20 +25,28 @@
 }
 
 .new-job-button {
-    box-shadow: 0 2px 4px rgba(0, 112, 210, 0.3);
+    background: linear-gradient(135deg, #0ea5a5 0%, #068787 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(14, 165, 165, 0.3);
 }
 
-/* Stats Card */
+.new-job-button:hover {
+    background: linear-gradient(135deg, #068787 0%, #045555 100%);
+    box-shadow: 0 6px 16px rgba(14, 165, 165, 0.4);
+    transform: translateY(-1px);
+}
+
+/* ========== Stats Card with Medical Theme ========== */
 .stats-card {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
     padding: 1rem;
-    background: linear-gradient(135deg, #0070d2 0%, #005fb2 100%);
+    background: linear-gradient(135deg, #0ea5a5 0%, #068787 100%);
     border-radius: 0.5rem;
     color: white;
-    box-shadow: 0 2px 6px rgba(0, 112, 210, 0.3);
+    box-shadow: 0 4px 12px rgba(14, 165, 165, 0.3);
 }
 
 .stats-number {
@@ -53,12 +64,12 @@
     color: rgba(255, 255, 255, 0.8);
 }
 
-/* DataTable Container */
+/* ========== DataTable Container ========== */
 .datatable-container {
     padding: 1rem;
 }
 
-/* Status Badge Styling */
+/* ========== Status Badge Styling ========== */
 .status-active {
     color: #04844b;
     font-weight: 600;
@@ -71,13 +82,13 @@
     font-size: 1.2em;
 }
 
-.status-inactive {
+.status-closed {
     color: #c23934;
     font-weight: 600;
     position: relative;
 }
 
-.status-inactive::before {
+.status-closed::before {
     content: '●';
     margin-right: 0.5rem;
     font-size: 1.2em;
@@ -95,25 +106,14 @@
     font-size: 1.2em;
 }
 
-.status-closed {
-    color: #706e6b;
-    font-weight: 600;
-    position: relative;
-}
-
-.status-closed::before {
-    content: '●';
-    margin-right: 0.5rem;
-    font-size: 1.2em;
-}
-
-/* Modal Styling */
+/* ========== Modal Styling with Medical Theme ========== */
 .slds-modal__container {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 90%;
 }
 
 .slds-modal__header {
-    background: linear-gradient(135deg, #0070d2 0%, #005fb2 100%);
+    background: linear-gradient(135deg, #0ea5a5 0%, #068787 100%);
     color: white;
 }
 
@@ -126,29 +126,178 @@
 }
 
 .slds-modal__footer {
-    background: #f3f3f3;
+    background: #f3f7f9;
+    border-top: 2px solid #0ea5a5;
 }
 
-/* Form Field Styling */
+/* ========== Tab Styling ========== */
+lightning-tabset {
+    background: white;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.slds-tabs_default__content {
+    background: white;
+    min-height: 400px;
+}
+
+/* ========== Section Headers ========== */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #0ea5a5;
+}
+
+.section-header h3 {
+    color: #080707;
+    font-weight: 700;
+    margin: 0;
+}
+
+.section-header lightning-icon {
+    color: #0ea5a5;
+}
+
+/* ========== Requirement Items ========== */
+.requirement-item {
+    background: #f9fafb;
+    border-left: 3px solid #0ea5a5;
+    padding: 1rem;
+    transition: all 0.2s ease;
+}
+
+.requirement-item:hover {
+    background: #e9f5f5;
+    box-shadow: 0 2px 8px rgba(14, 165, 165, 0.1);
+}
+
+/* ========== Form Field Styling ========== */
 lightning-input,
 lightning-combobox,
 lightning-textarea {
     display: block;
 }
 
-/* Empty State */
+/* ========== Help Text ========== */
+.slds-text-color_weak {
+    display: flex;
+    align-items: center;
+}
+
+/* ========== Empty State ========== */
 .slds-text-align_center lightning-icon {
     color: #dddbda;
 }
 
-/* Card Shadows */
+/* ========== Card Shadows ========== */
 lightning-card {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(14, 165, 165, 0.1);
     border-radius: 0.5rem;
     overflow: hidden;
 }
 
-/* Responsive Design */
+/* ========== Button Enhancements ========== */
+lightning-button:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+}
+
+.slds-modal__footer lightning-button[variant="brand"] {
+    background: linear-gradient(135deg, #0ea5a5 0%, #068787 100%);
+    border: none;
+    box-shadow: 0 2px 6px rgba(14, 165, 165, 0.3);
+}
+
+.slds-modal__footer lightning-button[variant="brand"]:hover {
+    background: linear-gradient(135deg, #068787 0%, #045555 100%);
+    box-shadow: 0 4px 12px rgba(14, 165, 165, 0.4);
+}
+
+/* ========== DataTable Row Hover ========== */
+lightning-datatable tbody tr:hover {
+    background-color: #e9f5f5;
+    cursor: pointer;
+}
+
+/* ========== Delete Button in Requirements ========== */
+.requirement-item lightning-button-icon {
+    transition: all 0.2s ease;
+}
+
+.requirement-item lightning-button-icon:hover {
+    background-color: rgba(194, 57, 52, 0.1);
+    border-radius: 0.25rem;
+}
+
+/* ========== Animations ========== */
+.slds-modal.slds-fade-in-open {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ========== Tab Content Spacing ========== */
+.slds-tabs_default__content > div {
+    animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ========== Loading State ========== */
+.slds-spinner_container {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+/* ========== Icon Styling ========== */
+lightning-icon[icon-name="utility:info"] {
+    color: #0ea5a5;
+    vertical-align: middle;
+}
+
+.slds-media__figure lightning-icon {
+    filter: drop-shadow(0 2px 4px rgba(14, 165, 165, 0.2));
+}
+
+/* ========== Add Button Styling ========== */
+lightning-button[icon-name="utility:add"] {
+    border: 2px dashed #0ea5a5;
+    background: transparent;
+    color: #0ea5a5;
+}
+
+lightning-button[icon-name="utility:add"]:hover {
+    background: rgba(14, 165, 165, 0.05);
+    border-color: #068787;
+}
+
+/* ========== Checkbox Styling ========== */
+lightning-input[type="checkbox"] {
+    margin-top: 0.5rem;
+}
+
+/* ========== Responsive Design ========== */
 @media (max-width: 768px) {
     .admin-container {
         padding: 0.5rem;
@@ -173,37 +322,136 @@ lightning-card {
     .datatable-container {
         overflow-x: auto;
     }
-}
-
-/* Loading State */
-.slds-spinner_container {
-    background: rgba(255, 255, 255, 0.8);
-}
-
-/* Button Hover Effects */
-lightning-button:hover {
-    transform: translateY(-1px);
-    transition: transform 0.2s ease;
-}
-
-/* DataTable Row Hover */
-lightning-datatable tbody tr:hover {
-    background-color: #f3f3f3;
-    cursor: pointer;
-}
-
-/* Animation for modals */
-.slds-modal.slds-fade-in-open {
-    animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
-    to {
-        opacity: 1;
-        transform: scale(1);
+
+    .slds-modal__container {
+        max-width: 95%;
+    }
+
+    .requirement-item {
+        padding: 0.75rem;
+    }
+}
+
+/* ========== Scrollbar Styling ========== */
+.slds-modal__content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.slds-modal__content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.slds-modal__content::-webkit-scrollbar-thumb {
+    background: #0ea5a5;
+    border-radius: 4px;
+}
+
+.slds-modal__content::-webkit-scrollbar-thumb:hover {
+    background: #068787;
+}
+
+/* ========== Field Labels ========== */
+lightning-input label,
+lightning-combobox label,
+lightning-textarea label {
+    font-weight: 600;
+    color: #080707;
+}
+
+/* ========== Required Field Indicator ========== */
+abbr.slds-required {
+    color: #c23934;
+}
+
+/* ========== Spacing Utilities ========== */
+.slds-m-top_medium {
+    margin-top: 1rem;
+}
+
+.slds-m-bottom_small {
+    margin-bottom: 0.75rem;
+}
+
+/* ========== Grid Enhancements ========== */
+.slds-grid.slds-gutters {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+}
+
+.slds-grid.slds-gutters > .slds-col {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+/* ========== Focus States ========== */
+lightning-input:focus-within,
+lightning-combobox:focus-within,
+lightning-textarea:focus-within {
+    outline: 2px solid #0ea5a5;
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+}
+
+/* ========== Validation Error Styling ========== */
+.slds-has-error .slds-form-element__help {
+    color: #c23934;
+}
+
+/* ========== Success State ========== */
+.success-banner {
+    background: linear-gradient(135deg, #04844b 0%, #026d3a 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ========== Warning Banner ========== */
+.warning-banner {
+    background: linear-gradient(135deg, #e07c05 0%, #c66e04 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+/* ========== AI Console Button Styling ========== */
+.ai-console-button {
+    background: linear-gradient(135deg, #9333EA 0%, #7E22CE 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
+}
+
+.ai-console-button:hover {
+    background: linear-gradient(135deg, #7E22CE 0%, #6B21A8 100%);
+    box-shadow: 0 6px 16px rgba(147, 51, 234, 0.4);
+    transform: translateY(-1px);
+}
+
+.slds-button-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .slds-button-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .ai-console-button,
+    .new-job-button {
+        width: 100%;
     }
 }

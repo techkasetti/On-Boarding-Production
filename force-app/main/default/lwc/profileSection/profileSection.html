@@ -5,9 +5,11 @@
             <div class="slds-col slds-grow">
                 <h2 class="slds-text-heading_medium">
                     <template if:true={iconName}>
-                        <lightning-icon icon-name={iconName} size="small" class="slds-m-right_x-small"></lightning-icon>
+                        <div class="section-header-icon-container">
+                            <lightning-icon icon-name={iconName} size="small" variant="inverse"></lightning-icon>
+                        </div>
                     </template>
-                    <slot name="title"></slot>
+                    <span class="section-title-text"><slot name="title"></slot></span>
                 </h2>
             </div>
             <div class="slds-col slds-no-flex">

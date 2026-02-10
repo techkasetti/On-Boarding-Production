@@ -1,8 +1,10 @@
+// jobPostingAdmin.js - WITH TAB NAVIGATION
 import { LightningElement, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { NavigationMixin } from 'lightning/navigation';
 
 import getJobPostings from '@salesforce/apex/JobPostingAdminController.getJobPostings';
-import saveJobPostings from '@salesforce/apex/JobPostingAdminController.saveJobPostings';
+import saveJobPosting from '@salesforce/apex/JobPostingAdminController.saveJobPosting';
 import deleteJobPosting from '@salesforce/apex/JobPostingAdminController.deleteJobPosting';
 import getPicklistValues from '@salesforce/apex/JobPostingAdminController.getPicklistValues';
 
@@ -11,15 +13,27 @@ const actions = [
     { label: 'Delete', name: 'delete', iconName: 'utility:delete' }
 ];
 
-export default class JobPostingAdmin extends LightningElement {
+export default class JobPostingAdmin extends NavigationMixin(LightningElement) {
     @track jobPostings = [];
     @track filteredJobPostings = [];
     @track columns = [];
     @track currentJob = {};
-    @track statusOptions = [];
+    
+    // Picklist Options
     @track categoryOptions = [];
-    @track experienceOptions = [];
-    @track specializationOptions = [];
+    @track roleTypeOptions = [];
+    @track departmentOptions = [];
+    @track employmentTypeOptions = [];
+    @track shiftTypeOptions = [];
+    @track skillLevelOptions = [];
+
+    // Child Objects
+    @track educationRequirements = [];
+    @track licenseRequirements = [];
+    @track certificationRequirements = [];
+    @track clinicalSkills = [];
+    @track procedureRequirements = [];
+    @track complianceRequirements = [];
 
     isModalOpen = false;
     isDeleteModalOpen = false;
@@ -27,6 +41,10 @@ export default class JobPostingAdmin extends LightningElement {
     searchKey = '';
     isLoading = false;
     jobToDelete = null;
+    activeTab = 'basic';
+
+    // Counter for generating unique keys
+    keyCounter = 0;
 
     get totalJobs() {
         return this.filteredJobPostings.length;
@@ -38,29 +56,50 @@ export default class JobPostingAdmin extends LightningElement {
 
     connectedCallback() {
         this.loadData();
+        this.initializeSkillLevelOptions();
+    }
+
+    /**
+     * Navigate to AI Console Tab
+     */
+    handleNavigateToAIConsole() {
+        this[NavigationMixin.Navigate]({
+            type: 'standard__navItemPage',
+            attributes: {
+                apiName: 'AI_Job_Posting_Console' 
+            }
+        });
+    }
+
+    initializeSkillLevelOptions() {
+        this.skillLevelOptions = [
+            { label: 'Basic', value: 'Basic' },
+            { label: 'Intermediate', value: 'Intermediate' },
+            { label: 'Advanced', value: 'Advanced' }
+        ];
     }
 
     async loadData() {
         this.isLoading = true;
         try {
-            // Load all picklist values
-            const [statusData, categoryData, experienceData, specializationData] = await Promise.all([
-                getPicklistValues({ fieldName: 'Status__c' }),
+            const [categoryData, roleTypeData, departmentData, employmentTypeData, shiftTypeData] = await Promise.all([
                 getPicklistValues({ fieldName: 'Category__c' }),
-                getPicklistValues({ fieldName: 'Experience_Level__c' }),
-                getPicklistValues({ fieldName: 'Specialization__c' })
+                getPicklistValues({ fieldName: 'Role_Type__c' }),
+                getPicklistValues({ fieldName: 'Department__c' }),
+                getPicklistValues({ fieldName: 'Employment_Type__c' }),
+                getPicklistValues({ fieldName: 'Shift_Type__c' })
             ]);
 
-            this.statusOptions = statusData;
             this.categoryOptions = categoryData;
-            this.experienceOptions = experienceData;
-            this.specializationOptions = specializationData;
+            this.roleTypeOptions = roleTypeData;
+            this.departmentOptions = departmentData;
+            this.employmentTypeOptions = employmentTypeData;
+            this.shiftTypeOptions = shiftTypeData;
 
-            // Define columns
             this.columns = [
                 { 
                     label: 'Job Title', 
-                    fieldName: 'Name', 
+                    fieldName: 'Job_Title__c', 
                     type: 'text', 
                     wrapText: true,
                     cellAttributes: { class: 'slds-text-title_bold' }
@@ -71,13 +110,23 @@ export default class JobPostingAdmin extends LightningElement {
                     type: 'text'
                 },
                 { 
-                    label: 'Location', 
-                    fieldName: 'Location__c', 
+                    label: 'Role Type', 
+                    fieldName: 'Role_Type__c', 
                     type: 'text'
                 },
                 { 
-                    label: 'Experience', 
-                    fieldName: 'Experience_Level__c', 
+                    label: 'Department', 
+                    fieldName: 'Department__c', 
+                    type: 'text'
+                },
+                { 
+                    label: 'Facility', 
+                    fieldName: 'Facility_Name__c', 
+                    type: 'text'
+                },
+                { 
+                    label: 'City', 
+                    fieldName: 'City__c', 
                     type: 'text'
                 },
                 { 
@@ -91,18 +140,8 @@ export default class JobPostingAdmin extends LightningElement {
                     }
                 },
                 { 
-                    label: 'End Date', 
-                    fieldName: 'End_Date__c', 
-                    type: 'date',
-                    typeAttributes: {
-                        year: 'numeric',
-                        month: 'short',
-                        day: '2-digit'
-                    }
-                },
-                { 
                     label: 'Status', 
-                    fieldName: 'Status__c', 
+                    fieldName: 'Job_Status__c', 
                     type: 'text',
                     cellAttributes: { 
                         class: { fieldName: 'statusClass' }
@@ -114,13 +153,7 @@ export default class JobPostingAdmin extends LightningElement {
                 }
             ];
 
-            // Load job records
-            const jobData = await getJobPostings();
-            this.jobPostings = jobData.map(record => ({
-                ...record,
-                statusClass: this.getStatusClass(record.Status__c)
-            }));
-            this.filteredJobPostings = [...this.jobPostings];
+            await this.refreshJobData();
 
         } catch (error) {
             this.showToast(
@@ -133,19 +166,37 @@ export default class JobPostingAdmin extends LightningElement {
         }
     }
 
+    async refreshJobData() {
+        try {
+            const jobData = await getJobPostings();
+            this.jobPostings = jobData.map(record => ({
+                ...record,
+                statusClass: this.getStatusClass(record.Job_Status__c)
+            }));
+            this.filteredJobPostings = [...this.jobPostings];
+            
+            if (this.searchKey) {
+                this.applySearchFilter();
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
     getStatusClass(status) {
         const statusMap = {
-            'Active': 'status-active',
-            'Inactive': 'status-inactive',
-            'Draft': 'status-draft',
+            'Open': 'status-active',
             'Closed': 'status-closed'
         };
-        return statusMap[status] || '';
+        return statusMap[status] || 'status-draft';
     }
 
     handleSearch(event) {
         this.searchKey = event.target.value.toLowerCase();
-        
+        this.applySearchFilter();
+    }
+
+    applySearchFilter() {
         if (!this.searchKey) {
             this.filteredJobPostings = [...this.jobPostings];
             return;
@@ -153,10 +204,10 @@ export default class JobPostingAdmin extends LightningElement {
 
         this.filteredJobPostings = this.jobPostings.filter(job => {
             return (
-                (job.Name && job.Name.toLowerCase().includes(this.searchKey)) ||
+                (job.Job_Title__c && job.Job_Title__c.toLowerCase().includes(this.searchKey)) ||
                 (job.Category__c && job.Category__c.toLowerCase().includes(this.searchKey)) ||
-                (job.Location__c && job.Location__c.toLowerCase().includes(this.searchKey)) ||
-                (job.Status__c && job.Status__c.toLowerCase().includes(this.searchKey))
+                (job.Facility_Name__c && job.Facility_Name__c.toLowerCase().includes(this.searchKey)) ||
+                (job.City__c && job.City__c.toLowerCase().includes(this.searchKey))
             );
         });
     }
@@ -164,8 +215,15 @@ export default class JobPostingAdmin extends LightningElement {
     handleNew() {
         this.modalTitle = 'Create New Job Posting';
         this.currentJob = {
-            Status__c: 'Draft'
+            Credentialing_Required__c: true
         };
+        this.educationRequirements = [];
+        this.licenseRequirements = [];
+        this.certificationRequirements = [];
+        this.clinicalSkills = [];
+        this.procedureRequirements = [];
+        this.complianceRequirements = [];
+        this.activeTab = 'basic';
         this.isModalOpen = true;
     }
 
@@ -176,6 +234,15 @@ export default class JobPostingAdmin extends LightningElement {
         if (actionName === 'edit') {
             this.modalTitle = 'Edit Job Posting';
             this.currentJob = { ...row };
+            
+            this.educationRequirements = this.getChildRecords(row.Education_Requirements__r);
+            this.licenseRequirements = this.getChildRecords(row.License_Requirements__r);
+            this.certificationRequirements = this.getChildRecords(row.Certification_Requirements__r);
+            this.clinicalSkills = this.getChildRecords(row.Job_Clinical_Skill__r);
+            this.procedureRequirements = this.getChildRecords(row.Job_Procedure_Requirements__r);
+            this.complianceRequirements = this.getChildRecords(row.Job_Compliance_Requirements__r);
+            
+            this.activeTab = 'basic';
             this.isModalOpen = true;
         } else if (actionName === 'delete') {
             this.jobToDelete = row;
@@ -183,22 +250,208 @@ export default class JobPostingAdmin extends LightningElement {
         }
     }
 
+    getChildRecords(childArray) {
+        if (!childArray || !Array.isArray(childArray)) {
+            return [];
+        }
+        return childArray.map(item => ({...item, key: this.generateKey()}));
+    }
+
     handleChange(event) {
         const field = event.target.dataset.field;
-        this.currentJob[field] = event.target.value;
-        
-        // Update currentJob to trigger reactivity for min date on End Date
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        this.currentJob[field] = value;
         this.currentJob = { ...this.currentJob };
     }
 
+    handleTabChange(event) {
+        this.activeTab = event.target.value;
+    }
+
+    // ========== EDUCATION REQUIREMENTS ==========
+    handleAddEducation() {
+        this.educationRequirements = [...this.educationRequirements, {
+            key: this.generateKey(),
+            Degree_Name__c: '',
+            Mandatory__c: false
+        }];
+    }
+
+    handleEducationChange(event) {
+        const index = parseInt(event.target.dataset.index);
+        const field = event.target.dataset.field;
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        
+        this.educationRequirements[index][field] = value;
+        this.educationRequirements = [...this.educationRequirements];
+    }
+
+    handleRemoveEducation(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.educationRequirements.splice(index, 1);
+        this.educationRequirements = [...this.educationRequirements];
+    }
+
+    // ========== LICENSE REQUIREMENTS ==========
+    handleAddLicense() {
+        this.licenseRequirements = [...this.licenseRequirements, {
+            key: this.generateKey(),
+            License_Name__c: '',
+            Issuing_Authority__c: '',
+            Active_Required__c: false,
+            Expiry_Check_Required__c: false
+        }];
+    }
+
+    handleLicenseChange(event) {
+        const index = parseInt(event.target.dataset.index);
+        const field = event.target.dataset.field;
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        
+        this.licenseRequirements[index][field] = value;
+        this.licenseRequirements = [...this.licenseRequirements];
+    }
+
+    handleRemoveLicense(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.licenseRequirements.splice(index, 1);
+        this.licenseRequirements = [...this.licenseRequirements];
+    }
+
+    // ========== CERTIFICATION REQUIREMENTS ==========
+    handleAddCertification() {
+        this.certificationRequirements = [...this.certificationRequirements, {
+            key: this.generateKey(),
+            Certification_Name__c: '',
+            Mandatory__c: false
+        }];
+    }
+
+    handleCertificationChange(event) {
+        const index = parseInt(event.target.dataset.index);
+        const field = event.target.dataset.field;
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        
+        this.certificationRequirements[index][field] = value;
+        this.certificationRequirements = [...this.certificationRequirements];
+    }
+
+    handleRemoveCertification(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.certificationRequirements.splice(index, 1);
+        this.certificationRequirements = [...this.certificationRequirements];
+    }
+
+    // ========== CLINICAL SKILLS ==========
+    handleAddSkill() {
+        this.clinicalSkills = [...this.clinicalSkills, {
+            key: this.generateKey(),
+            Skill_Name__c: '',
+            Skill_Level__c: '',
+            Mandatory__c: false
+        }];
+    }
+
+    handleSkillChange(event) {
+        const index = parseInt(event.target.dataset.index);
+        const field = event.target.dataset.field;
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        
+        this.clinicalSkills[index][field] = value;
+        this.clinicalSkills = [...this.clinicalSkills];
+    }
+
+    handleRemoveSkill(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.clinicalSkills.splice(index, 1);
+        this.clinicalSkills = [...this.clinicalSkills];
+    }
+
+    // ========== PROCEDURE REQUIREMENTS ==========
+    handleAddProcedure() {
+        this.procedureRequirements = [...this.procedureRequirements, {
+            key: this.generateKey(),
+            Procedure_Name__c: '',
+            Critical__c: false
+        }];
+    }
+
+    handleProcedureChange(event) {
+        const index = parseInt(event.target.dataset.index);
+        const field = event.target.dataset.field;
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        
+        this.procedureRequirements[index][field] = value;
+        this.procedureRequirements = [...this.procedureRequirements];
+    }
+
+    handleRemoveProcedure(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.procedureRequirements.splice(index, 1);
+        this.procedureRequirements = [...this.procedureRequirements];
+    }
+
+    // ========== COMPLIANCE REQUIREMENTS ==========
+    handleAddCompliance() {
+        this.complianceRequirements = [...this.complianceRequirements, {
+            key: this.generateKey(),
+            Compliance_Name__c: '',
+            Mandatory__c: false
+        }];
+    }
+
+    handleComplianceChange(event) {
+        const index = parseInt(event.target.dataset.index);
+        const field = event.target.dataset.field;
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        
+        this.complianceRequirements[index][field] = value;
+        this.complianceRequirements = [...this.complianceRequirements];
+    }
+
+    handleRemoveCompliance(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.complianceRequirements.splice(index, 1);
+        this.complianceRequirements = [...this.complianceRequirements];
+    }
+
+    // ========== SAVE LOGIC ==========
     async handleSave() {
-        // Validation
-        if (!this.currentJob.Name) {
-            this.showToast('Validation Error', 'Job Posting Name is required.', 'error');
+        if (!this.currentJob.Job_Title__c) {
+            this.showToast('Validation Error', 'Job Title is required.', 'error');
             return;
         }
 
-        // Date validation
+        if (!this.currentJob.Category__c) {
+            this.showToast('Validation Error', 'Category is required.', 'error');
+            return;
+        }
+
+        if (!this.currentJob.Role_Type__c) {
+            this.showToast('Validation Error', 'Role Type is required.', 'error');
+            return;
+        }
+
+        if (!this.currentJob.Employment_Type__c) {
+            this.showToast('Validation Error', 'Employment Type is required.', 'error');
+            return;
+        }
+
+        if (!this.currentJob.Facility_Name__c) {
+            this.showToast('Validation Error', 'Facility Name is required.', 'error');
+            return;
+        }
+
+        if (!this.currentJob.City__c || !this.currentJob.State__c || !this.currentJob.Country__c) {
+            this.showToast('Validation Error', 'Complete location (City, State, Country) is required.', 'error');
+            return;
+        }
+
+        if (!this.currentJob.Start_Date__c) {
+            this.showToast('Validation Error', 'Start Date is required.', 'error');
+            return;
+        }
+
         if (this.currentJob.Start_Date__c && this.currentJob.End_Date__c) {
             const startDate = new Date(this.currentJob.Start_Date__c);
             const endDate = new Date(this.currentJob.End_Date__c);
@@ -209,9 +462,27 @@ export default class JobPostingAdmin extends LightningElement {
             }
         }
 
+        if (this.currentJob.Min_Experience_Years__c && this.currentJob.Max_Experience_Years__c) {
+            if (parseInt(this.currentJob.Max_Experience_Years__c) < parseInt(this.currentJob.Min_Experience_Years__c)) {
+                this.showToast('Validation Error', 'Maximum Experience cannot be less than Minimum Experience.', 'error');
+                return;
+            }
+        }
+
         this.isLoading = true;
         try {
-            await saveJobPostings({ jobPostings: [this.currentJob] });
+            const dataToSave = {
+                jobPosting: this.currentJob,
+                educationRequirements: this.educationRequirements.filter(item => item.Degree_Name__c),
+                licenseRequirements: this.licenseRequirements.filter(item => item.License_Name__c),
+                certificationRequirements: this.certificationRequirements.filter(item => item.Certification_Name__c),
+                clinicalSkills: this.clinicalSkills.filter(item => item.Skill_Name__c),
+                procedureRequirements: this.procedureRequirements.filter(item => item.Procedure_Name__c),
+                complianceRequirements: this.complianceRequirements.filter(item => item.Compliance_Name__c)
+            };
+
+            await saveJobPosting({ jobPostingData: JSON.stringify(dataToSave) });
+            
             this.showToast(
                 'Success', 
                 this.currentJob.Id ? 'Job Posting updated successfully.' : 'Job Posting created successfully.', 
@@ -219,7 +490,7 @@ export default class JobPostingAdmin extends LightningElement {
             );
 
             this.closeModal();
-            await this.loadData();
+            await this.refreshJobData();
 
         } catch (error) {
             this.showToast(
@@ -240,7 +511,8 @@ export default class JobPostingAdmin extends LightningElement {
             await deleteJobPosting({ jobPostingId: this.jobToDelete.Id });
             this.showToast('Success', 'Job Posting deleted successfully.', 'success');
             this.closeDeleteModal();
-            await this.loadData();
+            await this.refreshJobData();
+            
         } catch (error) {
             this.showToast(
                 'Error Deleting',
@@ -255,11 +527,22 @@ export default class JobPostingAdmin extends LightningElement {
     closeModal() {
         this.isModalOpen = false;
         this.currentJob = {};
+        this.educationRequirements = [];
+        this.licenseRequirements = [];
+        this.certificationRequirements = [];
+        this.clinicalSkills = [];
+        this.procedureRequirements = [];
+        this.complianceRequirements = [];
+        this.activeTab = 'basic';
     }
 
     closeDeleteModal() {
         this.isDeleteModalOpen = false;
         this.jobToDelete = null;
+    }
+
+    generateKey() {
+        return `key_${this.keyCounter++}_${Date.now()}`;
     }
 
     showToast(title, message, variant) {

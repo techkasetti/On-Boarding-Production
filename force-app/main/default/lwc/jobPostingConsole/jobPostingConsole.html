@@ -1,18 +1,29 @@
+<!-- jobPostingConsole.html - WITH BACK BUTTON -->
 <template>
     <div class="console-container">
         <div class="console-wrapper">
             
-            <!-- Header -->
+            <!-- Header with Back Button -->
             <div class="header-card">
                 <div class="header-content">
                     <div class="header-left">
                         <div class="icon-container">
-                            <lightning-icon icon-name="utility:file" alternative-text="Job Posting" size="medium" variant="inverse"></lightning-icon>
+                            <lightning-icon icon-name="standard:work_order" alternative-text="Job Posting" size="medium" variant="inverse"></lightning-icon>
                         </div>
                         <div>
-                            <h1 class="header-title">AI Job Posting Console</h1>
-                            <p class="header-subtitle">Powered by Google Gemini AI - 8 Simple Fields</p>
+                            <h1 class="header-title">🏥 AI Medical Job Posting Console</h1>
+                            <p class="header-subtitle">Powered by Google Gemini AI - Comprehensive Medical Hiring</p>
                         </div>
+                    </div>
+                    <!-- NEW: Back to Admin Button -->
+                    <div class="header-right">
+                        <lightning-button
+                            label="Back to Admin"
+                            icon-name="utility:back"
+                            variant="neutral"
+                            onclick={navigateToAdmin}
+                            class="back-button">
+                        </lightning-button>
                     </div>
                 </div>
             </div>
@@ -21,23 +32,30 @@
             <div class="main-card">
                 <!-- Tabs -->
                 <lightning-tabset active-tab-value={activeTab} onactive={handleTabChange} variant="scoped">
+                    
+                    <!-- Natural Language Tab -->
                     <lightning-tab label="Natural Language" value="nlp" icon-name="utility:sparkles">
                         <div class="tab-content">
                             <div class="info-box info-box-blue">
                                 <div class="info-header">
                                     <lightning-icon icon-name="utility:sparkles" size="small"></lightning-icon>
-                                    <h3>Describe your job posting in plain English</h3>
+                                    <h3>Describe your medical job posting in plain English</h3>
                                 </div>
                                 <p class="info-text">
-                                    AI will automatically extract all required fields from your description
+                                    AI will automatically extract job details AND all requirements (education, licenses, certifications, skills, procedures, compliance)
                                 </p>
                             </div>
                             
                             <div class="example-box">
                                 <p class="example-text">
-                                    <strong>Example:</strong> "We need a Senior Cardiologist in San Francisco for Healthcare department. 
-                                    The position starts on February 1, 2026 and ends on April 30, 2026. Status is Open. 
-                                    Description: Provide comprehensive cardiac care, perform diagnostic procedures, and manage patient treatment plans."
+                                    <strong>Example:</strong> "We need a Duty Doctor for Emergency department at City General Hospital in Chennai, Tamil Nadu, India. 
+                                    The position requires MBBS degree, valid Medical Council Registration, BLS and ACLS certifications. 
+                                    Required skills include Patient Assessment and Emergency Management at advanced level. 
+                                    Must be able to perform IV Cannulation and Wound Suturing. 
+                                    2-10 years experience. Starts February 1, 2026. HIPAA compliance required."
+                                    <br><br>
+                                    <strong>Note:</strong> Be specific! AI will only extract information you explicitly mention. 
+                                    Required minimum: Job Title, Role Type, Facility Name, City, State, and Country.
                                 </p>
                             </div>
                             
@@ -47,16 +65,16 @@
                                     value={nlpInput}
                                     onchange={handleNLPInputChange}
                                     onkeydown={handleKeyDown}
-                                    placeholder="Enter your job description naturally. Example: 'We need a Senior Marketing Manager in Boston. Starts March 1, 2026, ends May 1, 2026. Status is Open. Lead digital marketing campaigns."
+                                    placeholder="Enter comprehensive job description including requirements for education, licenses, certifications, skills, and procedures..."
                                     class="custom-textarea"
-                                    rows="8">
+                                    rows="10">
                                 </lightning-textarea>
                                 <p class="char-count">{characterCount} characters</p>
                             </div>
 
                             <div class="button-group">
                                 <lightning-button
-                                    label="Generate Job Posting with AI"
+                                    label="Generate Comprehensive Job Posting with AI"
                                     icon-name="utility:sparkles"
                                     variant="brand"
                                     onclick={handleNLPSubmit}
@@ -73,6 +91,7 @@
                         </div>
                     </lightning-tab>
                     
+                    <!-- CSV Upload Tab -->
                     <lightning-tab label="CSV Upload" value="csv" icon-name="utility:upload">
                         <div class="tab-content">
                             <div class="info-box info-box-green">
@@ -81,7 +100,7 @@
                                     <h3>Upload multiple job postings via CSV</h3>
                                 </div>
                                 <p class="info-text">
-                                    Bulk create jobs by uploading a CSV file with all 8 fields
+                                    Bulk create jobs by uploading a CSV file with all required fields
                                 </p>
                             </div>
 
@@ -92,19 +111,6 @@
                                     accept=".csv" 
                                     onchange={handleCSVUpload}
                                     class="file-input">
-                            </div>
-                            <div class="csv-format-box">
-                                <p class="format-title">CSV Format (8 columns required):</p>
-                                <div class="format-grid">
-                                    <div class="format-item">1. Job Title</div>
-                                    <div class="format-item">2. Category</div>
-                                    <div class="format-item">3. Location</div>
-                                    <div class="format-item">4. Experience</div>
-                                    <div class="format-item">5. Start Date</div>
-                                    <div class="format-item">6. End Date</div>
-                                    <div class="format-item">7. Status</div>
-                                    <div class="format-item">8. Description</div>
-                                </div>
                             </div>
 
                             <template if:true={fileName}>
@@ -133,86 +139,7 @@
                             </div>
                         </div>
                     </lightning-tab>
-                    
-                    <lightning-tab label={recentPostingsLabel} value="recent" icon-name="utility:list">
-                        <div class="tab-content">
-                            <div class="info-box info-box-purple">
-                                <div class="info-header">
-                                    <lightning-icon icon-name="utility:list" size="small"></lightning-icon>
-                                    <h3>Recent Job Postings</h3>
-                                </div>
-                                <p class="info-text">
-                                    View and manage all created job postings
-                                </p>
-                            </div>
 
-                            <template if:true={hasJobPostings}>
-                                <div class="table-container">
-                                    <table class="job-table">
-                                        <thead>
-                                            <tr class="table-header">
-                                                <th class="table-th">Job Title</th>
-                                                <th class="table-th">Category</th>
-                                                <th class="table-th">Location</th>
-                                                <th class="table-th">Experience</th>
-                                                <th class="table-th">Status</th>
-                                                <th class="table-th">Start Date</th>
-                                                <th class="table-th">End Date</th>
-                                                <th class="table-th">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <template for:each={jobPostings} for:item="job">
-                                                <tr key={job.Id} class="table-row">
-                                                    <td class="table-td job-name">{job.Name}</td>
-                                                    <td class="table-td">{job.Category__c}</td>
-                                                    <td class="table-td">{job.Location__c}</td>
-                                                    <td class="table-td">{job.Experience_Level__c}</td>
-                                                    <td class="table-td">
-                                                        <template if:true={job.isActive}>
-                                                            <span class="status-badge status-active">{job.Status__c}</span>
-                                                        </template>
-                                                        <template if:true={job.isClosed}>
-                                                            <span class="status-badge status-closed">{job.Status__c}</span>
-                                                        </template>
-                                                    </td>
-                                                    <td class="table-td">{job.Start_Date__c}</td>
-                                                    <td class="table-td">{job.End_Date__c}</td>
-                                                    <td class="table-td">
-                                                        <div class="action-buttons">
-                                                            <lightning-button
-                                                                label="View"
-                                                                icon-name="utility:preview"
-                                                                variant="base"
-                                                                data-id={job.Id}
-                                                                onclick={handleView}
-                                                                class="action-btn">
-                                                            </lightning-button>
-                                                            <lightning-button
-                                                                label="Edit"
-                                                                icon-name="utility:edit"
-                                                                variant="base"
-                                                                data-id={job.Id}
-                                                                onclick={handleEdit}
-                                                                class="action-btn">
-                                                            </lightning-button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </template>
-
-                            <template if:false={hasJobPostings}>
-                                <div class="empty-state">
-                                    <lightning-icon icon-name="utility:inbox" size="large"></lightning-icon>
-                                    <p class="empty-state-text">No job postings found. Create your first job posting using AI!</p>
-                                </div>
-                            </template>
-                        </div>
-                    </lightning-tab>
                 </lightning-tabset>
 
                 <!-- Loading Spinner -->
@@ -227,277 +154,4 @@
             </div>
         </div>
     </div>
-
-    <!-- View Job Modal -->
-    <template if:true={showViewModal}>
-        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
-            <div class="slds-modal__container modal-large">
-                <header class="slds-modal__header">
-                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
-                            title="Close" onclick={handleCloseViewModal}>
-                        <lightning-icon icon-name="utility:close" alternative-text="close" size="small"></lightning-icon>
-                        <span class="slds-assistive-text">Close</span>
-                    </button>
-                    <h2 class="slds-modal__title slds-hyphenate modal-title">
-                        <lightning-icon icon-name="utility:file" size="small" class="modal-icon"></lightning-icon>
-                        {selectedJob.Name}
-                    </h2>
-                </header>
-
-                <div class="slds-modal__content slds-p-around_medium" id="modal-content">
-                    <lightning-tabset variant="scoped">
-                        <lightning-tab label="Overview" icon-name="utility:info">
-                            <div class="detail-section">
-                                <div class="detail-grid">
-                                    <div class="detail-item">
-                                        <div class="detail-label">
-                                            <lightning-icon icon-name="utility:text" size="x-small"></lightning-icon>
-                                            Job Title
-                                        </div>
-                                        <div class="detail-value">{selectedJob.Name}</div>
-                                    </div>
-
-                                    <div class="detail-item">
-                                        <div class="detail-label">
-                                            <lightning-icon icon-name="utility:apps" size="x-small"></lightning-icon>
-                                            Category
-                                        </div>
-                                        <div class="detail-value">{selectedJob.Category__c}</div>
-                                    </div>
-
-                                    <div class="detail-item">
-                                        <div class="detail-label">
-                                            <lightning-icon icon-name="utility:location" size="x-small"></lightning-icon>
-                                            Location
-                                        </div>
-                                        <div class="detail-value">{selectedJob.Location__c}</div>
-                                    </div>
-
-                                    <div class="detail-item">
-                                        <div class="detail-label">
-                                            <lightning-icon icon-name="utility:trending" size="x-small"></lightning-icon>
-                                            Experience Level
-                                        </div>
-                                        <div class="detail-value">{selectedJob.Experience_Level__c}</div>
-                                    </div>
-
-                                    <template if:true={selectedJob.Specialization__c}>
-                                        <div class="detail-item">
-                                            <div class="detail-label">
-                                                <lightning-icon icon-name="utility:magicwand" size="x-small"></lightning-icon>
-                                                Specialization
-                                            </div>
-                                            <div class="detail-value">{selectedJob.Specialization__c}</div>
-                                        </div>
-                                    </template>
-
-                                    <div class="detail-item">
-                                        <div class="detail-label">
-                                            <lightning-icon icon-name="utility:info_alt" size="x-small"></lightning-icon>
-                                            Status
-                                        </div>
-                                        <div class="detail-value">
-                                            <template if:true={selectedJob.isActive}>
-                                                <span class="status-badge status-active">{selectedJob.Status__c}</span>
-                                            </template>
-                                            <template if:true={selectedJob.isClosed}>
-                                                <span class="status-badge status-closed">{selectedJob.Status__c}</span>
-                                            </template>
-                                        </div>
-                                    </div>
-
-                                    <div class="detail-item">
-                                        <div class="detail-label">
-                                            <lightning-icon icon-name="utility:event" size="x-small"></lightning-icon>
-                                            Start Date
-                                        </div>
-                                        <div class="detail-value">{formattedStartDate}</div>
-                                    </div>
-
-                                    <div class="detail-item">
-                                        <div class="detail-label">
-                                            <lightning-icon icon-name="utility:event" size="x-small"></lightning-icon>
-                                            End Date
-                                        </div>
-                                        <div class="detail-value">{formattedEndDate}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </lightning-tab>
-
-                        <lightning-tab label="Description" icon-name="utility:description">
-                            <div class="description-section">
-                                <div class="description-header">
-                                    <lightning-icon icon-name="utility:description" size="small"></lightning-icon>
-                                    <h3>Job Description</h3>
-                                </div>
-                                <div class="description-content">
-                                    <template if:true={selectedJob.Description__c}>
-                                        <p class="description-text">{selectedJob.Description__c}</p>
-                                    </template>
-                                    <template if:false={selectedJob.Description__c}>
-                                        <p class="description-empty">No description provided</p>
-                                    </template>
-                                </div>
-                            </div>
-                        </lightning-tab>
-                    </lightning-tabset>
-                </div>
-
-                <footer class="slds-modal__footer">
-                    <lightning-button
-                        label="Close"
-                        variant="neutral"
-                        onclick={handleCloseViewModal}>
-                    </lightning-button>
-                </footer>
-            </div>
-        </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
-    </template>
-
-    <!-- Edit Job Modal -->
-    <template if:true={showEditModal}>
-        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
-            <div class="slds-modal__container modal-large">
-                <header class="slds-modal__header">
-                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
-                            title="Close" onclick={handleCloseEditModal}>
-                        <lightning-icon icon-name="utility:close" alternative-text="close" size="small"></lightning-icon>
-                        <span class="slds-assistive-text">Close</span>
-                    </button>
-                    <h2 class="slds-modal__title slds-hyphenate modal-title">
-                        <lightning-icon icon-name="utility:edit" size="small" class="modal-icon"></lightning-icon>
-                        Edit Job Posting
-                    </h2>
-                </header>
-
-                <div class="slds-modal__content slds-p-around_medium" id="edit-modal-content">
-                    <div class="edit-form">
-                        <div class="form-row">
-                            <div class="form-field">
-                                <label class="form-label">Job Title *</label>
-                                <lightning-input
-                                    type="text"
-                                    value={editName}
-                                    data-field="name"
-                                    onchange={handleEditFieldChange}
-                                    required>
-                                </lightning-input>
-                            </div>
-
-                            <div class="form-field">
-                                <label class="form-label">Category *</label>
-                                <lightning-combobox
-                                    value={editCategory}
-                                    data-field="category"
-                                    onchange={handleEditFieldChange}
-                                    options={categoryOptions}
-                                    placeholder="Select Category">
-                                </lightning-combobox>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-field">
-                                <label class="form-label">Location *</label>
-                                <lightning-input
-                                    type="text"
-                                    value={editLocation}
-                                    data-field="location"
-                                    onchange={handleEditFieldChange}>
-                                </lightning-input>
-                            </div>
-
-                            <div class="form-field">
-                                <label class="form-label">Experience Level *</label>
-                                <lightning-combobox
-                                    value={editExperienceLevel}
-                                    data-field="experienceLevel"
-                                    onchange={handleEditFieldChange}
-                                    options={experienceLevelOptions}
-                                    placeholder="Select Experience Level">
-                                </lightning-combobox>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-field">
-                                <label class="form-label">Specialization</label>
-                                <lightning-combobox
-                                    value={editSpecialization}
-                                    data-field="specialization"
-                                    onchange={handleEditFieldChange}
-                                    options={specializationOptions}
-                                    placeholder="Select Specialization (Healthcare only)">
-                                </lightning-combobox>
-                            </div>
-
-                            <div class="form-field">
-                                <label class="form-label">Status *</label>
-                                <lightning-combobox
-                                    value={editStatus}
-                                    data-field="status"
-                                    onchange={handleEditFieldChange}
-                                    options={statusOptions}
-                                    placeholder="Select Status">
-                                </lightning-combobox>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-field">
-                                <label class="form-label">Start Date</label>
-                                <lightning-input
-                                    type="date"
-                                    value={editStartDate}
-                                    data-field="startDate"
-                                    onchange={handleEditFieldChange}>
-                                </lightning-input>
-                            </div>
-
-                            <div class="form-field">
-                                <label class="form-label">End Date</label>
-                                <lightning-input
-                                    type="date"
-                                    value={editEndDate}
-                                    data-field="endDate"
-                                    onchange={handleEditFieldChange}>
-                                </lightning-input>
-                            </div>
-                        </div>
-
-                        <div class="form-row-full">
-                            <div class="form-field">
-                                <label class="form-label">Description</label>
-                                <lightning-textarea
-                                    value={editDescription}
-                                    data-field="description"
-                                    onchange={handleEditFieldChange}
-                                    rows="6">
-                                </lightning-textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <footer class="slds-modal__footer">
-                    <lightning-button
-                        label="Cancel"
-                        variant="neutral"
-                        onclick={handleCloseEditModal}
-                        disabled={isProcessing}>
-                    </lightning-button>
-                    <lightning-button
-                        label="Save Changes"
-                        variant="brand"
-                        icon-name="utility:save"
-                        onclick={handleSaveEdit}
-                        disabled={isProcessing}>
-                    </lightning-button>
-                </footer>
-            </div>
-        </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
-    </template>
 </template>

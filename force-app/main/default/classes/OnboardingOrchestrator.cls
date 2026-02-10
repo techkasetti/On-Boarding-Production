@@ -12,7 +12,7 @@ public with sharing class OnboardingOrchestrator {
     public static Id registerCandidate(String fullName, String phone, String email) {
         // Instantiate the candidate record
         Candidate__c newCandidate = new Candidate__c(
-            Name = fullName,
+            //Name = fullName,
             Phone__c = phone,
             Email__c = email,
             Resume_Status__c = false // <-- NEW: Explicitly set status to false on creation
@@ -190,8 +190,7 @@ public static List<Screening_Question__c> getScreeningQuestions(String specializ
     }
 
     try {
-        // This is the correct SOQL syntax.
-        // It will find matches if the data is clean (no extra spaces, correct spelling).
+        
         return [
             SELECT Id, Question_Text__c, Order__c
             FROM Screening_Question__c

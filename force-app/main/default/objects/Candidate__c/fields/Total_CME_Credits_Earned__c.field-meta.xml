@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Total_CME_Credits_Earned__c</fullName>
+    <label>Total CME Credits Earned</label>
+    <summarizedField>CMERecord__c.Credits_Earned__c</summarizedField>
+    <summaryForeignKey>CMERecord__c.Candidate__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Block_Placement_if_HIPAA_Incomplete</fullName>
+    <active>true</active>
+    <description>Prevents a candidate from being moved to Ready for Placement; if their role requires PHI access but they have not completed the required HIPAA compliance steps.</description>
+    <errorConditionFormula>AND(
+    /* --- Check 1: Is the status being changed TO &quot;Hired&quot;? --- */
+    ISPICKVAL(Status__c, &quot;Hired&quot;),
+    ISCHANGED(Status__c),
+
+    /* --- Check 2: Does the candidate&apos;s role require PHI access? --- */
+    OR(
+        ISPICKVAL(Role__c, &quot;Nurse&quot;),
+        ISPICKVAL(Role__c, &quot;Physician&quot;),
+        ISPICKVAL(Role__c, &quot;Medical Assistant&quot;),
+        ISPICKVAL(Role__c, &quot;Billing Staff&quot;)
+    ),
+
+    /* --- Check 3: Is the PHI Access flag FALSE? --- */
+    PHI_Access_Granted__c = FALSE
+)</errorConditionFormula>
+    <errorMessage>You cannot move this candidate to “Hired”. Their role requires HIPAA compliance, but the required training and acknowledgment forms have not been completed.</errorMessage>
+</ValidationRule>

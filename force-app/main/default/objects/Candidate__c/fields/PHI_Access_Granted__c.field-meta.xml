@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>PHI_Access_Granted__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Indicates if the candidate has completed all necessary HIPAA compliance steps and is approved for PHI access.</description>
+    <label>PHI Access Granted</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

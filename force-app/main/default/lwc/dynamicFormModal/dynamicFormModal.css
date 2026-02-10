@@ -1,247 +1,219 @@
-/* dynamicFormModal.css
+/* dynamicFormModal.css - AGGRESSIVE Z-INDEX FIX */
 
-/* ========== Modal Animations ========== 
-.slds-modal {
-    animation: modalFadeIn 0.3s ease-out;
+/* ========== FORCE NOTIFICATIONS ABOVE EVERYTHING ========== */
+.custom-notification {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    min-width: 300px;
+    max-width: 500px;
+    z-index: 99999 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    border-radius: 0.375rem;
+    animation: slideInRight 0.3s ease-out;
 }
 
-.slds-modal__container {
-    animation: modalSlideUp 0.4s ease-out;
+.slds-theme_success {
+    background: linear-gradient(135deg, #2e844a 0%, #227a3e 100%);
+    color: white;
 }
 
-.slds-backdrop {
-    animation: backdropFadeIn 0.3s ease-out;
+.slds-theme_error {
+    background: linear-gradient(135deg, #c23934 0%, #a61b15 100%);
+    color: white;
 }
 
-/* ========== Modal Header Styles ========== 
-.slds-modal__header {
-    position: relative;
-    overflow: hidden;
+.slds-theme_warning {
+    background: linear-gradient(135deg, #fe9339 0%, #dd7a01 100%);
+    color: white;
 }
 
-.slds-modal__header::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.6), rgba(255,255,255,0.3));
+.slds-theme_info {
+    background: linear-gradient(135deg, #0070d2 0%, #005fb2 100%);
+    color: white;
 }
 
-/* ========== Fix Combobox Dropdown Positioning ========== 
-.slds-form-element {
-    position: relative;
-    margin-bottom: 1rem;
-    z-index: 1;
+.slds-notify__content {
+    padding: 1rem;
 }
 
-/* Ensure combobox dropdown appears above other elements 
-.slds-form-element lightning-combobox {
-    position: relative;
-    z-index: 10;
+.notification-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+    margin: 0;
 }
 
-/* Fix dropdown listbox positioning
-.slds-combobox {
-    position: relative !important;
+.notification-message {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.95);
+    margin: 0.25rem 0 0 0;
 }
 
-.slds-dropdown {
-    z-index: 9999 !important;
-    position: absolute !important;
-    background: white;
-    border: 1px solid #dddbda;
-    border-radius: 0.25rem;
-    box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
-    margin-top: 0.125rem;
+.close-button {
+    color: white;
 }
 
-.slds-listbox {
-    max-height: 15rem;
-    overflow-y: auto;
-}
-
-/* Ensure form elements don't overlap dropdown 
-.slds-form-element:focus-within {
-    z-index: 100;
-}
-
-/* ========== Form Container ========== 
-.form-container {
-    animation: formFadeIn 0.5s ease-out;
-    position: relative;
-}
-
-.slds-form__item {
-    transition: all 0.3s ease;
-    position: relative;
-    margin-bottom: 0 !important; /* Remove default margin, use slds-form-element margin 
-}
-
-/* ========== Modal Content Scrolling ========== 
-.slds-modal__content {
-    position: relative;
-    overflow-y: visible !important; /* Changed from auto to visible 
-}
-
-/* ========== Input Field Enhancements ========== 
-lightning-input,
-lightning-textarea {
-    --slds-c-input-shadow-focus: 0 0 0 2px rgba(102, 126, 234, 0.3);
-}
-
-/* ========== Loading State ========== 
-.slds-align_absolute-center {
-    animation: fadeIn 0.3s ease-in;
-}
-
-/* ========== Error Alert in Modal ========== 
-.slds-notify.slds-theme_error 
-    animation: slideInDown 0.4s ease-out;
-    border-left: 4px solid #c23934;
-}
-
-/* ========== Footer Styles ========== 
-.slds-modal__footer {
-    background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-    border-top: 1px solid #e0e5ee;
-}
-
-.slds-modal__footer lightning-button {
-    transition: all 0.2s ease;
-}
-
-.slds-modal__footer lightning-button:hover {
-    transform: translateY(-1px);
-}
-
-/* ========== Custom Form Element Help Text ========== 
-.slds-form-element__help {
-    font-size: 0.75rem;
-    color: #706e6b;
-    margin-top: 0.25rem;
-    line-height: 1.5;
-}
-
-/* ========== Custom Label Styling ========== 
-.slds-form-element__label {
-    display: block;
-    color: #3e3e3c;
-    font-size: 0.75rem;
-    line-height: 1.5;
-    margin-bottom: 0.125rem;
-}
-
-.slds-form-element__label span {
-    font-weight: 600;
-}
-
-/* ========== Combobox Control ========== 
-.slds-form-element__control {
-    position: relative;
-    clear: left;
-}
-
-/* ========== Custom Animations ========== 
-@keyframes modalFadeIn {
+@keyframes slideInRight {
     from {
+        transform: translateX(100%);
         opacity: 0;
     }
     to {
+        transform: translateX(0);
         opacity: 1;
     }
 }
 
-@keyframes modalSlideUp {
-    from {
-        opacity: 0;
-        transform: translateY(50px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+/* ========== FORCE EDIT MODAL TO LOWER Z-INDEX ========== */
+.modal-backdrop,
+.modal-backdrop.slds-backdrop,
+.modal-backdrop.slds-backdrop_open {
+    z-index: 8000 !important;
+    position: fixed !important;
 }
 
-@keyframes backdropFadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+.modal-container,
+.modal-container.slds-modal,
+.modal-container.slds-modal_medium,
+.modal-container.slds-modal_large,
+.modal-container.slds-fade-in-open {
+    z-index: 8001 !important;
+    position: fixed !important;
 }
-
-@keyframes formFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slideInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-/* ========== Responsive Modal ========== 
-@media (max-width: 768px) {
-    .slds-modal__container {
-        max-width: 95% !important;
-        margin: 1rem;
-    }
-    
-    .slds-modal__content {
-        padding: 1rem !important;
-    }
-}
-
-/* ========== Force proper stacking context ========== 
-.slds-modal__container {
-    position: relative;
-    z-index: 9000;
-}
-
-/* Dropdown should be on top of everything in modal 
-lightning-combobox .slds-combobox__form-element {
-    position: relative;
-}
-
-lightning-combobox .slds-combobox_container {
-    position: relative;
-    z-index: 9999;
-} */
-/* dynamicFormModal.css - ENHANCED VERSION */
 
 .slds-modal__container {
     max-width: 50rem;
+    z-index: 8001 !important;
+    position: relative;
+}
+
+/* ========== CRITICAL: FORCE ALL FILE UPLOAD ELEMENTS TO HIGHEST Z-INDEX ========== */
+
+/* Target the lightning-file-upload wrapper */
+c-dynamic-form-modal lightning-file-upload,
+lightning-file-upload {
+    z-index: 20000 !important;
+    position: relative !important;
+}
+
+/* Target all SLDS file selector elements */
+.slds-file-selector,
+.slds-file-selector__dropzone,
+.slds-file-selector__body,
+.slds-file-selector__button {
+    z-index: 20001 !important;
+    position: relative !important;
+}
+
+/* Force native file input to top */
+input[type="file"],
+input[type="file"]::-webkit-file-upload-button {
+    z-index: 20002 !important;
+    position: relative !important;
+}
+
+/* ========== TARGET SALESFORCE UPLOAD MODAL GLOBALLY ========== */
+
+/* Target any modal that contains "Upload Files" or "Done" button */
+.slds-modal.slds-fade-in-open:not(.modal-container),
+.uiModal,
+.forceModal {
+    z-index: 20003 !important;
+    position: fixed !important;
+}
+
+/* Force the upload modal container to top AND reduce width */
+.slds-modal.slds-fade-in-open:not(.modal-container) .slds-modal__container,
+.uiModal .slds-modal__container,
+.forceModal .slds-modal__container {
+    z-index: 20003 !important;
+    max-width: 40rem !important;  /* Reduce from default ~60rem */
+    width: 90% !important;         /* Responsive width */
+}
+
+/* Target the upload modal backdrop */
+.slds-backdrop.slds-backdrop_open:not(.modal-backdrop) {
+    z-index: 20002 !important;
+    position: fixed !important;
+}
+
+/* ========== OVERRIDE ANY SALESFORCE INLINE STYLES ========== */
+section[role="dialog"][aria-modal="true"]:not([class*="modal-container"]) {
+    z-index: 20004 !important;
+    position: fixed !important;
+}
+
+section[role="dialog"][aria-modal="true"]:not([class*="modal-container"]) .slds-modal__container {
+    max-width: 40rem !important;  /* Reduce upload modal width */
+    width: 90% !important;
+}
+
+section[role="dialog"][aria-modal="true"]:not([class*="modal-container"]) ~ .slds-backdrop {
+    z-index: 20003 !important;
+}
+
+/* Target upload dialog by common patterns */
+div[class*="forceFileUpload"],
+div[class*="forceFileSelector"],
+div[data-aura-class*="fileUpload"] {
+    z-index: 20005 !important;
+    position: relative !important;
+}
+
+/* Reduce upload modal content width */
+.slds-modal.slds-fade-in-open:not(.modal-container) .slds-modal__content {
+    padding: 1rem !important;
+}
+
+/* Make the file list more compact */
+.slds-modal.slds-fade-in-open:not(.modal-container) .slds-file-selector__dropzone {
+    padding: 1rem !important;
+}
+
+/* ========== FORCE OUR EDIT MODAL TO STAY BELOW ========== */
+c-dynamic-form-modal .modal-container {
+    z-index: 8001 !important;
+}
+
+c-dynamic-form-modal .modal-backdrop {
+    z-index: 8000 !important;
 }
 
 .slds-hide {
     display: none !important;
 }
 
-/* Document Management Section */
+/* ========== OPTIONAL BADGE ========== */
+.optional-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    margin-left: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+}
+
+/* ========== UPLOAD PLACEHOLDER ========== */
+.upload-placeholder {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: #f8f9fa;
+    border: 2px dashed #c3cfe2;
+    border-radius: 0.375rem;
+    color: #706e6b;
+}
+
+.upload-placeholder lightning-icon {
+    color: #c3cfe2;
+}
+
+/* ========== DOCUMENT MANAGEMENT ========== */
 .documents-list {
     max-height: 300px;
     overflow-y: auto;
@@ -253,6 +225,7 @@ lightning-combobox .slds-combobox_container {
     border-radius: 0.375rem;
     border: 1px solid #e5e5e5;
     transition: all 0.2s ease;
+    animation: slideInDoc 0.3s ease-out;
 }
 
 .existing-doc-item:hover {
@@ -271,19 +244,17 @@ lightning-combobox .slds-combobox_container {
     transform: scale(1.1);
 }
 
-/* Upload Section Styling */
 .slds-theme_shade {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border: 1px solid #dddbda;
 }
 
-/* Make document titles bold */
 .slds-text-title_bold {
     font-weight: 600;
     color: #080707;
 }
 
-/* Scrollbar styling for documents list */
+/* ========== SCROLLBAR STYLING ========== */
 .documents-list::-webkit-scrollbar {
     width: 8px;
 }
@@ -302,12 +273,10 @@ lightning-combobox .slds-combobox_container {
     background: #a8a8a8;
 }
 
-/* Ensure proper spacing */
 .slds-grid_vertical-align-center {
     align-items: center;
 }
 
-/* Animation for document items */
 @keyframes slideInDoc {
     from {
         opacity: 0;
@@ -319,11 +288,7 @@ lightning-combobox .slds-combobox_container {
     }
 }
 
-.existing-doc-item {
-    animation: slideInDoc 0.3s ease-out;
-}
-
-/* Upload Success Styling */
+/* ========== UPLOAD SUCCESS ========== */
 .upload-success-container {
     text-align: center;
 }
@@ -346,7 +311,6 @@ lightning-combobox .slds-combobox_container {
     background: #e9ecef;
 }
 
-/* Success Icon Animation */
 @keyframes scaleIn {
     from {
         transform: scale(0);
@@ -360,4 +324,15 @@ lightning-combobox .slds-combobox_container {
 
 .upload-success-container lightning-icon {
     animation: scaleIn 0.4s ease-out;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .custom-notification {
+        top: 10px !important;
+        right: 10px !important;
+        left: 10px !important;
+        max-width: none;
+        min-width: auto;
+    }
 }

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Screening_Status__c</fullName>
+    <label>Screening_Status</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Not Screened</fullName>
+                <default>false</default>
+                <label>Not Screened</label>
+            </value>
+            <value>
+                <fullName>In Progress</fullName>
+                <default>false</default>
+                <label>In Progress</label>
+            </value>
+            <value>
+                <fullName>Passed</fullName>
+                <default>false</default>
+                <label>Passed</label>
+            </value>
+            <value>
+                <fullName>Failed</fullName>
+                <default>false</default>
+                <label>Failed</label>
+            </value>
+            <value>
+                <fullName>Manual Review</fullName>
+                <default>false</default>
+                <label>Manual Review</label>
+            </value>
+            <value>
+                <fullName>Routed</fullName>
+                <default>false</default>
+                <label>Routed</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
