@@ -194,70 +194,135 @@ export default class CandidateProfileHub extends LightningElement {
         this.resumeStatusWasReset = false;
     }
     
-    /**
-     * Shows modal with spinner immediately during S3 upload
-     */
+    // /**
+    //  * Shows modal with spinner immediately during S3 upload
+    //  */
+    // async handleUploadFinished(event) {
+    //     console.log('=== 📤 Upload Finished Event ===');
+        
+    //     const uploadedFiles = event.detail.files;
+    //     console.log('Uploaded Files:', uploadedFiles);
+        
+    //     if (!uploadedFiles || uploadedFiles.length === 0) {
+    //         console.log('⚠️ No files uploaded');
+    //         this.showResumeUpload = false;
+    //         this.resumeStatusWasReset = false;
+    //         return;
+    //     }
+        
+    //     const uploadedFile = uploadedFiles[0];
+    //     console.log('✅ File uploaded:', uploadedFile.name);
+        
+    //     this.resumeStatusWasReset = false;
+        
+    //     if (this.useAiParsing) {
+    //         console.log('🤖 AI Parsing enabled - opening modal immediately');
+            
+    //         // Close upload UI
+    //         this.showResumeUpload = false;
+            
+    //         // Open modal with analyzing spinner IMMEDIATELY
+    //         this.showPreviewModal = true;
+    //         this.isAnalyzingResume = true;
+            
+    //         // Wait for S3 upload (15 seconds) - spinner shows during this time
+    //         console.log('⏳ Waiting 15 seconds for S3 upload (spinner showing)...');
+    //         await this.delay(15000);
+            
+    //         console.log('✅ S3 upload complete. Loading resume info...');
+    //         await this.loadResumeInfo();
+            
+    //         // Add 3 more seconds for "AI analysis"
+    //         console.log('⏳ Simulating AI analysis (3 seconds)...');
+    //         await this.delay(3000);
+            
+    //         // Hide spinner, show preview component
+    //         this.isAnalyzingResume = false;
+    //         console.log('✅ AI analysis complete, showing preview');
+            
+    //     } else {
+    //         console.log('ℹ️ AI Parsing disabled - showing inline processing');
+    //         this.isProcessingResume = true;
+    //         this.uploadMessage = 'Resume uploaded! Processing in background...';
+            
+    //         // Wait for S3 upload
+    //         console.log('⏳ Waiting 15 seconds for S3 upload...');
+    //         await this.delay(15000);
+            
+    //         console.log('✅ S3 upload complete');
+    //         this.isProcessingResume = false;
+    //         this.showResumeUpload = false;
+    //         this.showToast('Success', 'Resume uploaded successfully!', 'success');
+    //         await this.loadResumeInfo();
+    //         await this.loadProfileData();
+    //     }
+    // }
     async handleUploadFinished(event) {
-        console.log('=== 📤 Upload Finished Event ===');
-        
-        const uploadedFiles = event.detail.files;
-        console.log('Uploaded Files:', uploadedFiles);
-        
-        if (!uploadedFiles || uploadedFiles.length === 0) {
-            console.log('⚠️ No files uploaded');
-            this.showResumeUpload = false;
-            this.resumeStatusWasReset = false;
-            return;
-        }
-        
-        const uploadedFile = uploadedFiles[0];
-        console.log('✅ File uploaded:', uploadedFile.name);
-        
+    console.log('=== 📤 Upload Finished Event ===');
+    
+    const uploadedFiles = event.detail.files;
+    console.log('Uploaded Files:', uploadedFiles);
+    
+    if (!uploadedFiles || uploadedFiles.length === 0) {
+        console.log('⚠️ No files uploaded');
+        this.showResumeUpload = false;
         this.resumeStatusWasReset = false;
-        
-        if (this.useAiParsing) {
-            console.log('🤖 AI Parsing enabled - opening modal immediately');
-            
-            // Close upload UI
-            this.showResumeUpload = false;
-            
-            // Open modal with analyzing spinner IMMEDIATELY
-            this.showPreviewModal = true;
-            this.isAnalyzingResume = true;
-            
-            // Wait for S3 upload (15 seconds) - spinner shows during this time
-            console.log('⏳ Waiting 15 seconds for S3 upload (spinner showing)...');
-            await this.delay(15000);
-            
-            console.log('✅ S3 upload complete. Loading resume info...');
-            await this.loadResumeInfo();
-            
-            // Add 3 more seconds for "AI analysis"
-            console.log('⏳ Simulating AI analysis (3 seconds)...');
-            await this.delay(3000);
-            
-            // Hide spinner, show preview component
-            this.isAnalyzingResume = false;
-            console.log('✅ AI analysis complete, showing preview');
-            
-        } else {
-            console.log('ℹ️ AI Parsing disabled - showing inline processing');
-            this.isProcessingResume = true;
-            this.uploadMessage = 'Resume uploaded! Processing in background...';
-            
-            // Wait for S3 upload
-            console.log('⏳ Waiting 15 seconds for S3 upload...');
-            await this.delay(15000);
-            
-            console.log('✅ S3 upload complete');
-            this.isProcessingResume = false;
-            this.showResumeUpload = false;
-            this.showToast('Success', 'Resume uploaded successfully!', 'success');
-            await this.loadResumeInfo();
-            await this.loadProfileData();
-        }
+        return;
     }
     
+    const uploadedFile = uploadedFiles[0];
+    console.log('✅ File uploaded:', uploadedFile.name);
+    
+    this.resumeStatusWasReset = false;
+    
+    if (this.useAiParsing) {
+        console.log('🤖 AI Parsing enabled - opening modal for S3 upload + analysis');
+        
+        // Close upload UI
+        this.showResumeUpload = false;
+        
+        // Open modal with analyzing spinner IMMEDIATELY
+        this.showPreviewModal = true;
+        this.isAnalyzingResume = true;
+        
+        // Wait for S3 upload (15 seconds) - spinner shows during this time
+        console.log('⏳ Waiting 15 seconds for S3 upload (spinner showing)...');
+        await this.delay(15000);
+        
+        console.log('✅ S3 upload complete. Loading resume info...');
+        await this.loadResumeInfo();
+        
+        // Add 3 more seconds for "AI analysis"
+        console.log('⏳ Simulating AI analysis (3 seconds)...');
+        await this.delay(3000);
+        
+        // Hide spinner, show preview component
+        this.isAnalyzingResume = false;
+        console.log('✅ AI analysis complete, showing preview');
+        
+    } else {
+        console.log('ℹ️ AI Parsing disabled - file uploaded to Salesforce only (no S3)');
+        
+        // 🔥 FIX: No S3 upload when AI parsing is disabled
+        // File is already in Salesforce - just refresh immediately
+        
+        // Hide upload UI
+        this.showResumeUpload = false;
+        
+        // 🔥 FIX: Small delay to let Salesforce process the ContentVersion
+        console.log('⏳ Waiting 2 seconds for Salesforce to process file...');
+        await this.delay(2000);
+        
+        // 🔥 FIX: Refresh resume info to show the new file
+        console.log('🔄 Refreshing resume info...');
+        await this.loadResumeInfo();
+        
+        // Show success message
+        this.showToast('Success', 'Resume uploaded successfully!', 'success');
+        
+        console.log('✅ Resume displayed in UI');
+    }
+}
     /**
      * Close preview modal
      */

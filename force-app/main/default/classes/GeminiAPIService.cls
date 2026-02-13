@@ -109,11 +109,56 @@ public class GeminiAPIService {
         public Integer candidatesTokenCount;
         public Integer totalTokenCount;
     }
-
+////////////////////////
     /**
      * Main Gemini call
      */
-    public static GeminiResponse callGeminiAPI(String systemPrompt, String userPrompt, String modelName) {
+    
+    public static GeminiResponse callGeminiAPIWithPrompt(String Prompt) {
+      
+        String[] modelsToTry = new String[] {
+            'gemini-2.5-flash',
+            'gemini-2.5-pro',
+            'gemini-2.0-flash-exp',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash',
+            'gemini-1.5-pro'
+        };
+        
+        GeminiResponse lastResponse = null;
+        
+        for (String model : modelsToTry) {
+            System.debug('Trying model: ' + model);
+            lastResponse = callGeminiAPIWithPrompt(Prompt, model);
+            
+            if (lastResponse.success) {
+                System.debug('Success with model: ' + model);
+                return lastResponse;
+            }
+            
+            System.debug('Failed with model ' + model + ': ' + lastResponse.errorMessage);
+        }
+
+        
+        return lastResponse;
+    }
+    
+     public static GeminiResponse callGeminiAPIWithPrompt(String Prompt, String modelName) {
+        GeminiRequest request = new GeminiRequest();
+        
+        Content userContent = new Content();
+        userContent.parts.add(new Part(Prompt));
+        request.contents.add(userContent);
+        
+        return sendRequest(request, modelName);
+    } 
+  //////////////////////////////////////  
+   
+  /**
+     * Main Gemini call
+     */
+    
+     public static GeminiResponse callGeminiAPI(String systemPrompt, String userPrompt, String modelName) {
         GeminiRequest request = new GeminiRequest();
         
         String combinedPrompt = systemPrompt + '\n\n' + userPrompt;

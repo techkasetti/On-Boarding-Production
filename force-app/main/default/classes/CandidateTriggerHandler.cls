@@ -7,7 +7,7 @@ public without sharing class CandidateTriggerHandler {
             Candidate__c oldCand = oldMap.get(newCand.Id);
 
             // Check if the status changed from false to true
-            if (newCand.Resume_Status__c == true && oldCand.Resume_Status__c == false) {
+            if (newCand.Resume_Status__c == true && oldCand.Resume_Status__c == false  && newCand.Resume_parsing_using_ai__c == true) {
                 candidateIdsForS3Upload.add(newCand.Id);
             }
         }

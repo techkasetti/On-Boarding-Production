@@ -40,7 +40,11 @@ public without sharing class CandidateProfileController {
 
         // Query candidate
         List<Candidate__c> candidates = [
-            SELECT Id, 	Full_Name__c, Email__c, Phone__c, Location__c
+<<<<<<< HEAD
+            SELECT Id, Full_Name__c, Email__c, Phone__c, Location__c
+=======
+            SELECT Id, Name, Full_Name__c, Email__c, Phone__c, Location__c
+>>>>>>> 0898deaef1174f455ef44e517f5b1557ecdd008a
             FROM Candidate__c 
             WHERE Id = :candidateId 
             LIMIT 1

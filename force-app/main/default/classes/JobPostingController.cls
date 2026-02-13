@@ -184,7 +184,7 @@ public without sharing class JobPostingController {
                 throw new AuraHandledException('No contact associated with this user. Please contact administrator to link your account.');
             }
             
-            List<Candidate__c> candidates = [SELECT Id, Name, Email__c, Phone__c, Location__c
+            List<Candidate__c> candidates = [SELECT Id, Name,Full_Name__c, Email__c, Phone__c, Location__c
                                             FROM Candidate__c 
                                             WHERE Contact__c = :currentUser.ContactId 
                                             LIMIT 1];
@@ -195,7 +195,7 @@ public without sharing class JobPostingController {
             
             Candidate__c candidate = candidates[0];
             result.put('candidateId', candidate.Id);
-            result.put('candidateName', candidate.Name);
+            result.put('candidateName', candidate.Full_Name__c);
             
             return result;
             

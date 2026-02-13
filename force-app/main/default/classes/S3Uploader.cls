@@ -1,4 +1,3 @@
-
 // public with sharing class S3Uploader {
 //     private static final String S3_NAMED_CREDENTIAL = 'S3_Upload';
 //     private static final String BUCKET_NAME = 'snowflake-onboarding-p';
@@ -142,7 +141,7 @@ public with sharing class S3Uploader {
     public static void uploadToS3(Map<Id, Id> contentVersionIdToCandidateId) {
         System.debug('S3Uploader.uploadToS3 invoked with map: ' + contentVersionIdToCandidateId);
 
-        if (contentVersionIdToCandidateId == null | contentVersionIdToCandidateId.isEmpty()) {
+        if (contentVersionIdToCandidateId == null || contentVersionIdToCandidateId.isEmpty()) {
             return;
         }
 
