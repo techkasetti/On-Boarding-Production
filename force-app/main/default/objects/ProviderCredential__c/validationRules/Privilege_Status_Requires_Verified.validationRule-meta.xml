@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Privilege_Status_Requires_Verified</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(       ISPICKVAL(Privilege_Status__c, &quot;Active&quot;),       NOT(Hospital_Privileges_Verified__c)     )</errorConditionFormula>
+    <errorDisplayField>Privilege_Status__c</errorDisplayField>
+    <errorMessage>Hospital Privileges Verified must be checked before setting Privilege Status to Active.</errorMessage>
+</ValidationRule>

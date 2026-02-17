@@ -1,0 +1,401 @@
+<template>
+    <!-- Premium Modal Backdrop -->
+    <div class="modal-backdrop-premium" onclick={handleBackdropClick}>
+        
+        <!-- Premium Modal Container -->
+        <div class="modal-container-premium" onclick={handleModalClick}>
+            
+            <!-- Modal Close Button -->
+            <button class="modal-close-premium" onclick={handleClose} title="Close">
+                <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
+            </button>
+
+            <!-- Loading State -->
+            <template if:true={isLoading}>
+                <div class="modal-loading-premium">
+                    <lightning-spinner size="large"></lightning-spinner>
+                </div>
+            </template>
+
+            <!-- Modal Content -->
+            <template if:false={isLoading}>
+                <template if:true={candidateDetail}>
+                    
+                    <!-- Premium Modal Header -->
+                    <div class="modal-header-premium">
+                        <div class="header-avatar-premium">
+                            <div class="avatar-large-premium">
+                                <span class="avatar-initials-large">{candidateInitials}</span>
+                            </div>
+                        </div>
+                        <div class="header-info-premium">
+                            <h2 class="candidate-name-large">{candidateDetail.application.Candidate__r.Full_Name__c}</h2>
+                            <p class="candidate-email-large">{candidateDetail.application.Candidate__r.Email__c}</p>
+                        </div>
+                        <div class="header-status-premium">
+                            <span class={currentStatusPillClass}>{selectedStatus}</span>
+                        </div>
+                    </div>
+
+                    <!-- Modal Body Scroll -->
+                    <div class="modal-body-premium">
+                        
+                        <!-- Quick Info Cards -->
+                        <div class="info-cards-grid">
+                            <div class="info-card-premium">
+                                <lightning-icon icon-name="utility:phone_portrait" size="small"></lightning-icon>
+                                <div>
+                                    <span class="info-label">Phone</span>
+                                    <span class="info-value">{candidateDetail.application.Candidate__r.Phone__c}</span>
+                                </div>
+                            </div>
+                            <div class="info-card-premium">
+                                <lightning-icon icon-name="utility:work" size="small"></lightning-icon>
+                                <div>
+                                    <span class="info-label">Applied For</span>
+                                    <span class="info-value">{candidateDetail.application.Job_Posting__r.Job_Title__c}</span>
+                                </div>
+                            </div>
+                            <div class="info-card-premium">
+                                <lightning-icon icon-name="utility:date_time" size="small"></lightning-icon>
+                                <div>
+                                    <span class="info-label">Experience</span>
+                                    <span class="info-value">{candidateDetail.application.Candidate__r.Years_of_Experience__c} years</span>
+                                </div>
+                            </div>
+                            <div class="info-card-premium">
+                                <lightning-icon icon-name="utility:date_input" size="small"></lightning-icon>
+                                <div>
+                                    <span class="info-label">Applied On</span>
+                                    <span class="info-value">{candidateDetail.application.Application_Date__c}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Premium Timeline Status Section -->
+                        <div class="section-card-premium timeline-section">
+                            <div class="section-header-premium">
+                                <lightning-icon icon-name="standard:timeline" size="small"></lightning-icon>
+                                <h3 class="section-title-premium">Application Progress</h3>
+                                <div class="timeline-actions">
+                                    <span class="steps-counter">{completedStepsText}</span>
+                                </div>
+                            </div>
+                            <div class="section-content-premium">
+                                
+                                <!-- Quick Status Dropdown (For fast updates) -->
+                                <lightning-combobox
+                                    name="status"
+                                    label="Quick Status Update"
+                                    value={selectedStatus}
+                                    options={statusOptions}
+                                    onchange={handleQuickStatusChange}
+                                    class="status-combobox-premium">
+                                </lightning-combobox>
+
+                                <!-- Premium Interactive Timeline -->
+                                <div class="timeline-container">
+                                    <div class="timeline-scroll">
+                                        <template for:each={timelineSteps} for:item="step">
+                                            <div key={step.id} 
+                                                 class={step.containerClass} 
+                                                 data-step-id={step.id}
+                                                 onclick={handleStepClick}
+                                                 data-step-value={step.value}>
+                                                
+                                                <!-- Timeline Node -->
+                                                <div class="timeline-node-wrapper">
+                                                    <div class={step.nodeClass}>
+                                                        <lightning-icon 
+                                                            icon-name={step.icon} 
+                                                            size="x-small"
+                                                            class="node-icon">
+                                                        </lightning-icon>
+                                                    </div>
+                                                    <template if:false={step.isLast}>
+                                                        <div class={step.connectorClass}></div>
+                                                    </template>
+                                                </div>
+
+                                                <!-- Timeline Content -->
+                                                <div class="timeline-content">
+                                                    <div class="timeline-header">
+                                                        <h4 class="timeline-title">{step.label}</h4>
+                                                        <template if:true={step.isCurrent}>
+                                                            <span class="current-badge">Current Step</span>
+                                                        </template>
+                                                        <template if:true={step.isPending}>
+                                                            <span class="pending-badge">Pending</span>
+                                                        </template>
+                                                    </div>
+                                                    <p class="timeline-description">{step.description}</p>
+                                                    <template if:true={step.timestamp}>
+                                                        <p class="timeline-timestamp">
+                                                            <lightning-icon icon-name="utility:clock" size="xx-small"></lightning-icon>
+                                                            {step.timestamp}
+                                                        </p>
+                                                    </template>
+
+                                                    <!-- Expandable Edit Panel -->
+                                                    <template if:true={step.isExpanded}>
+                                                        <div class="step-edit-panel">
+                                                            <div class="edit-panel-header">
+                                                                <lightning-icon icon-name="utility:edit" size="x-small"></lightning-icon>
+                                                                <span class="edit-panel-title">Edit Stage</span>
+                                                            </div>
+
+                                                            <div class="edit-panel-body">
+                                                                <!-- Status Info -->
+                                                                <div class="info-row-premium">
+                                                                    <span class="info-label-small">Stage Status</span>
+                                                                    <span class="info-value-small">{step.label}</span>
+                                                                </div>
+
+                                                                <!-- Status Selector -->
+                                                                <lightning-combobox
+                                                                    name="stepStatus"
+                                                                    label="Update to Status"
+                                                                    value={editingStatus}
+                                                                    options={statusOptions}
+                                                                    onchange={handleEditStatusChange}
+                                                                    class="edit-status-combobox">
+                                                                </lightning-combobox>
+
+                                                                <!-- Stage-Specific Fields -->
+                                                                <template if:true={hasStageFields}>
+                                                                    <div class="stage-fields-section">
+                                                                        <div class="fields-header">
+                                                                            <lightning-icon icon-name="standard:record" size="x-small"></lightning-icon>
+                                                                            <h4 class="fields-title">License Verification Details</h4>
+                                                                        </div>
+                                                                        
+                                                                        <div class="fields-grid">
+                                                                            <template for:each={currentStageFields} for:item="field">
+                                                                                <div key={field.apiName} class="field-item">
+                                                                                    
+                                                                                    <!-- Text Fields -->
+                                                                                    <template if:true={field.isText}>
+                                                                                        <lightning-input
+                                                                                            label={field.label}
+                                                                                            name={field.apiName}
+                                                                                            type="text"
+                                                                                            value={field.value}
+                                                                                            required={field.required}
+                                                                                            disabled={field.readonly}
+                                                                                            onchange={handleFieldChange}
+                                                                                            class="field-input">
+                                                                                        </lightning-input>
+                                                                                    </template>
+
+                                                                                    <!-- Date Fields -->
+                                                                                    <template if:true={field.isDate}>
+                                                                                        <lightning-input
+                                                                                            label={field.label}
+                                                                                            name={field.apiName}
+                                                                                            type="date"
+                                                                                            value={field.value}
+                                                                                            required={field.required}
+                                                                                            onchange={handleFieldChange}
+                                                                                            class="field-input">
+                                                                                        </lightning-input>
+                                                                                    </template>
+
+                                                                                    <!-- Number Fields -->
+                                                                                    <template if:true={field.isNumber}>
+                                                                                        <lightning-input
+                                                                                            label={field.label}
+                                                                                            name={field.apiName}
+                                                                                            type="number"
+                                                                                            value={field.value}
+                                                                                            required={field.required}
+                                                                                            onchange={handleFieldChange}
+                                                                                            class="field-input">
+                                                                                        </lightning-input>
+                                                                                    </template>
+
+                                                                                    <!-- Checkbox Fields -->
+                                                                                    <template if:true={field.isCheckbox}>
+                                                                                        <lightning-input
+                                                                                            label={field.label}
+                                                                                            name={field.apiName}
+                                                                                            type="checkbox"
+                                                                                            checked={field.value}
+                                                                                            onchange={handleFieldChange}
+                                                                                            class="field-input">
+                                                                                        </lightning-input>
+                                                                                    </template>
+
+                                                                                    <!-- Picklist Fields -->
+                                                                                    <template if:true={field.isPicklist}>
+                                                                                        <lightning-combobox
+                                                                                            label={field.label}
+                                                                                            name={field.apiName}
+                                                                                            value={field.value}
+                                                                                            placeholder="Select an option"
+                                                                                            required={field.required}
+                                                                                            onchange={handleFieldChange}
+                                                                                            class="field-input">
+                                                                                        </lightning-combobox>
+                                                                                    </template>
+
+                                                                                    <!-- Textarea Fields -->
+                                                                                    <template if:true={field.isTextarea}>
+                                                                                        <lightning-textarea
+                                                                                            label={field.label}
+                                                                                            name={field.apiName}
+                                                                                            value={field.value}
+                                                                                            required={field.required}
+                                                                                            onchange={handleFieldChange}
+                                                                                            class="field-input">
+                                                                                        </lightning-textarea>
+                                                                                    </template>
+
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+                                                                    </div>
+                                                                </template>
+
+                                                                <!-- Notes Textarea -->
+                                                                <lightning-textarea
+                                                                    name="notes"
+                                                                    label="Add Notes (Optional)"
+                                                                    placeholder="Add internal notes about this stage..."
+                                                                    value={editingNotes}
+                                                                    onchange={handleNotesChange}
+                                                                    max-length="500"
+                                                                    class="notes-textarea">
+                                                                </lightning-textarea>
+
+                                                                <!-- Action Buttons -->
+                                                                <div class="edit-panel-actions">
+                                                                    <lightning-button
+                                                                        label="Cancel"
+                                                                        onclick={handleCancelEdit}
+                                                                        class="cancel-edit-btn">
+                                                                    </lightning-button>
+                                                                    <lightning-button
+                                                                        variant="brand"
+                                                                        label={saveButtonLabel}
+                                                                        onclick={handleSaveStepEdit}
+                                                                        disabled={isSavingStep}
+                                                                        class="save-edit-btn">
+                                                                    </lightning-button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                                
+                                <template if:true={hasScores}>
+                                    <div class="scores-grid">
+                                        <template if:true={candidateDetail.application.Eligibility_Score__c}>
+                                            <div class="score-card-premium">
+                                                <span class="score-label">Eligibility Score</span>
+                                                <span class="score-value-large">{candidateDetail.application.Eligibility_Score__c}</span>
+                                            </div>
+                                        </template>
+                                        <template if:true={candidateDetail.application.Screening_Score__c}>
+                                            <div class="score-card-premium">
+                                                <span class="score-label">Screening Score</span>
+                                                <span class="score-value-large">{candidateDetail.application.Screening_Score__c}%</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Eligibility Summary -->
+                        <template if:true={candidateDetail.application.Eligibility_Summary__c}>
+                            <div class="section-card-premium">
+                                <div class="section-header-premium">
+                                    <lightning-icon icon-name="standard:document" size="small"></lightning-icon>
+                                    <h3 class="section-title-premium">Eligibility Summary</h3>
+                                </div>
+                                <div class="section-content-premium">
+                                    <p class="summary-text">{candidateDetail.application.Eligibility_Summary__c}</p>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Pros and Cons -->
+                        <template if:true={hasProsCons}>
+                            <div class="pros-cons-grid">
+                                <template if:true={candidateDetail.application.Eligibility_Pros__c}>
+                                    <div class="pros-card-premium">
+                                        <div class="section-header-premium">
+                                            <lightning-icon icon-name="utility:success" size="small" class="icon-success"></lightning-icon>
+                                            <h3 class="section-title-premium">Strengths</h3>
+                                        </div>
+                                        <div class="section-content-premium">
+                                            <p class="pros-text">{candidateDetail.application.Eligibility_Pros__c}</p>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template if:true={candidateDetail.application.Eligibility_Cons__c}>
+                                    <div class="cons-card-premium">
+                                        <div class="section-header-premium">
+                                            <lightning-icon icon-name="utility:warning" size="small" class="icon-warning"></lightning-icon>
+                                            <h3 class="section-title-premium">Considerations</h3>
+                                        </div>
+                                        <div class="section-content-premium">
+                                            <p class="cons-text">{candidateDetail.application.Eligibility_Cons__c}</p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Summary Stats -->
+                        <div class="stats-grid-premium">
+                            <div class="stat-card-premium">
+                                <lightning-icon icon-name="standard:education" size="small"></lightning-icon>
+                                <span class="stat-number">{educationCount}</span>
+                                <span class="stat-label">Education</span>
+                            </div>
+                            <div class="stat-card-premium">
+                                <lightning-icon icon-name="standard:document" size="small"></lightning-icon>
+                                <span class="stat-number">{licenseCount}</span>
+                                <span class="stat-label">Licenses</span>
+                            </div>
+                            <div class="stat-card-premium">
+                                <lightning-icon icon-name="standard:work_order" size="small"></lightning-icon>
+                                <span class="stat-number">{experienceCount}</span>
+                                <span class="stat-label">Experience</span>
+                            </div>
+                            <div class="stat-card-premium">
+                                <lightning-icon icon-name="standard:skill" size="small"></lightning-icon>
+                                <span class="stat-number">{clinicalSkillsCount}</span>
+                                <span class="stat-label">Skills</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Premium Modal Footer -->
+                    <div class="modal-footer-premium">
+                        <lightning-button
+                            label="Cancel"
+                            onclick={handleClose}
+                            class="cancel-btn-premium">
+                        </lightning-button>
+                        <lightning-button
+                            variant="brand"
+                            label="Save Changes"
+                            onclick={handleSave}
+                            disabled={isSaving}
+                            class="save-btn-premium">
+                        </lightning-button>
+                    </div>
+
+                </template>
+            </template>
+
+        </div>
+    </div>
+</template>

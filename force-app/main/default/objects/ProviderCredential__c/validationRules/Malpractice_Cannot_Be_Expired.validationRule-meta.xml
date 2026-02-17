@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Malpractice_Cannot_Be_Expired</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(       Malpractice_Insurance_Verified__c = TRUE,       NOT(ISBLANK(Malpractice_Expiration_Date__c)),       Malpractice_Expiration_Date__c &lt; TODAY()     )</errorConditionFormula>
+    <errorDisplayField>Malpractice_Expiration_Date__c</errorDisplayField>
+    <errorMessage>You can&apos;t mark malpractice insurance as Verified if the expiration date is in the past.</errorMessage>
+</ValidationRule>

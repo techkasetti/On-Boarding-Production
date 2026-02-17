@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Candidate__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <description>The candidate for whom this compliance record is being tracked.</description>
+    <externalId>false</externalId>
+    <label>Candidate</label>
+    <referenceTo>Candidate__c</referenceTo>
+    <relationshipLabel>HIPAA Compliance</relationshipLabel>
+    <relationshipName>HIPAACompliance</relationshipName>
+    <required>true</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>
