@@ -190,7 +190,7 @@ public class ScreeningDataLoader {
     
     /**
      * Load candidate with all related records for AI analysis
-     * FIXED: Added Expiry_Date__c and Issue_Date__c to License query
+     
      */
     public static Candidate__c loadCandidateWithAllRelations(Id candidateId) {
         if (candidateId == null) {

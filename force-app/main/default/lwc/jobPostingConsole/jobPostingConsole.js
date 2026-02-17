@@ -1,4 +1,4 @@
-// jobPostingConsole.js - FIXED NAVIGATION WITH FALLBACK
+// jobPostingConsole.js - 
 import { LightningElement, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
@@ -190,29 +190,57 @@ export default class JobPostingConsole extends NavigationMixin(LightningElement)
         }
     }
 
-    handleDownloadSample() {
-        const csvContent = 
-            'Job Title,Category,Role Type,Department,Employment Type,Shift Type,Min Experience,Max Experience,Start Date,End Date,Facility Name,City,State,Country,Credentialing Required,Privilege Scope,Description\n' +
-            '"Duty Doctor - Emergency","Medical","Doctor","Emergency","Full-time","Rotational",2,10,2026-02-01,2026-12-31,"City General Hospital","Chennai","Tamil Nadu","India",TRUE,"Emergency OPD, Stabilization & Basic Procedures","Emergency duty doctor responsible for triage, stabilization, and patient management. EDUCATION: MBBS degree required. LICENSES: Valid Medical Council Registration from Tamil Nadu Medical Council required. CERTIFICATIONS: BLS and ACLS certifications mandatory. SKILLS: Patient Assessment at Advanced level, Emergency Management at Advanced level required. PROCEDURES: Must be able to perform IV Cannulation and Wound Suturing. COMPLIANCE: HIPAA compliance mandatory."\n' +
-            '"ICU Staff Nurse","Medical","Nurse","ICU","Full-time","Night",3,8,2026-03-01,2026-12-31,"Apollo Hospital","Mumbai","Maharashtra","India",TRUE,"Critical Care Nursing, Ventilator Management","Provide comprehensive patient care in intensive care unit. EDUCATION: BSc Nursing or GNM required. LICENSES: Valid Nursing Council Registration from Maharashtra Nursing Council. CERTIFICATIONS: BLS, ACLS, and Critical Care Nursing certification mandatory. SKILLS: Ventilator Management at Advanced level, Critical Care Monitoring at Advanced level. PROCEDURES: Central Line Care, Arterial Line Management. COMPLIANCE: HIPAA and Infection Control Protocol compliance required."';
-        
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'enhanced_medical_jobs_sample.csv';
-        link.click();
-        window.URL.revokeObjectURL(url);
-        
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title: 'Sample CSV Downloaded',
-                message: 'Contains 2 example jobs with comprehensive descriptions. Maximum 50 jobs per upload.',
-                variant: 'info'
-            })
-        );
-    }
+handleDownloadSample() {
+    const csvRows = [
+        [
+            'Job Title', 'Category', 'Role Type', 'Department', 'Employment Type',
+            'Shift Type', 'Min Experience', 'Max Experience', 'Start Date', 'End Date',
+            'Facility Name', 'City', 'State', 'Country', 'Credentialing Required',
+            'Privilege Scope', 'Description'
+        ],
+        [
+            'Duty Doctor - Emergency', 'Medical', 'Doctor', 'Emergency', 'Full-time',
+            'Rotational', '2', '10', '2026-02-01', '2026-12-31',
+            'City General Hospital', 'Chennai', 'Tamil Nadu', 'India', 'TRUE',
+            'Emergency OPD - Stabilization & Basic Procedures',
+            'Emergency duty doctor responsible for triage stabilization and patient management. EDUCATION: MBBS degree required. LICENSES: Valid Medical Council Registration from Tamil Nadu Medical Council required. CERTIFICATIONS: BLS and ACLS certifications mandatory. SKILLS: Patient Assessment at Advanced level - Emergency Management at Advanced level required. PROCEDURES: Must be able to perform IV Cannulation and Wound Suturing. COMPLIANCE: HIPAA compliance mandatory.'
+        ],
+        [
+            'ICU Staff Nurse', 'Medical', 'Nurse', 'ICU', 'Full-time',
+            'Night', '3', '8', '2026-03-01', '2026-12-31',
+            'Apollo Hospital', 'Mumbai', 'Maharashtra', 'India', 'TRUE',
+            'Critical Care Nursing - Ventilator Management',
+            'Provide comprehensive patient care in intensive care unit. EDUCATION: BSc Nursing or GNM required. LICENSES: Valid Nursing Council Registration from Maharashtra Nursing Council. CERTIFICATIONS: BLS - ACLS - and Critical Care Nursing certification mandatory. SKILLS: Ventilator Management at Advanced level - Critical Care Monitoring at Advanced level. PROCEDURES: Central Line Care - Arterial Line Management. COMPLIANCE: HIPAA and Infection Control Protocol compliance required.'
+        ]
+    ];
 
+    // Build CSV string — wrap every field in double quotes and escape any internal quotes
+    const csvString = csvRows.map(row =>
+        row.map(field => {
+            // Escape double quotes inside field by doubling them
+            const escaped = String(field).replace(/"/g, '""');
+            return `"${escaped}"`;
+        }).join(',')
+    ).join('\r\n');
+
+    // Use data URI instead of Blob URL (works inside Salesforce CSP)
+    const encodedUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvString);
+
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'enhanced_medical_jobs_sample.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.dispatchEvent(
+        new ShowToastEvent({
+            title: 'Sample CSV Downloaded',
+            message: 'Contains 2 example jobs with comprehensive descriptions. Maximum 50 jobs per upload.',
+            variant: 'info'
+        })
+    );
+}
     /**
      * Navigate back to Admin Tab
      */

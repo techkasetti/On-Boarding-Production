@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Education_Level__c</fullName>
+    <label>Education Level</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>High School</fullName>
+                <default>false</default>
+                <label>High School</label>
+            </value>
+            <value>
+                <fullName>Diploma</fullName>
+                <default>false</default>
+                <label>Diploma</label>
+            </value>
+            <value>
+                <fullName>Associate Degree</fullName>
+                <default>false</default>
+                <label>Associate Degree</label>
+            </value>
+            <value>
+                <fullName>Bachelor Degree</fullName>
+                <default>false</default>
+                <label>Bachelor Degree</label>
+            </value>
+            <value>
+                <fullName>Master Degree</fullName>
+                <default>false</default>
+                <label>Master Degree</label>
+            </value>
+            <value>
+                <fullName>Doctorate</fullName>
+                <default>false</default>
+                <label>Doctorate</label>
+            </value>
+            <value>
+                <fullName>Postgraduate Diploma</fullName>
+                <default>false</default>
+                <label>Postgraduate Diploma</label>
+            </value>
+            <value>
+                <fullName>Fellowship</fullName>
+                <default>false</default>
+                <label>Fellowship</label>
+            </value>
+            <value>
+                <fullName>Residency</fullName>
+                <default>false</default>
+                <label>Residency</label>
+            </value>
+            <value>
+                <fullName>Internship</fullName>
+                <default>false</default>
+                <label>Internship</label>
+            </value>
+            <value>
+                <fullName>Other</fullName>
+                <default>false</default>
+                <label>Other</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Required_Fields</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(
+     ISBLANK(TEXT(Priority__c)),
+     ISBLANK(Applied_Role__c),
+     ISBLANK(Target_Object__c),
+     ISBLANK(Field_API_Name__c)
+   )</errorConditionFormula>
+    <errorMessage>Priority, Applied Role, Target Object, and Field are required</errorMessage>
+</ValidationRule>

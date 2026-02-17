@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Verification_Source__c</fullName>
+    <label>Verification Source</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Supervisor</fullName>
+                <default>false</default>
+                <label>Supervisor</label>
+            </value>
+            <value>
+                <fullName>Hospital Records</fullName>
+                <default>false</default>
+                <label>Hospital Records</label>
+            </value>
+            <value>
+                <fullName>Training Log</fullName>
+                <default>false</default>
+                <label>Training Log</label>
+            </value>
+            <value>
+                <fullName>Certification</fullName>
+                <default>false</default>
+                <label>Certification</label>
+            </value>
+            <value>
+                <fullName>Self-Declared</fullName>
+                <default>false</default>
+                <label>Self-Declared</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

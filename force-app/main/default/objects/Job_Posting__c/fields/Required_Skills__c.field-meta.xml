@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Required_Skills__c</fullName>
+    <description>Clinical and technical skills required for this position</description>
+    <encryptionScheme>None</encryptionScheme>
+    <inlineHelpText>Enter required clinical skills, procedures, and competencies (e.g., &quot;Advanced Cardiac Life Support (ACLS)&quot;, &quot;Electronic Medical Records (EMR) proficiency&quot;)</inlineHelpText>
+    <label>Required Skills</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>5</visibleLines>
+</CustomField>

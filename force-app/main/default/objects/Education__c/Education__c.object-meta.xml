@@ -155,6 +155,7 @@
     <externalSharingModel>Private</externalSharingModel>
     <label>Education</label>
     <nameField>
+        <encryptionScheme>None</encryptionScheme>
         <label>Education Name</label>
         <type>Text</type>
     </nameField>

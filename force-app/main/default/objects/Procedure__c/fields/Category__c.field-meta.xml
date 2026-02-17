@@ -6,13 +6,17 @@
     <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
-        <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
             <value>
                 <fullName>Minor</fullName>
                 <default>false</default>
                 <label>Minor</label>
+            </value>
+            <value>
+                <fullName>Major</fullName>
+                <default>false</default>
+                <label>Major</label>
             </value>
             <value>
                 <fullName>Emergency</fullName>
@@ -23,6 +27,11 @@
                 <fullName>Diagnostic</fullName>
                 <default>false</default>
                 <label>Diagnostic</label>
+            </value>
+            <value>
+                <fullName>Therapeutic</fullName>
+                <default>false</default>
+                <label>Therapeutic</label>
             </value>
             <value>
                 <fullName>Other</fullName>

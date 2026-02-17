@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Cannot_Override_To_Same_Outcome</fullName>
+    <active>true</active>
+    <errorConditionFormula>TEXT(Original_Outcome__c) = TEXT(New_Outcome__c)</errorConditionFormula>
+    <errorMessage>New outcome must be different from original</errorMessage>
+</ValidationRule>

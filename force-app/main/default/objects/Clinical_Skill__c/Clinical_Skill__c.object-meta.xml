@@ -155,7 +155,8 @@
     <externalSharingModel>Private</externalSharingModel>
     <label>Clinical Skill</label>
     <nameField>
-        <label>Name</label>
+        <encryptionScheme>None</encryptionScheme>
+        <label>Skill Name</label>
         <type>Text</type>
     </nameField>
     <pluralLabel>Clinical Skills</pluralLabel>

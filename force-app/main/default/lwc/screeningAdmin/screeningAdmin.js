@@ -353,7 +353,7 @@ const COLUMNS = [
     { label: 'Category', fieldName: 'ruleCategory', type: 'text' },
     { label: 'Journey Path', fieldName: 'journeyPath', type: 'text' },
     { label: 'Target Object', fieldName: 'targetObject', type: 'text' },
-    { label: 'Pass Rate', fieldName: 'passRate', type: 'percent', cellAttributes: { alignment: 'left' } },
+   // { label: 'Pass Rate', fieldName: 'passRate', type: 'percent', cellAttributes: { alignment: 'left' } },
     {
         type: 'action',
         typeAttributes: {
@@ -470,7 +470,7 @@ export default class ScreeningAdmin extends LightningElement {
                 this.jobPostingOptions = [
                     { label: 'All Job Postings', value: '' },
                     ...jobsData.map(job => ({ 
-                        label: job.Name, 
+                        label: job.Job_Title__c, 
                         value: job.Id 
                     }))
                 ];
@@ -513,7 +513,7 @@ export default class ScreeningAdmin extends LightningElement {
             
             if (jobsData && jobsData.length > 0) {
                 this.jobPostingOptions = jobsData.map(job => ({ 
-                    label: job.Name, 
+                    label: job.Job_Title__c, 
                     value: job.Id 
                 }));
             } else {

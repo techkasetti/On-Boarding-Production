@@ -155,6 +155,7 @@
     <externalSharingModel>Private</externalSharingModel>
     <label>Work Experience</label>
     <nameField>
+        <encryptionScheme>None</encryptionScheme>
         <label>Work Experience Name</label>
         <type>Text</type>
     </nameField>

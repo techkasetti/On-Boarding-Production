@@ -155,6 +155,7 @@
     <externalSharingModel>Private</externalSharingModel>
     <label>Research and Publication</label>
     <nameField>
+        <encryptionScheme>None</encryptionScheme>
         <label>Research and Publication Name</label>
         <type>Text</type>
     </nameField>

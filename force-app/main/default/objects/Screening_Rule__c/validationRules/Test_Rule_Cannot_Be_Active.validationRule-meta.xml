@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Test_Rule_Cannot_Be_Active</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(Test_Mode_Only__c = TRUE, Active__c = TRUE)</errorConditionFormula>
+    <errorMessage>Test-only rules cannot be active in production</errorMessage>
+</ValidationRule>

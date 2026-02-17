@@ -60,11 +60,11 @@ public static List<RuleWrapper> getRules() {
     @AuraEnabled(cacheable=true)
     public static List<Job_Posting__c> getJobPostings() {
         try {
-            List<Job_Posting__c> jobs = [
-                SELECT Id, Name, Enable_Screening__c, Default_Journey_Path__c
-                FROM Job_Posting__c 
-                ORDER BY Name ASC
-                LIMIT 200
+         List<Job_Posting__c> jobs = [
+            SELECT Id, Name,Job_Title__c, Enable_Screening__c, Default_Journey_Path__c
+            FROM Job_Posting__c 
+            ORDER BY Job_Title__c ASC
+            LIMIT 200
             ];
             return jobs;
         } catch (Exception e) {
@@ -843,7 +843,7 @@ private static Boolean sendApprovalEmailDirect(Id overrideId, Screening_Rule__c 
             this.Name = rule.Name;
             this.active = rule.Active__c;
             this.priority = rule.Priority__c;
-            this.appliedRoleId = rule.Applied_Role__c;
+            this.appliedRoleId = rule.Applied_Role__c != null ? String.valueOf(rule.Applied_Role__c) : null;
             this.appliedRoleName = rule.Applied_Role__r != null ? rule.Applied_Role__r.Name : '';
             this.targetObject = rule.Target_Object__c;
             this.fieldApiName = rule.Field_API_Name__c;

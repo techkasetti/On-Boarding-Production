@@ -24,6 +24,16 @@
                 <default>false</default>
                 <label>Review</label>
             </value>
+            <value>
+                <fullName>Error</fullName>
+                <default>false</default>
+                <label>Error</label>
+            </value>
+            <value>
+                <fullName>Skipped</fullName>
+                <default>false</default>
+                <label>Skipped</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>
