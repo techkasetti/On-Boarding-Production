@@ -5,6 +5,9 @@ import updateApplicationStatus from '@salesforce/apex/MedicalRecruitmentControll
 import getLicenseVerifications from '@salesforce/apex/MedicalRecruitmentController.getLicenseVerifications';
 import updateLicenseVerification from '@salesforce/apex/MedicalRecruitmentController.updateLicenseVerification';
 import createLicenseVerification from '@salesforce/apex/MedicalRecruitmentController.createLicenseVerification';
+import getInterviewDetails from '@salesforce/apex/MedicalRecruitmentController.getInterviewDetails';
+import updateInterviewDetail from '@salesforce/apex/MedicalRecruitmentController.updateInterviewDetail';
+import createInterviewDetail from '@salesforce/apex/MedicalRecruitmentController.createInterviewDetail';
 
 export default class CandidateDetailModal extends LightningElement {
     @api applicationId;
@@ -26,6 +29,11 @@ export default class CandidateDetailModal extends LightningElement {
     // License data
     @track licenseVerifications = [];
     @track currentLicenseId = null;
+    
+    // Interview data
+    @track interviewDetails = [];
+    @track currentInterviewId = null;
+    
     stageFieldValues = {};
     ONBOARDING_STAGES = [
         {
@@ -185,6 +193,39 @@ export default class CandidateDetailModal extends LightningElement {
                 { label: 'Name Match AI Reason', apiName: 'Name_Match_AI_Reason__c', type: 'textarea', required: false },
                 { label: 'Requires Manual Review', apiName: 'Requires_Manual_Review__c', type: 'checkbox', required: false }
             ]
+        },
+        'Interview Scheduled': {
+            objectName: 'Interview_Detail__c',
+            fields: [
+                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false },
+                { label: 'External Interviewer Email', apiName: 'External_Interviewer_Email__c', type: 'email', required: false },
+                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'lookup', required: false },
+                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true },
+                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true },
+                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: false }
+            ]
+        },
+        'Interview Cleared': {
+            objectName: 'Interview_Detail__c',
+            fields: [
+                { label: 'Interview Detail Name', apiName: 'Name', type: 'text', required: false, readonly: true },
+                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false },
+                { label: 'External Interviewer Email', apiName: 'External_Interviewer_Email__c', type: 'email', required: false },
+                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'lookup', required: false },
+                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true },
+                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true },
+                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: true }
+            ]
+        },
+        'Interview Rejected': {
+            objectName: 'Interview_Detail__c',
+            fields: [
+                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false },
+                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'lookup', required: false },
+                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true },
+                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true },
+                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: true }
+            ]
         }
     };
 
@@ -214,6 +255,34 @@ export default class CandidateDetailModal extends LightningElement {
         { label: 'Onboarding Completed', value: 'Onboarding Completed' },
         { label: 'Active – Allowed to Practice', value: 'Active – Allowed to Practice' }
     ];
+
+    // Picklist options for stage-specific fields
+    picklistOptions = {
+        'Status__c': [
+            { label: 'Active', value: 'Active' },
+            { label: 'Pending', value: 'Pending' },
+            { label: 'Expired', value: 'Expired' },
+            { label: 'Verified', value: 'Verified' },
+            { label: 'Failed', value: 'Failed' }
+        ],
+        'Name_Match_AI_Decision__c': [
+            { label: 'Match', value: 'Match' },
+            { label: 'No Match', value: 'No Match' },
+            { label: 'Partial Match', value: 'Partial Match' },
+            { label: 'Needs Review', value: 'Needs Review' }
+        ],
+        'Interviewer_Type__c': [
+            { label: 'Internal', value: 'Internal' },
+            { label: 'External', value: 'External' },
+            { label: 'Panel', value: 'Panel' }
+        ],
+        'Meeting_Type__c': [
+            { label: 'In-Person', value: 'In-Person' },
+            { label: 'Virtual', value: 'Virtual' },
+            { label: 'Phone', value: 'Phone' },
+            { label: 'Hybrid', value: 'Hybrid' }
+        ]
+    };
 
     get educationCount() {
         return this.candidateDetail?.educations?.length || 0;
@@ -270,42 +339,88 @@ export default class CandidateDetailModal extends LightningElement {
         return this.expandedStepValue && this.STAGE_FIELDS_MAP[this.expandedStepValue];
     }
 
-    get currentStageFields() {
-        if (!this.hasStageFields) return [];
-        const fields = this.STAGE_FIELDS_MAP[this.expandedStepValue].fields;
+    get stageFieldsTitle() {
+        if (!this.hasStageFields) return 'Stage Details';
+        const objectName = this.STAGE_FIELDS_MAP[this.expandedStepValue].objectName;
         
-        // Get the first license record if available
-        const licenseData = this.licenseVerifications && this.licenseVerifications.length > 0 
-            ? this.licenseVerifications[0] 
-            : null;
+        if (objectName === 'LicenseVerification__c') {
+            return 'License Verification Details';
+        } else if (objectName === 'Interview_Detail__c') {
+            return 'Interview Details';
+        }
+        return 'Stage Details';
+    }
+
+    get currentStageFields() {
+        if (!this.hasStageFields) {
+            console.log('No stage fields configured for:', this.expandedStepValue);
+            return [];
+        }
+        
+        const stageConfig = this.STAGE_FIELDS_MAP[this.expandedStepValue];
+        const fields = stageConfig.fields;
+        const objectName = stageConfig.objectName;
+        
+        console.log('Fields config:', fields);
+        console.log('Object name:', objectName);
+        
+        // Get data based on object type
+        let stageData = null;
+        if (objectName === 'LicenseVerification__c') {
+            stageData = this.licenseVerifications && this.licenseVerifications.length > 0 
+                ? this.licenseVerifications[0] 
+                : null;
+            console.log('Using License data:', stageData);
+        } else if (objectName === 'Interview_Detail__c') {
+            stageData = this.interviewDetails && this.interviewDetails.length > 0 
+                ? this.interviewDetails[0] 
+                : null;
+            console.log('Using Interview data:', stageData);
+        }
+        
+        console.log('Stage data for fields:', stageData);
         
         // Add type detection flags and values for template conditionals
-        return fields.map(field => {
+        const mappedFields = fields.map(field => {
             let fieldValue = '';
             
-            // Get value from license data or from edited values
+            // Get value from stage data or from edited values
             if (this.stageFieldValues[field.apiName] !== undefined) {
                 fieldValue = this.stageFieldValues[field.apiName];
-            } else if (licenseData && licenseData[field.apiName] !== undefined) {
-                fieldValue = licenseData[field.apiName];
+                console.log(`Field ${field.apiName} from stageFieldValues:`, fieldValue);
+            } else if (stageData && stageData[field.apiName] !== undefined) {
+                fieldValue = stageData[field.apiName];
+                console.log(`Field ${field.apiName} from stageData:`, fieldValue);
                 
                 // Handle lookup fields (get name from relationship)
-                if (field.type === 'lookup' && field.apiName === 'Provider__c' && licenseData.Provider__r) {
-                    fieldValue = licenseData.Provider__r.Name;
+                if (field.type === 'lookup') {
+                    if (field.apiName === 'Provider__c' && stageData.Provider__r) {
+                        fieldValue = stageData.Provider__r.Name;
+                    } else if (field.apiName === 'Interviewer_User__c' && stageData.Interviewer_User__r) {
+                        fieldValue = stageData.Interviewer_User__r.Name;
+                    }
+                    console.log(`Lookup field resolved to:`, fieldValue);
                 }
+            } else {
+                console.log(`Field ${field.apiName} has no value`);
             }
             
             return {
                 ...field,
                 value: fieldValue,
+                options: field.type === 'picklist' ? this.picklistOptions[field.apiName] : undefined,
                 isText: field.type === 'text' || field.type === 'lookup',
                 isDate: field.type === 'date',
+                isEmail: field.type === 'email',
                 isNumber: field.type === 'number',
                 isCheckbox: field.type === 'checkbox',
                 isPicklist: field.type === 'picklist',
                 isTextarea: field.type === 'textarea'
             };
         });
+        
+        console.log('Mapped fields with values:', mappedFields);
+        return mappedFields;
     }
 
     connectedCallback() {
@@ -320,15 +435,40 @@ export default class CandidateDetailModal extends LightningElement {
                 this.candidateDetail = result;
                 this.selectedStatus = result.application.Status__c;
                 this.originalStatus = result.application.Status__c;
-                this.buildTimeline(result.application.Status__c, true);
                 
-                // Fetch license verifications for the candidate
+                // Fetch both license and interview data for the candidate
                 const candidateId = result.application.Candidate__c;
-                return getLicenseVerifications({ candidateId: candidateId });
+                console.log('Loading data for candidate:', candidateId);
+                
+                // Fetch license and interview data in parallel
+                return Promise.all([
+                    getLicenseVerifications({ candidateId: candidateId })
+                        .catch(err => {
+                            console.error('Error loading licenses:', err);
+                            return [];
+                        }),
+                    getInterviewDetails({ candidateId: candidateId })
+                        .catch(err => {
+                            console.error('Error loading interviews:', err);
+                            return [];
+                        })
+                ]);
             })
-            .then(licenses => {
+            .then(([licenses, interviews]) => {
+                console.log('License data loaded:', licenses);
+                console.log('Interview data loaded:', interviews);
+                
                 this.licenseVerifications = licenses || [];
                 this.currentLicenseId = licenses && licenses.length > 0 ? licenses[0].Id : null;
+                
+                this.interviewDetails = interviews || [];
+                this.currentInterviewId = interviews && interviews.length > 0 ? interviews[0].Id : null;
+                
+                console.log('Current license ID:', this.currentLicenseId);
+                console.log('Current interview ID:', this.currentInterviewId);
+                
+                // Build timeline after data is loaded
+                this.buildTimeline(this.selectedStatus, true);
                 this.isLoading = false;
                 
                 // Auto-scroll to current step after render
@@ -338,8 +478,8 @@ export default class CandidateDetailModal extends LightningElement {
             })
             .catch(error => {
                 this.isLoading = false;
-                this.showToast('Error', 'Error loading candidate details', 'error');
-                console.error('Error:', error);
+                console.error('Error loading data:', error);
+                this.showToast('Error', 'Error loading candidate details: ' + (error.body?.message || error.message), 'error');
             });
     }
 
@@ -529,6 +669,11 @@ export default class CandidateDetailModal extends LightningElement {
         this.stageFieldValues[fieldName] = fieldValue;
     }
 
+    handlePanelClick(event) {
+        // Stop click events inside the panel from bubbling up
+        event.stopPropagation();
+    }
+
     handleQuickStatusChange(event) {
         this.selectedStatus = event.detail.value;
         // Rebuild timeline with new status
@@ -556,31 +701,56 @@ export default class CandidateDetailModal extends LightningElement {
 
         this.isSavingStep = true;
 
-        // Promise chain: Update application status, then license data if needed
+        // Determine which object to update based on expanded step
+        const stageConfig = this.hasStageFields ? this.STAGE_FIELDS_MAP[this.expandedStepValue] : null;
+        const objectName = stageConfig ? stageConfig.objectName : null;
+        
+        console.log('Saving to object:', objectName);
+        console.log('Field values:', this.stageFieldValues);
+
+        // Update application status first
         updateApplicationStatus({
             applicationId: this.applicationId,
             newStatus: this.editingStatus,
             comments: this.editingNotes || ''
         })
             .then(() => {
-                // If there are license field changes, save them
-                if (Object.keys(this.stageFieldValues).length > 0) {
+                // Save stage-specific fields if any changes exist
+                if (Object.keys(this.stageFieldValues).length > 0 && objectName) {
                     const candidateId = this.candidateDetail.application.Candidate__c;
                     
-                    if (this.currentLicenseId) {
-                        // Update existing license
-                        return updateLicenseVerification({
-                            licenseId: this.currentLicenseId,
-                            fieldValues: this.stageFieldValues
-                        });
-                    } else {
-                        // Create new license record
-                        return createLicenseVerification({
-                            candidateId: candidateId,
-                            fieldValues: this.stageFieldValues
-                        }).then(newLicenseId => {
-                            this.currentLicenseId = newLicenseId;
-                        });
+                    // Route to correct object based on stage
+                    if (objectName === 'LicenseVerification__c') {
+                        console.log('Updating/Creating License record');
+                        if (this.currentLicenseId) {
+                            return updateLicenseVerification({
+                                licenseId: this.currentLicenseId,
+                                fieldValues: this.stageFieldValues
+                            });
+                        } else {
+                            return createLicenseVerification({
+                                candidateId: candidateId,
+                                fieldValues: this.stageFieldValues
+                            }).then(newLicenseId => {
+                                this.currentLicenseId = newLicenseId;
+                            });
+                        }
+                    } else if (objectName === 'Interview_Detail__c') {
+                        console.log('Updating/Creating Interview record');
+                        if (this.currentInterviewId) {
+                            return updateInterviewDetail({
+                                interviewId: this.currentInterviewId,
+                                fieldValues: this.stageFieldValues
+                            });
+                        } else {
+                            return createInterviewDetail({
+                                candidateId: candidateId,
+                                applicationId: this.applicationId,
+                                fieldValues: this.stageFieldValues
+                            }).then(newInterviewId => {
+                                this.currentInterviewId = newInterviewId;
+                            });
+                        }
                     }
                 }
                 return Promise.resolve();
@@ -590,7 +760,7 @@ export default class CandidateDetailModal extends LightningElement {
                 this.selectedStatus = this.editingStatus;
                 this.originalStatus = this.editingStatus;
                 
-                // Success animation
+                // Success message
                 this.showToast('Success', 
                     `Status updated to "${this.editingStatus}"`, 
                     'success');
@@ -602,18 +772,26 @@ export default class CandidateDetailModal extends LightningElement {
                 this.expandedStepValue = null;
                 this.editingNotes = '';
                 
-                // Rebuild timeline with new current status
+                // Rebuild timeline
                 this.buildTimeline(this.editingStatus, false);
                 
-                // Reload license data
+                // Reload data from both objects
                 const candidateId = this.candidateDetail.application.Candidate__c;
-                return getLicenseVerifications({ candidateId: candidateId });
+                return Promise.all([
+                    getLicenseVerifications({ candidateId: candidateId })
+                        .catch(() => []),
+                    getInterviewDetails({ candidateId: candidateId })
+                        .catch(() => [])
+                ]);
             })
-            .then(licenses => {
+            .then(([licenses, interviews]) => {
                 this.licenseVerifications = licenses || [];
                 this.currentLicenseId = licenses && licenses.length > 0 ? licenses[0].Id : null;
                 
-                // Fire event to parent to refresh applications list
+                this.interviewDetails = interviews || [];
+                this.currentInterviewId = interviews && interviews.length > 0 ? interviews[0].Id : null;
+                
+                // Fire event to parent
                 this.dispatchEvent(new CustomEvent('statusupdate'));
                 
                 // Scroll to new current step
@@ -623,8 +801,8 @@ export default class CandidateDetailModal extends LightningElement {
             })
             .catch(error => {
                 this.isSavingStep = false;
-                this.showToast('Error', 'Error updating status or license data', 'error');
-                console.error('Error:', error);
+                this.showToast('Error', 'Error updating: ' + (error.body?.message || error.message), 'error');
+                console.error('Save error:', error);
             });
     }
 

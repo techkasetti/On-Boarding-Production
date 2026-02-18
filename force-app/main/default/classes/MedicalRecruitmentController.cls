@@ -333,4 +333,82 @@ public static Id createLicenseVerification(Id candidateId, Map<String, Object> f
     }
 }
 
+
+/**
+ * Get Interview Detail records for a candidate
+ */
+@AuraEnabled(cacheable=false)
+public static List<Interview_Detail__c> getInterviewDetails(Id candidateId) {
+    try {
+        return [
+            SELECT Id, Name,
+                   External_Interviewer_Name__c,
+                   External_Interviewer_Email__c,
+                   Interviewer_User__c,
+                   Interviewer_User__r.Name,
+                   Interviewer_Type__c,
+                   Meeting_Type__c,
+                   Feedback__c,
+                   Job_Application__c,
+                   Candidate__c
+            FROM Interview_Detail__c
+            WHERE Candidate__c = :candidateId
+            ORDER BY CreatedDate DESC
+            LIMIT 10
+        ];
+    } catch (Exception e) {
+        throw new AuraHandledException('Error fetching interview details: ' + e.getMessage());
+    }
+}
+
+/**
+ * Update Interview Detail record
+ */
+@AuraEnabled
+public static void updateInterviewDetail(Id interviewId, Map<String, Object> fieldValues) {
+    try {
+        Interview_Detail__c interview = new Interview_Detail__c(Id = interviewId);
+        
+        for (String fieldName : fieldValues.keySet()) {
+            Object value = fieldValues.get(fieldName);
+            if (value != null) {
+                if (fieldName.endsWith('__c') || fieldName == 'Name') {
+                    interview.put(fieldName, value);
+                }
+            }
+        }
+        
+        update interview;
+    } catch (Exception e) {
+        throw new AuraHandledException('Error updating interview detail: ' + e.getMessage());
+    }
+}
+
+/**
+ * Create new Interview Detail record
+ */
+@AuraEnabled
+public static Id createInterviewDetail(Id candidateId, Id applicationId, Map<String, Object> fieldValues) {
+    try {
+        Interview_Detail__c interview = new Interview_Detail__c(
+            Candidate__c = candidateId,
+            Job_Application__c = applicationId
+        );
+        
+        for (String fieldName : fieldValues.keySet()) {
+            Object value = fieldValues.get(fieldName);
+            if (value != null && fieldName.endsWith('__c')) {
+                interview.put(fieldName, value);
+            }
+        }
+        
+        insert interview;
+        return interview.Id;
+    } catch (Exception e) {
+        throw new AuraHandledException('Error creating interview detail: ' + e.getMessage());
+    }
+}
+
+
+
 }

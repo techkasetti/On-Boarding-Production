@@ -138,7 +138,7 @@
 
                                                     <!-- Expandable Edit Panel -->
                                                     <template if:true={step.isExpanded}>
-                                                        <div class="step-edit-panel">
+                                                        <div class="step-edit-panel" onclick={handlePanelClick}>
                                                             <div class="edit-panel-header">
                                                                 <lightning-icon icon-name="utility:edit" size="x-small"></lightning-icon>
                                                                 <span class="edit-panel-title">Edit Stage</span>
@@ -166,8 +166,19 @@
                                                                     <div class="stage-fields-section">
                                                                         <div class="fields-header">
                                                                             <lightning-icon icon-name="standard:record" size="x-small"></lightning-icon>
-                                                                            <h4 class="fields-title">License Verification Details</h4>
+                                                                            <h4 class="fields-title">{stageFieldsTitle}</h4>
                                                                         </div>
+
+                                                                        <!-- DEBUG: Show license data -->
+                                                                        <!-- <template if:true={licenseVerifications}>
+                                                                            <div class="debug-section">
+                                                                                <p><strong>Debug Info:</strong></p>
+                                                                                <p>License Records Found: {licenseVerifications.length}</p>
+                                                                                <template if:true={currentLicenseId}>
+                                                                                    <p>Current License ID: {currentLicenseId}</p>
+                                                                                </template>
+                                                                            </div>
+                                                                        </template> -->
                                                                         
                                                                         <div class="fields-grid">
                                                                             <template for:each={currentStageFields} for:item="field">
@@ -193,6 +204,19 @@
                                                                                             label={field.label}
                                                                                             name={field.apiName}
                                                                                             type="date"
+                                                                                            value={field.value}
+                                                                                            required={field.required}
+                                                                                            onchange={handleFieldChange}
+                                                                                            class="field-input">
+                                                                                        </lightning-input>
+                                                                                    </template>
+
+                                                                                    <!-- Email Fields -->
+                                                                                    <template if:true={field.isEmail}>
+                                                                                        <lightning-input
+                                                                                            label={field.label}
+                                                                                            name={field.apiName}
+                                                                                            type="email"
                                                                                             value={field.value}
                                                                                             required={field.required}
                                                                                             onchange={handleFieldChange}
@@ -231,6 +255,7 @@
                                                                                             label={field.label}
                                                                                             name={field.apiName}
                                                                                             value={field.value}
+                                                                                            options={field.options}
                                                                                             placeholder="Select an option"
                                                                                             required={field.required}
                                                                                             onchange={handleFieldChange}
