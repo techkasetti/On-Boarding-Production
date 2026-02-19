@@ -409,6 +409,31 @@ public static Id createInterviewDetail(Id candidateId, Id applicationId, Map<Str
     }
 }
 
+@AuraEnabled(cacheable=true)
+public static List<Map<String, String>> getActiveUsers() {
+    try {
+        List<Map<String, String>> userOptions = new List<Map<String, String>>();
+        
+        List<User> activeUsers = [
+            SELECT Id, Name
+            FROM User
+            WHERE IsActive = true
+            ORDER BY Name
+            LIMIT 200
+        ];
+        
+        for (User u : activeUsers) {
+            userOptions.add(new Map<String, String>{
+                'label' => u.Name,
+                'value' => u.Id
+            });
+        }
+        
+        return userOptions;
+    } catch (Exception e) {
+        throw new AuraHandledException('Error fetching active users: ' + e.getMessage());
+    }
+}
 
 
 }

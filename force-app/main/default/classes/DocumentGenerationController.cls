@@ -31,18 +31,25 @@ public with sharing class DocumentGenerationController {
     }
     
     
-    @AuraEnabled
-    public static Id saveTemplate(DocumentTemplate__c templateRecord) {
-        if (!Schema.sObjectType.DocumentTemplate__c.isCreateable() ||
-            !Schema.sObjectType.DocumentTemplate__c.isUpdateable()) {
-                throw new AuraHandledException(
-                    'You do not have permission to create or update Document Templates.'
-                );
-            }
-        System.debug('templateRecord::::::'+templateRecord);
+   @AuraEnabled
+public static Id saveTemplate(DocumentTemplate__c templateRecord) {
+
+    if (!Schema.sObjectType.DocumentTemplate__c.isCreateable() ||
+        !Schema.sObjectType.DocumentTemplate__c.isUpdateable()) {
+        throw new AuraHandledException(
+            'You do not have permission to create or update Document Templates.'
+        );
+    }
+
+    try {
         upsert templateRecord;
         return templateRecord.Id;
+
+    } catch (Exception e) {
+        throw new AuraHandledException('Template save failed: ' + e.getMessage());
     }
+}
+
     
     //====================================================
     // METHODS FOR: documentGenerator LWC - UPDATED WITH AI MODEL

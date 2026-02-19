@@ -170,7 +170,7 @@
                                                                         </div>
 
                                                                         <!-- DEBUG: Show license data -->
-                                                                        <!-- <template if:true={licenseVerifications}>
+                                                                        <template if:true={licenseVerifications}>
                                                                             <div class="debug-section">
                                                                                 <p><strong>Debug Info:</strong></p>
                                                                                 <p>License Records Found: {licenseVerifications.length}</p>
@@ -178,104 +178,121 @@
                                                                                     <p>Current License ID: {currentLicenseId}</p>
                                                                                 </template>
                                                                             </div>
-                                                                        </template> -->
+                                                                        </template>
                                                                         
                                                                         <div class="fields-grid">
                                                                             <template for:each={currentStageFields} for:item="field">
-                                                                                <div key={field.apiName} class="field-item">
+                                                                                <!-- Only show field if shouldShow is true -->
+                                                                                <template if:true={field.shouldShow}>
+                                                                                    <div key={field.apiName} class="field-item">
                                                                                     
-                                                                                    <!-- Text Fields -->
-                                                                                    <template if:true={field.isText}>
-                                                                                        <lightning-input
-                                                                                            label={field.label}
-                                                                                            name={field.apiName}
-                                                                                            type="text"
-                                                                                            value={field.value}
-                                                                                            required={field.required}
-                                                                                            disabled={field.readonly}
-                                                                                            onchange={handleFieldChange}
-                                                                                            class="field-input">
-                                                                                        </lightning-input>
-                                                                                    </template>
+                                                                                        <!-- Text Fields -->
+                                                                                        <template if:true={field.isText}>
+                                                                                            <lightning-input
+                                                                                                label={field.label}
+                                                                                                name={field.apiName}
+                                                                                                type="text"
+                                                                                                value={field.value}
+                                                                                                required={field.required}
+                                                                                                disabled={field.readonly}
+                                                                                                onchange={handleFieldChange}
+                                                                                                class="field-input">
+                                                                                            </lightning-input>
+                                                                                        </template>
 
-                                                                                    <!-- Date Fields -->
-                                                                                    <template if:true={field.isDate}>
-                                                                                        <lightning-input
-                                                                                            label={field.label}
-                                                                                            name={field.apiName}
-                                                                                            type="date"
-                                                                                            value={field.value}
-                                                                                            required={field.required}
-                                                                                            onchange={handleFieldChange}
-                                                                                            class="field-input">
-                                                                                        </lightning-input>
-                                                                                    </template>
+                                                                                        <!-- Date Fields -->
+                                                                                        <template if:true={field.isDate}>
+                                                                                            <lightning-input
+                                                                                                label={field.label}
+                                                                                                name={field.apiName}
+                                                                                                type="date"
+                                                                                                value={field.value}
+                                                                                                required={field.required}
+                                                                                                onchange={handleFieldChange}
+                                                                                                class="field-input">
+                                                                                            </lightning-input>
+                                                                                        </template>
 
-                                                                                    <!-- Email Fields -->
-                                                                                    <template if:true={field.isEmail}>
-                                                                                        <lightning-input
-                                                                                            label={field.label}
-                                                                                            name={field.apiName}
-                                                                                            type="email"
-                                                                                            value={field.value}
-                                                                                            required={field.required}
-                                                                                            onchange={handleFieldChange}
-                                                                                            class="field-input">
-                                                                                        </lightning-input>
-                                                                                    </template>
+                                                                                        <!-- Email Fields -->
+                                                                                        <template if:true={field.isEmail}>
+                                                                                            <lightning-input
+                                                                                                label={field.label}
+                                                                                                name={field.apiName}
+                                                                                                type="email"
+                                                                                                value={field.value}
+                                                                                                required={field.required}
+                                                                                                onchange={handleFieldChange}
+                                                                                                class="field-input">
+                                                                                            </lightning-input>
+                                                                                        </template>
 
-                                                                                    <!-- Number Fields -->
-                                                                                    <template if:true={field.isNumber}>
-                                                                                        <lightning-input
-                                                                                            label={field.label}
-                                                                                            name={field.apiName}
-                                                                                            type="number"
-                                                                                            value={field.value}
-                                                                                            required={field.required}
-                                                                                            onchange={handleFieldChange}
-                                                                                            class="field-input">
-                                                                                        </lightning-input>
-                                                                                    </template>
+                                                                                        <!-- Number Fields -->
+                                                                                        <template if:true={field.isNumber}>
+                                                                                            <lightning-input
+                                                                                                label={field.label}
+                                                                                                name={field.apiName}
+                                                                                                type="number"
+                                                                                                value={field.value}
+                                                                                                required={field.required}
+                                                                                                onchange={handleFieldChange}
+                                                                                                class="field-input">
+                                                                                            </lightning-input>
+                                                                                        </template>
 
-                                                                                    <!-- Checkbox Fields -->
-                                                                                    <template if:true={field.isCheckbox}>
-                                                                                        <lightning-input
-                                                                                            label={field.label}
-                                                                                            name={field.apiName}
-                                                                                            type="checkbox"
-                                                                                            checked={field.value}
-                                                                                            onchange={handleFieldChange}
-                                                                                            class="field-input">
-                                                                                        </lightning-input>
-                                                                                    </template>
+                                                                                        <!-- Checkbox Fields -->
+                                                                                        <template if:true={field.isCheckbox}>
+                                                                                            <lightning-input
+                                                                                                label={field.label}
+                                                                                                name={field.apiName}
+                                                                                                type="checkbox"
+                                                                                                checked={field.value}
+                                                                                                onchange={handleFieldChange}
+                                                                                                class="field-input">
+                                                                                            </lightning-input>
+                                                                                        </template>
 
-                                                                                    <!-- Picklist Fields -->
-                                                                                    <template if:true={field.isPicklist}>
-                                                                                        <lightning-combobox
-                                                                                            label={field.label}
-                                                                                            name={field.apiName}
-                                                                                            value={field.value}
-                                                                                            options={field.options}
-                                                                                            placeholder="Select an option"
-                                                                                            required={field.required}
-                                                                                            onchange={handleFieldChange}
-                                                                                            class="field-input">
-                                                                                        </lightning-combobox>
-                                                                                    </template>
+                                                                                        <!-- Picklist Fields -->
+                                                                                        <template if:true={field.isPicklist}>
+                                                                                            <lightning-combobox
+                                                                                                label={field.label}
+                                                                                                name={field.apiName}
+                                                                                                value={field.value}
+                                                                                                options={field.options}
+                                                                                                placeholder="Select an option"
+                                                                                                required={field.required}
+                                                                                                onchange={handleFieldChange}
+                                                                                                class="field-input">
+                                                                                            </lightning-combobox>
+                                                                                        </template>
 
-                                                                                    <!-- Textarea Fields -->
-                                                                                    <template if:true={field.isTextarea}>
-                                                                                        <lightning-textarea
-                                                                                            label={field.label}
-                                                                                            name={field.apiName}
-                                                                                            value={field.value}
-                                                                                            required={field.required}
-                                                                                            onchange={handleFieldChange}
-                                                                                            class="field-input">
-                                                                                        </lightning-textarea>
-                                                                                    </template>
+                                                                                        <!-- User Lookup Fields -->
+                                                                                        <template if:true={field.isUserLookup}>
+                                                                                            <lightning-combobox
+                                                                                                label={field.label}
+                                                                                                name={field.apiName}
+                                                                                                value={field.value}
+                                                                                                options={field.options}
+                                                                                                placeholder="Select a user"
+                                                                                                required={field.required}
+                                                                                                onchange={handleFieldChange}
+                                                                                                class="field-input">
+                                                                                            </lightning-combobox>
+                                                                                        </template>
 
-                                                                                </div>
+                                                                                        <!-- Textarea Fields -->
+                                                                                        <template if:true={field.isTextarea}>
+                                                                                            <lightning-textarea
+                                                                                                label={field.label}
+                                                                                                name={field.apiName}
+                                                                                                value={field.value}
+                                                                                                required={field.required}
+                                                                                                onchange={handleFieldChange}
+                                                                                                class="field-input">
+                                                                                            </lightning-textarea>
+                                                                                        </template>
+
+                                                                                    </div>
+                                                                                </template>
                                                                             </template>
                                                                         </div>
                                                                     </div>

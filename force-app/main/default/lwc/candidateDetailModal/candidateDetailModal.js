@@ -1,4 +1,4 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getCandidateDetails from '@salesforce/apex/MedicalRecruitmentController.getCandidateDetails';
 import updateApplicationStatus from '@salesforce/apex/MedicalRecruitmentController.updateApplicationStatus';
@@ -8,6 +8,7 @@ import createLicenseVerification from '@salesforce/apex/MedicalRecruitmentContro
 import getInterviewDetails from '@salesforce/apex/MedicalRecruitmentController.getInterviewDetails';
 import updateInterviewDetail from '@salesforce/apex/MedicalRecruitmentController.updateInterviewDetail';
 import createInterviewDetail from '@salesforce/apex/MedicalRecruitmentController.createInterviewDetail';
+import getActiveUsers from '@salesforce/apex/MedicalRecruitmentController.getActiveUsers';
 
 export default class CandidateDetailModal extends LightningElement {
     @api applicationId;
@@ -33,6 +34,9 @@ export default class CandidateDetailModal extends LightningElement {
     // Interview data
     @track interviewDetails = [];
     @track currentInterviewId = null;
+    
+    // Active users for lookup
+    @track activeUsers = [];
     
     stageFieldValues = {};
     ONBOARDING_STAGES = [
@@ -197,35 +201,38 @@ export default class CandidateDetailModal extends LightningElement {
         'Interview Scheduled': {
             objectName: 'Interview_Detail__c',
             fields: [
-                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false },
-                { label: 'External Interviewer Email', apiName: 'External_Interviewer_Email__c', type: 'email', required: false },
-                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'lookup', required: false },
-                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true },
-                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true },
-                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: false }
-            ]
+                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true, order: 1 },
+                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'userLookup', required: false, order: 2, showWhen: { field: 'Interviewer_Type__c', value: 'User' } },
+                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false, order: 3, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
+                { label: 'External Interviewer Email', apiName: 'External_Interviewer_Email__c', type: 'email', required: false, order: 4, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
+                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true, order: 5 },
+                // { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: false, order: 6 }
+            ],
+            buttonLabel: 'Schedule Interview'
         },
         'Interview Cleared': {
             objectName: 'Interview_Detail__c',
             fields: [
-                { label: 'Interview Detail Name', apiName: 'Name', type: 'text', required: false, readonly: true },
-                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false },
-                { label: 'External Interviewer Email', apiName: 'External_Interviewer_Email__c', type: 'email', required: false },
-                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'lookup', required: false },
-                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true },
-                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true },
-                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: true }
-            ]
+                { label: 'Interview Detail Name', apiName: 'Name', type: 'text', required: false, readonly: true, order: 1 },
+                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true, order: 2 },
+                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'userLookup', required: false, order: 3, showWhen: { field: 'Interviewer_Type__c', value: 'User' } },
+                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false, order: 4, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
+                { label: 'External Interviewer Email', apiName: 'External_Interviewer_Email__c', type: 'email', required: false, order: 5, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
+                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true, order: 6 },
+                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: true, order: 7 }
+            ],
+            buttonLabel: 'Save Changes'
         },
         'Interview Rejected': {
             objectName: 'Interview_Detail__c',
             fields: [
-                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false },
-                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'lookup', required: false },
-                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true },
-                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true },
-                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: true }
-            ]
+                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true, order: 1 },
+                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'userLookup', required: false, order: 2, showWhen: { field: 'Interviewer_Type__c', value: 'User' } },
+                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false, order: 3, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
+                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true, order: 4 },
+                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: true, order: 5 }
+            ],
+            buttonLabel: 'Save Changes'
         }
     };
 
@@ -272,15 +279,15 @@ export default class CandidateDetailModal extends LightningElement {
             { label: 'Needs Review', value: 'Needs Review' }
         ],
         'Interviewer_Type__c': [
-            { label: 'Internal', value: 'Internal' },
+            { label: 'Internal', value: 'User' },
             { label: 'External', value: 'External' },
-            { label: 'Panel', value: 'Panel' }
+            // { label: 'Panel', value: 'Panel' }
         ],
         'Meeting_Type__c': [
-            { label: 'In-Person', value: 'In-Person' },
-            { label: 'Virtual', value: 'Virtual' },
-            { label: 'Phone', value: 'Phone' },
-            { label: 'Hybrid', value: 'Hybrid' }
+            { label: 'In-Person', value: 'In Person' },
+            { label: 'Zoom', value: 'Zoom' },
+            { label: 'Telephonic', value: 'Phone' },
+            { label: 'Others', value: 'Others' }
         ]
     };
 
@@ -332,7 +339,17 @@ export default class CandidateDetailModal extends LightningElement {
     }
 
     get saveButtonLabel() {
-        return this.isSavingStep ? 'Saving...' : 'Save Changes';
+        if (this.isSavingStep) return 'Saving...';
+        
+        // Check if stage has custom button label
+        if (this.hasStageFields) {
+            const stageConfig = this.STAGE_FIELDS_MAP[this.expandedStepValue];
+            if (stageConfig.buttonLabel) {
+                return stageConfig.buttonLabel;
+            }
+        }
+        
+        return 'Save Changes';
     }
 
     get hasStageFields() {
@@ -380,8 +397,11 @@ export default class CandidateDetailModal extends LightningElement {
         
         console.log('Stage data for fields:', stageData);
         
+        // Sort fields by order if specified
+        const sortedFields = [...fields].sort((a, b) => (a.order || 999) - (b.order || 999));
+        
         // Add type detection flags and values for template conditionals
-        const mappedFields = fields.map(field => {
+        const mappedFields = sortedFields.map(field => {
             let fieldValue = '';
             
             // Get value from stage data or from edited values
@@ -393,7 +413,7 @@ export default class CandidateDetailModal extends LightningElement {
                 console.log(`Field ${field.apiName} from stageData:`, fieldValue);
                 
                 // Handle lookup fields (get name from relationship)
-                if (field.type === 'lookup') {
+                if (field.type === 'lookup' || field.type === 'userLookup') {
                     if (field.apiName === 'Provider__c' && stageData.Provider__r) {
                         fieldValue = stageData.Provider__r.Name;
                     } else if (field.apiName === 'Interviewer_User__c' && stageData.Interviewer_User__r) {
@@ -405,22 +425,51 @@ export default class CandidateDetailModal extends LightningElement {
                 console.log(`Field ${field.apiName} has no value`);
             }
             
+            // Determine if field should be shown based on conditional logic
+            let shouldShow = true;
+            if (field.showWhen) {
+                const dependentFieldValue = this.stageFieldValues[field.showWhen.field] || 
+                    (stageData ? stageData[field.showWhen.field] : null);
+                shouldShow = dependentFieldValue === field.showWhen.value;
+                console.log(`Field ${field.apiName} showWhen check:`, shouldShow, 'dependent value:', dependentFieldValue);
+            }
+            
+            // Get options for picklists and user lookups
+            let fieldOptions;
+            if (field.type === 'picklist') {
+                fieldOptions = this.picklistOptions[field.apiName];
+            } else if (field.type === 'userLookup') {
+                fieldOptions = this.activeUsers;
+            }
+            
             return {
                 ...field,
                 value: fieldValue,
-                options: field.type === 'picklist' ? this.picklistOptions[field.apiName] : undefined,
-                isText: field.type === 'text' || field.type === 'lookup',
+                options: fieldOptions,
+                shouldShow: shouldShow,
+                isText: field.type === 'text',
                 isDate: field.type === 'date',
                 isEmail: field.type === 'email',
                 isNumber: field.type === 'number',
                 isCheckbox: field.type === 'checkbox',
                 isPicklist: field.type === 'picklist',
-                isTextarea: field.type === 'textarea'
+                isTextarea: field.type === 'textarea',
+                isUserLookup: field.type === 'userLookup'
             };
         });
         
         console.log('Mapped fields with values:', mappedFields);
         return mappedFields;
+    }
+
+    @wire(getActiveUsers)
+    wiredUsers({ data, error }) {
+        if (data) {
+            this.activeUsers = data;
+            console.log('Active users loaded:', this.activeUsers.length);
+        } else if (error) {
+            console.error('Error loading users:', error);
+        }
     }
 
     connectedCallback() {
@@ -667,6 +716,13 @@ export default class CandidateDetailModal extends LightningElement {
         
         // Store field changes
         this.stageFieldValues[fieldName] = fieldValue;
+        
+        // If this is the Interviewer_Type__c field, trigger re-render to show/hide dependent fields
+        if (fieldName === 'Interviewer_Type__c') {
+            console.log('Interviewer Type changed to:', fieldValue);
+            // Force re-render by updating a tracked property
+            this.stageFieldValues = { ...this.stageFieldValues };
+        }
     }
 
     handlePanelClick(event) {
