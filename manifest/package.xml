@@ -1,36 +1,49 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
+
+    <!-- Apex Classes -->
     <types>
-        <members>*</members>
+        <members>CandidateComplianceSummaryController</members>
+        <members>DocumentGenerationController</members>
+        <members>LicenseNameAIService</members>
+        <members>LicenseStatusViewerController</members>
+        <members>LicenseVerificationApi</members>
+        <members>LicenseVerificationInvoker</members>
+\        <members>LicenseVerificationQueueable</members>
+        <members>MalpracticeCoverageCallback</members>
+        <members>MedicalLicenseVerificationService</members>
+        <members>MedicalRecruitmentController</members>
+        <members>ProviderComplianceController</members>
         <name>ApexClass</name>
     </types>
+
+    <!-- LWC Components -->
     <types>
-        <members>*</members>
-        <name>ApexComponent</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>ApexPage</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>ApexTestSuite</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>ApexTrigger</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>AuraDefinitionBundle</name>
-    </types>
-    <types>
-        <members>*</members>
+        <members>applicationsList</members>
+        <members>candidateDetailModal</members>
+        <members>candidateMedicalComplianceSummary</members>
+        <members>documentDashboard</members>
+        <members>documentGenerator</members>
+        <members>jobPostingsList</members>
+        <members>licenseStatusViewer</members>
+        <members>providerComplianceOverview</members>
         <name>LightningComponentBundle</name>
     </types>
+
+    <!-- Custom Objects -->
     <types>
-        <members>*</members>
-        <name>StaticResource</name>
+        <members>ClinicalTrialRequirement__c</members>
+        <members>CMERecord__c</members>
+        <members>Device_Training__c</members>
+        <members>Device_Training_Certificate__c</members>
+        <members>HIPAACompliance__c</members>
+        <members>InsurancePanel__c</members>
+        <members>LicenseVerification__c</members>
+        <members>ProfessionalReference__c</members>
+        <members>ProviderCredential__c</members>
+        <members>Trial_Assignment__c</members>
+        <name>CustomObject</name>
     </types>
-    <version>65.0</version>
+
+    <version>60.0</version>
 </Package>

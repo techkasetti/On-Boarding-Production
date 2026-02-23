@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Device_Training__c</fullName>
+    <externalId>false</externalId>
+    <label>Device Training</label>
+    <referenceTo>Device_Training__c</referenceTo>
+    <relationshipLabel>Device Training Certificates</relationshipLabel>
+    <relationshipName>Device_Training_Certificates</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

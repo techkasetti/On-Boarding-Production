@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Open_Requirements__c</fullName>
+    <externalId>false</externalId>
+    <label>Open Requirements</label>
+    <summaryFilterItems>
+        <field>ClinicalTrialRequirement__c.Status__c</field>
+        <operation>notEqual</operation>
+        <value>Verified</value>
+    </summaryFilterItems>
+    <summaryForeignKey>ClinicalTrialRequirement__c.Trial_Assignment__c</summaryForeignKey>
+    <summaryOperation>count</summaryOperation>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

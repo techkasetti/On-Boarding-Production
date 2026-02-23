@@ -1,0 +1,306 @@
+<template>
+    <!-- ROOT CONSOLE CONTAINER -->
+    <section class="slds-grid slds-grid_vertical slds-size_1-of-1 console-root">
+        <!-- GLOBAL HEADER -->
+        <header class="slds-page-header slds-p-around_medium">
+            <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+                <!-- Title + Subtitle -->
+                <div>
+                    <p class="slds-text-title_caps slds-text-color_weak">Compliance Console</p>
+                    <h1 class="slds-page-header__title slds-text-heading_medium">
+                        Medical Compliance Admin Console
+                    </h1>
+                    <p class="slds-text-body_small slds-m-top_xx-small">
+                        Monitor provider eligibility, license status, CME compliance, and HIPAA training in one place.
+                    </p>
+                </div>
+
+                <!-- Header Utilities: Search + Filters -->
+                <div class="slds-grid slds-grid_vertical-align-center header-utilities">
+                    <!-- Global Search -->
+                    <div class="slds-m-right_small">
+                        <lightning-input
+                            type="search"
+                            label="Search Providers"
+                            variant="label-hidden"
+                            placeholder="Search providers, NPI, or license #"
+                            value={searchKey}
+                            onchange={handleSearchChange}
+                        ></lightning-input>
+                    </div>
+
+                    <!-- Facility Filter -->
+                    <div class="slds-m-right_small">
+                        <lightning-combobox
+                            name="facilityFilter"
+                            label="Facility"
+                            variant="label-hidden"
+                            placeholder="All Facilities"
+                            value={facilityValue}
+                            options={facilityOptions}
+                            onchange={handleFacilityChange}
+                        ></lightning-combobox>
+                    </div>
+
+                    <!-- Specialty Filter -->
+                    <div class="slds-m-right_small">
+                        <lightning-combobox
+                            name="specialtyFilter"
+                            label="Specialty"
+                            variant="label-hidden"
+                            placeholder="All Specialties"
+                            value={specialtyValue}
+                            options={specialtyOptions}
+                            onchange={handleSpecialtyChange}
+                        ></lightning-combobox>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- BODY: LEFT NAV + MAIN WORKSPACE -->
+        <div class="slds-grid slds-gutters body-layout">
+            <!-- LEFT NAVIGATION -->
+            <aside class="slds-size_1-of-1 slds-large-size_1-of-5 slds-p-around_medium left-nav">
+                <lightning-vertical-navigation selected-item={selectedNav} onselect={handleNavSelect}>
+                    <lightning-vertical-navigation-section label="Queues">
+                        <lightning-vertical-navigation-item
+                            label="Blocked Providers"
+                            name="queue_blocked"
+                            icon-name="utility:error"
+                        ></lightning-vertical-navigation-item>
+                        <lightning-vertical-navigation-item
+                            label="At-Risk Providers"
+                            name="queue_at_risk"
+                            icon-name="utility:warning"
+                        ></lightning-vertical-navigation-item>
+                        <lightning-vertical-navigation-item
+                            label="Manual Review Required"
+                            name="queue_manual_review"
+                            icon-name="utility:record_update"
+                        ></lightning-vertical-navigation-item>
+                    </lightning-vertical-navigation-section>
+
+                    <lightning-vertical-navigation-section label="Compliance Domains">
+                        <lightning-vertical-navigation-item
+                            label="Licenses &amp; Certifications"
+                            name="domain_license"
+                            icon-name="utility:approval"
+                        ></lightning-vertical-navigation-item>
+                        <lightning-vertical-navigation-item
+                            label="CME / CEU"
+                            name="domain_cme"
+                            icon-name="utility:education"
+                        ></lightning-vertical-navigation-item>
+                        <lightning-vertical-navigation-item
+                            label="HIPAA &amp; Privacy"
+                            name="domain_hipaa"
+                            icon-name="utility:lock"
+                        ></lightning-vertical-navigation-item>
+                        <lightning-vertical-navigation-item
+                            label="Credentialing &amp; Privileges"
+                            name="domain_credentialing"
+                            icon-name="utility:employee_organization"
+                        ></lightning-vertical-navigation-item>
+                    </lightning-vertical-navigation-section>
+                </lightning-vertical-navigation>
+            </aside>
+
+            <!-- MAIN WORKSPACE -->
+            <main class="slds-size_1-of-1 slds-large-size_4-of-5 slds-p-around_medium workspace">
+                <!-- Global error banner -->
+                <template if:true={hasError}>
+                    <div
+                        class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error slds-m-bottom_small"
+                        role="alert"
+                    >
+                        <span class="slds-assistive-text">Error</span>
+                        <h2>{errorMessage}</h2>
+                    </div>
+                </template>
+
+                <lightning-tabset variant="scoped" active-value={activeTab}>
+                    <!-- ===================== OVERVIEW TAB ===================== -->
+                    <lightning-tab label="Overview" value="overview" icon-name="utility:summary">
+                        <div class="slds-p-around_small dashboard-scope">
+                            <div class="slds-m-bottom_medium">
+                                <p class="slds-text-title_caps slds-text-color_weak">
+                                    Org-wide Compliance Snapshot
+                                </p>
+                                <p class="slds-text-body_small">
+                                    High-level view of provider eligibility, expirations, and training status across the organization.
+                                </p>
+                            </div>
+
+                            <div class="slds-text-title slds-m-bottom_x-small results-title">
+                                <lightning-icon
+                                    icon-name="utility:chart"
+                                    size="x-small"
+                                    class="results-title__icon"
+                                ></lightning-icon>
+                                <span>Results Breakdown</span>
+                            </div>
+
+                            <div class="slds-grid slds-wrap slds-gutters results-grid">
+                                <!-- Eligible -->
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                    <div class="summary-card summary-card_success">
+                                        <div class="summary-card__icon">
+                                            <span class="summary-card__icon-circle summary-card__icon-circle_success">
+                                                <lightning-icon icon-name="utility:check" size="small"></lightning-icon>
+                                            </span>
+                                        </div>
+                                        <div class="summary-card__value">{kpi.eligibleProviders}</div>
+                                        <div class="summary-card__label">ELIGIBLE</div>
+                                    </div>
+                                </div>
+
+                                <!-- Blocked -->
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                    <div class="summary-card summary-card_error">
+                                        <div class="summary-card__icon">
+                                            <span class="summary-card__icon-circle summary-card__icon-circle_error">
+                                                <lightning-icon icon-name="utility:error" size="small"></lightning-icon>
+                                            </span>
+                                        </div>
+                                        <div class="summary-card__value">{kpi.blockedProviders}</div>
+                                        <div class="summary-card__label">BLOCKED</div>
+                                    </div>
+                                </div>
+
+                                <!-- At Risk -->
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                    <div class="summary-card summary-card_warning">
+                                        <div class="summary-card__icon">
+                                            <span class="summary-card__icon-circle summary-card__icon-circle_warning">
+                                                <lightning-icon icon-name="utility:warning" size="small"></lightning-icon>
+                                            </span>
+                                        </div>
+                                        <div class="summary-card__value">{kpi.atRiskProviders}</div>
+                                        <div class="summary-card__label">AT RISK</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </lightning-tab>
+
+                    <!-- ================= PROVIDER WORK QUEUE TAB ================= -->
+                    <lightning-tab label="Provider Work Queue" value="providers" icon-name="utility:queue">
+                        <div class="slds-p-around_small">
+                            <div class="slds-m-bottom_medium slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                                <div>
+                                    <p class="slds-text-title_caps slds-text-color_weak">{queueTitle}</p>
+                                    <h2 class="slds-text-heading_small">
+                                        {queueLabel}
+                                        <template if:true={totalCount}> ({totalCount}) </template>
+                                    </h2>
+                                </div>
+
+                                <div class="slds-grid slds-grid_vertical-align-center slds-gutters_small">
+                                    <div>
+                                        <lightning-combobox
+                                            name="statusFilter"
+                                            variant="label-hidden"
+                                            placeholder="All Statuses"
+                                            value={statusFilter}
+                                            options={statusFilterOptions}
+                                            onchange={handleStatusFilterChange}
+                                        ></lightning-combobox>
+                                    </div>
+
+                                    <div>
+                                        <lightning-button
+                                            label="Export Snapshot"
+                                            icon-name="utility:download"
+                                            onclick={handleExportSnapshot}
+                                        ></lightning-button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <lightning-card title="Provider Work Queue" icon-name="utility:list">
+                                <div class="slds-p-around_small">
+                                    <lightning-datatable
+                                        key-field="candidateId"
+                                        data={rows}
+                                        columns={columns}
+                                        sorted-by={sortedBy}
+                                        sorted-direction={sortedDirection}
+                                        onsort={handleSort}
+                                        enable-infinite-loading
+                                        onloadmore={handleLoadMore}
+                                        is-loading={isLoading}
+                                        hide-checkbox-column
+                                        onrowaction={handleRowAction}
+                                    ></lightning-datatable>
+                                </div>
+                            </lightning-card>
+                        </div>
+                    </lightning-tab>
+
+                    <!-- ================= ALERTS & EXPIRATIONS TAB ================= -->
+                    <lightning-tab label="Alerts &amp; Expirations" value="alerts" icon-name="utility:notification">
+                        <div class="slds-p-around_small dashboard-scope">
+                            <div class="slds-m-bottom_medium">
+                                <p class="slds-text-title_caps slds-text-color_weak">Alerts &amp; Expirations</p>
+                                <p class="slds-text-body_small">
+                                    Upcoming license/CME expirations and high-priority compliance alerts.
+                                </p>
+                            </div>
+
+                            <div class="slds-text-title slds-m-bottom_x-small results-title">
+                                <lightning-icon
+                                    icon-name="utility:notification"
+                                    size="x-small"
+                                    class="results-title__icon"
+                                ></lightning-icon>
+                                <span>Alert Breakdown</span>
+                            </div>
+
+                            <div class="slds-grid slds-wrap slds-gutters results-grid">
+                                <!-- License Expiring -->
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                    <div class="summary-card summary-card_warning">
+                                        <div class="summary-card__icon">
+                                            <span class="summary-card__icon-circle summary-card__icon-circle_warning">
+                                                <lightning-icon icon-name="utility:time" size="small"></lightning-icon>
+                                            </span>
+                                        </div>
+                                        <div class="summary-card__value">{kpi.expiringLicenses30}</div>
+                                        <div class="summary-card__label">LICENSES EXPIRING (30 DAYS)</div>
+                                    </div>
+                                </div>
+
+                                <!-- CME Expiring -->
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                    <div class="summary-card summary-card_warning">
+                                        <div class="summary-card__icon">
+                                            <span class="summary-card__icon-circle summary-card__icon-circle_warning">
+                                                <lightning-icon icon-name="utility:education" size="small"></lightning-icon>
+                                            </span>
+                                        </div>
+                                        <div class="summary-card__value">{kpi.expiringCme60}</div>
+                                        <div class="summary-card__label">CME / CEU EXPIRING (60 DAYS)</div>
+                                    </div>
+                                </div>
+
+                                <!-- Missing HIPAA -->
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                    <div class="summary-card summary-card_error">
+                                        <div class="summary-card__icon">
+                                            <span class="summary-card__icon-circle summary-card__icon-circle_error">
+                                                <lightning-icon icon-name="utility:lock" size="small"></lightning-icon>
+                                            </span>
+                                        </div>
+                                        <div class="summary-card__value">{kpi.missingHipaa}</div>
+                                        <div class="summary-card__label">MISSING HIPAA TRAINING</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </lightning-tab>
+                </lightning-tabset>
+            </main>
+        </div>
+    </section>
+</template>

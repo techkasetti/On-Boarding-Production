@@ -1,0 +1,94 @@
+<template>
+    <!-- Premium Applications Container -->
+    <div class="applications-container-premium">
+        
+        <!-- Applications Header -->
+        <div class="applications-header-premium">
+            <div class="header-info-premium">
+                <h3 class="applications-title-premium">Applications</h3>
+                <p class="applications-subtitle-premium">{cardTitle}</p>
+            </div>
+            <template if:true={hasApplications}>
+                <div class="count-badge-premium">
+                    {applicationCount} candidates
+                </div>
+            </template>
+        </div>
+
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+            <div class="loading-premium">
+                <div class="skeleton-candidate"></div>
+                <div class="skeleton-candidate"></div>
+                <div class="skeleton-candidate"></div>
+            </div>
+        </template>
+
+        <!-- Premium Applications List -->
+        <template if:false={isLoading}>
+            <template if:true={hasApplications}>
+                <div class="candidates-list-premium">
+                    <template for:each={applications} for:item="app" for:index="index">
+                        <div key={app.id} 
+                             class="candidate-card-premium" 
+                             data-app-id={app.id}
+                             data-index={index}
+                             onclick={handleRowAction}>
+                            
+                            <!-- Avatar -->
+                            <div class="candidate-avatar-premium">
+                                <div class="avatar-circle-premium">
+                                    <span class="avatar-initials">{app.initials}</span>
+                                </div>
+                            </div>
+
+                            <!-- Candidate Info -->
+                            <div class="candidate-info-premium">
+                                <h4 class="candidate-name-premium">{app.candidateName}</h4>
+                                <p class="candidate-email-premium">{app.candidateEmail}</p>
+                            </div>
+
+                            <!-- Candidate Meta -->
+                            <div class="candidate-meta-premium">
+                                <div class="meta-column-premium">
+                                    <span class="meta-label-premium">Role</span>
+                                    <span class="meta-value-premium">{app.candidateRole}</span>
+                                </div>
+                                <div class="meta-column-premium">
+                                    <span class="meta-label-premium">Experience</span>
+                                    <span class="meta-value-premium">{app.yearsExperience} yrs</span>
+                                </div>
+                                <div class="meta-column-premium">
+                                    <span class="meta-label-premium">Applied</span>
+                                    <span class="meta-value-premium">{app.applicationDate}</span>
+                                </div>
+                            </div>
+
+                            <!-- Status Pill -->
+                            <div class="candidate-status-premium">
+                                <span class={app.statusPillClass}>{app.status}</span>
+                            </div>
+
+                            <!-- Chevron -->
+                            <div class="candidate-chevron-premium">
+                                <lightning-icon icon-name="utility:chevronright" size="x-small"></lightning-icon>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Empty State -->
+            <template if:false={hasApplications}>
+                <div class="empty-applications-premium">
+                    <div class="empty-icon-premium">
+                        <lightning-icon icon-name="utility:inbox" size="medium"></lightning-icon>
+                    </div>
+                    <p class="empty-text-premium">No applications yet</p>
+                    <p class="empty-subtext-premium">Applications will appear here once candidates apply</p>
+                </div>
+            </template>
+        </template>
+
+    </div>
+</template>

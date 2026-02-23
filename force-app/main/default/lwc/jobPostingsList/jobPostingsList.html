@@ -1,0 +1,139 @@
+<template>
+    <!-- Premium Container -->
+    <div class="premium-dashboard">
+        
+        <!-- Premium Header -->
+        <div class="dashboard-header-premium">
+            <div class="header-content-premium">
+                <div class="header-left-premium">
+                    <div class="icon-circle">
+                        <lightning-icon icon-name="standard:work_order" size="small"></lightning-icon>
+                    </div>
+                    <div class="header-text-premium">
+                        <h1 class="page-title">Job Postings</h1>
+                        <p class="page-subtitle">Manage open positions and track applications</p>
+                    </div>
+                </div>
+                <div class="header-actions-premium">
+                    <div class="search-container-premium">
+                        <lightning-icon icon-name="utility:search" size="x-small" class="search-icon-premium"></lightning-icon>
+                        <lightning-input
+                            type="search"
+                            placeholder="Search jobs..."
+                            value={searchKey}
+                            onchange={handleSearchChange}
+                            variant="label-hidden"
+                            class="search-input-premium">
+                        </lightning-input>
+                    </div>
+                    <lightning-button-icon
+                        icon-name="utility:refresh"
+                        variant="border-filled"
+                        alternative-text="Refresh"
+                        title="Refresh"
+                        onclick={handleRefresh}
+                        class="refresh-btn-premium">
+                    </lightning-button-icon>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State with Skeleton -->
+        <template if:true={isLoading}>
+            <div class="skeleton-container">
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+            </div>
+        </template>
+
+        <!-- Premium Jobs List -->
+        <template if:false={isLoading}>
+            <template if:true={hasJobs}>
+                <div class="jobs-grid-premium">
+                    <template iterator:it={jobPostings}>
+                        <!-- Premium Job Card -->
+                        <div key={it.value.Id} class={it.value.cardClass} data-job-id={it.value.Id} onclick={handleJobClick}>
+                            <div class="job-card-premium">
+                                <!-- Left Accent Bar -->
+                                <div class="accent-bar"></div>
+                                
+                                <!-- Job Card Content -->
+                                <div class="job-content-premium">
+                                    <div class="job-header-premium">
+                                        <div class="job-title-section-premium">
+                                            <h3 class="job-title-premium">{it.value.Job_Title__c}</h3>
+                                            <div class="job-meta-premium">
+                                                <span class="meta-item-premium">
+                                                    <lightning-icon icon-name="utility:company" size="xx-small"></lightning-icon>
+                                                    {it.value.Department__c}
+                                                </span>
+                                                <span class="meta-separator">•</span>
+                                                <span class="meta-item-premium">
+                                                    <lightning-icon icon-name="utility:location" size="xx-small"></lightning-icon>
+                                                    {it.value.Location__c}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="job-badges-premium">
+                                            <span class="badge-premium badge-role">{it.value.Role_Type__c}</span>
+                                            <span class="badge-premium badge-type">{it.value.Employment_Type__c}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="job-footer-premium">
+                                        <div class="job-stats-premium">
+                                            <span class="stat-item-premium">
+                                                <lightning-icon icon-name="utility:groups" size="xx-small"></lightning-icon>
+                                                {it.value.Number_of_Positions__c} positions
+                                            </span>
+                                        </div>
+                                        <div class="expand-indicator">
+                                            <lightning-icon 
+                                                icon-name={it.value.expandIcon} 
+                                                size="x-small"
+                                                class="chevron-icon">
+                                            </lightning-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Expanded Applications Section -->
+                            <template if:true={it.value.isExpanded}>
+                                <div key={it.value.expandedKey} class="applications-reveal">
+                                    <c-applications-list
+                                        job-id={it.value.Id}
+                                        job-title={it.value.Job_Title__c}
+                                        oncandidateselected={handleCandidateSelected}>
+                                    </c-applications-list>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Premium Empty State -->
+            <template if:false={hasJobs}>
+                <div class="empty-state-premium">
+                    <div class="empty-icon-circle">
+                        <lightning-icon icon-name="utility:search" size="large"></lightning-icon>
+                    </div>
+                    <h3 class="empty-title">No job postings found</h3>
+                    <p class="empty-subtitle">Try adjusting your search criteria or create a new posting</p>
+                </div>
+            </template>
+        </template>
+
+    </div>
+
+    <!-- Premium Modal -->
+    <template if:true={showModal}>
+        <c-candidate-detail-modal
+            application-id={selectedApplicationId}
+            onclosemodal={handleCloseModal}
+            onstatusupdate={handleStatusUpdate}>
+        </c-candidate-detail-modal>
+    </template>
+</template>

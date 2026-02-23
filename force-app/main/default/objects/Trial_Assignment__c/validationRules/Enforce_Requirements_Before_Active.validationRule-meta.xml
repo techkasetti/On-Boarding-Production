@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Enforce_Requirements_Before_Active</fullName>
+    <active>false</active>
+    <description>Users  can only set Active__c = TRUE when All_Requirements_Complete__c = TRUE.</description>
+    <errorConditionFormula>AND(Active__c , NOT(All_Requirements_Complete__c))</errorConditionFormula>
+    <errorDisplayField>Active__c</errorDisplayField>
+    <errorMessage>Cannot set Active to TRUE until all Clinical Trial Requirements are completed.</errorMessage>
+</ValidationRule>

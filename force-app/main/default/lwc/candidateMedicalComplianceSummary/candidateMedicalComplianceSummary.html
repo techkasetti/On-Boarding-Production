@@ -1,0 +1,143 @@
+<template>
+    <lightning-card title="Medical Compliance Summary" icon-name="standard:dashboard">
+        <template if:true={summary}>
+            <div class="slds-p-around_medium">
+                <div class="slds-grid slds-wrap slds-gutters">
+                    <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-3">
+                        <div class="slds-box slds-theme_default">
+                            <div class="slds-text-title_caps slds-m-bottom_x-small">
+                                Overall Status
+                            </div>
+                            <span class={overallStatusClass}>
+                                <lightning-icon
+                                    icon-name={overallStatusIcon}
+                                    size="x-small"
+                                    class="slds-m-right_x-small"
+                                    alternative-text="Overall status"
+                                ></lightning-icon>
+                                {summary.overallStatus}
+                            </span>
+                            <p class="slds-m-top_small slds-text-body_small">
+                                Candidate: {summary.candidateName}
+                            </p>
+                            <p class="slds-m-top_small slds-text-body_small">
+                                Nearest expiration:
+                                <template if:true={summary.nearestExpiration}>
+                                    {summary.nearestExpiration}
+                                </template>
+                                <template if:false={summary.nearestExpiration}>
+                                    None
+                                </template>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-large-size_2-of-3">
+                        <div class="slds-grid slds-wrap slds-gutters">
+                            <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                                <div class="slds-box slds-theme_default slds-text-align_center">
+                                    <div class="slds-text-title_caps">Compliant Domains</div>
+                                    <div class="slds-text-heading_large">{summary.compliantDomains}</div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                                <div class="slds-box slds-theme_default slds-text-align_center">
+                                    <div class="slds-text-title_caps">At-Risk Domains</div>
+                                    <div class="slds-text-heading_large">{summary.atRiskDomains}</div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                                <div class="slds-box slds-theme_default slds-text-align_center">
+                                    <div class="slds-text-title_caps">Blocked Domains</div>
+                                    <div class="slds-text-heading_large">{summary.blockedDomains}</div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                                <div class="slds-box slds-theme_default slds-text-align_center">
+                                    <div class="slds-text-title_caps">Total Domains</div>
+                                    <div class="slds-text-heading_large">{summary.totalDomains}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slds-m-top_large">
+                    <div class="slds-text-title_caps slds-m-bottom_small">Domain Status</div>
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <template for:each={summary.domains} for:item="domain">
+                            <div
+                                key={domain.apiName}
+                                class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3"
+                            >
+                                <article
+                                    class="slds-box slds-theme_default domain-tile"
+                                    data-domain={domain.apiName}
+                                    onclick={handleTileClick}
+                                >
+                                    <header
+                                        class="slds-m-bottom_small slds-grid slds-align-spread slds-p-bottom_x-small"
+                                    >
+                                        <span class="slds-text-title_caps">{domain.label}</span>
+                                        <span class={domain.statusClass}>{domain.status}</span>
+                                    </header>
+                                    <div class="slds-text-body_small">
+                                        <p>Completed: {domain.completedCount} / {domain.totalCount}</p>
+                                        <p>Blocked items: {domain.blockedCount}</p>
+                                        <p>At-risk items: {domain.atRiskCount}</p>
+                                        <p>
+                                            Nearest expiration:
+                                            <template if:true={domain.nearestExpiration}>
+                                                {domain.nearestExpiration}
+                                            </template>
+                                            <template if:false={domain.nearestExpiration}>
+                                                None
+                                            </template>
+                                        </p>
+                                    </div>
+                                </article>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <template if:true={selectedDomain}>
+                    <div class="slds-m-top_large">
+                        <div class="slds-text-title_caps slds-m-bottom_small">Selected Domain Details</div>
+                        <div class="slds-box slds-theme_default">
+                            <p class="slds-text-heading_small slds-m-bottom_small">
+                                {selectedDomain.label}
+                            </p>
+                            <p class="slds-text-body_small">Status: {selectedDomain.status}</p>
+                            <p class="slds-text-body_small">
+                                Completed: {selectedDomain.completedCount} / {selectedDomain.totalCount}
+                            </p>
+                            <p class="slds-text-body_small">Blocked items: {selectedDomain.blockedCount}</p>
+                            <p class="slds-text-body_small">At-risk items: {selectedDomain.atRiskCount}</p>
+                            <p class="slds-text-body_small">
+                                Nearest expiration:
+                                <template if:true={selectedDomain.nearestExpiration}>
+                                    {selectedDomain.nearestExpiration}
+                                </template>
+                                <template if:false={selectedDomain.nearestExpiration}>
+                                    None
+                                </template>
+                            </p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+        <template if:true={error}>
+            <div class="slds-p-around_medium">
+                <div class="slds-text-color_error slds-text-body_small">
+                    {errorMessage}
+                </div>
+            </div>
+        </template>
+        <template if:true={isLoading}>
+            <div class="slds-is-relative spinner-container">
+                <lightning-spinner alternative-text="Loading compliance summary"></lightning-spinner>
+            </div>
+        </template>
+    </lightning-card>
+</template>

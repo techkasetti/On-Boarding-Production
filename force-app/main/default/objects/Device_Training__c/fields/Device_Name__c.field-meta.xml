@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Device_Name__c</fullName>
+    <description>The specific medical device or equipment type (e.g., &apos;Siemens MRI Model X&apos;).</description>
+    <externalId>false</externalId>
+    <label>Device Name</label>
+    <required>false</required>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>true</sorted>
+            <value>
+                <fullName>Anesthesia Machine</fullName>
+                <default>false</default>
+                <label>Anesthesia Machine</label>
+            </value>
+            <value>
+                <fullName>CPR/BLS Equipment</fullName>
+                <default>false</default>
+                <label>CPR/BLS Equipment</label>
+            </value>
+            <value>
+                <fullName>CT Scan</fullName>
+                <default>false</default>
+                <label>CT Scan</label>
+            </value>
+            <value>
+                <fullName>Defibrillator</fullName>
+                <default>false</default>
+                <label>Defibrillator</label>
+            </value>
+            <value>
+                <fullName>Dialysis Machine</fullName>
+                <default>false</default>
+                <label>Dialysis Machine</label>
+            </value>
+            <value>
+                <fullName>ECG Machine</fullName>
+                <default>false</default>
+                <label>ECG Machine</label>
+            </value>
+            <value>
+                <fullName>EMR System</fullName>
+                <default>false</default>
+                <label>EMR System</label>
+            </value>
+            <value>
+                <fullName>Glucometer</fullName>
+                <default>false</default>
+                <label>Glucometer</label>
+            </value>
+            <value>
+                <fullName>Infusion Pump</fullName>
+                <default>false</default>
+                <label>Infusion Pump</label>
+            </value>
+            <value>
+                <fullName>Laparoscopic Equipment</fullName>
+                <default>false</default>
+                <label>Laparoscopic Equipment</label>
+            </value>
+            <value>
+                <fullName>MRI</fullName>
+                <default>false</default>
+                <label>MRI</label>
+            </value>
+            <value>
+                <fullName>Nebulizer</fullName>
+                <default>false</default>
+                <label>Nebulizer</label>
+            </value>
+            <value>
+                <fullName>Oxygen Therapy Equipment</fullName>
+                <default>false</default>
+                <label>Oxygen Therapy Equipment</label>
+            </value>
+            <value>
+                <fullName>pacemaker</fullName>
+                <default>false</default>
+                <label>pacemaker</label>
+            </value>
+            <value>
+                <fullName>Patient Monitor</fullName>
+                <default>false</default>
+                <label>Patient Monitor</label>
+            </value>
+            <value>
+                <fullName>Pulse Oximeter</fullName>
+                <default>false</default>
+                <label>Pulse Oximeter</label>
+            </value>
+            <value>
+                <fullName>Suction Apparatus</fullName>
+                <default>false</default>
+                <label>Suction Apparatus</label>
+            </value>
+            <value>
+                <fullName>Syringe Pump</fullName>
+                <default>false</default>
+                <label>Syringe Pump</label>
+            </value>
+            <value>
+                <fullName>Ultrasound Machine</fullName>
+                <default>false</default>
+                <label>Ultrasound Machine</label>
+            </value>
+            <value>
+                <fullName>Ventilator</fullName>
+                <default>false</default>
+                <label>Ventilator</label>
+            </value>
+            <value>
+                <fullName>X-Ray</fullName>
+                <default>false</default>
+                <label>X-Ray</label>
+            </value>
+            <value>
+                <fullName>X-Ray Machine</fullName>
+                <default>false</default>
+                <label>X-Ray Machine</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
