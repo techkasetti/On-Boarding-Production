@@ -583,6 +583,120 @@
 <!-- candidateScreenStatus.html - WITH MANUAL OVERRIDE UI -->
 <!-- ========================================== -->
 <template>
+<!-- 🔥 NEW: Job Applications List View -->
+<template if:true={showJobList}>
+    <lightning-card title="Applied Jobs" icon-name="standard:job_profile">
+
+        <div class="slds-card__body slds-p-around_medium">
+
+            <!-- Loading -->
+            <template if:true={isLoadingJobs}>
+                <lightning-spinner 
+                    alternative-text="Loading..." 
+                    size="medium">
+                </lightning-spinner>
+            </template>
+
+            <!-- No Applications -->
+            <template if:false={hasJobApplications}>
+                <div class="slds-align_absolute-center slds-p-vertical_large">
+                    <lightning-icon 
+                        icon-name="utility:info" 
+                        size="small">
+                    </lightning-icon>
+                    <p class="slds-m-left_small slds-text-color_weak">
+                        No job applications found.
+                    </p>
+                </div>
+            </template>
+
+            <!-- Job Applications List -->
+            <template if:true={hasJobApplications}>
+                <template for:each={jobApplications} for:item="jobApp">
+                    <div key={jobApp.jobApplicationId} class={jobApp.cardClass}>
+
+                        <!-- Card Header -->
+                        <div class="job-card-header">
+                            <div class="job-title-section">
+                                <lightning-icon 
+                                    icon-name="standard:job_profile" 
+                                    size="small">
+                                </lightning-icon>
+                                <div>
+                                    <p class="job-title">{jobApp.jobTitle}</p>
+                                    <p class="job-app-name">
+                                        {jobApp.jobApplicationName}
+                                    </p>
+                                </div>
+                            </div>
+                            <span class={jobApp.statusBadgeClass}>
+                                {jobApp.status}
+                            </span>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="job-card-body">
+                            <div class="job-meta">
+                                <span>
+                                    <lightning-icon 
+                                        icon-name="utility:date_time" 
+                                        size="xx-small">
+                                    </lightning-icon>
+                                    Applied: {jobApp.applicationDate}
+                                </span>
+                                <span>
+                                    <lightning-icon 
+                                        icon-name="utility:metrics" 
+                                        size="xx-small">
+                                    </lightning-icon>
+                                    Score: {jobApp.screeningScore}%
+                                </span>
+                                <span class={jobApp.screeningBadgeClass}>
+                                    Screening: {jobApp.screeningResult}
+                                </span>
+                            </div>
+
+                            <template if:true={jobApp.eligibilitySummary}>
+                                <p class="job-summary">
+                                    {jobApp.eligibilitySummary}
+                                </p>
+                            </template>
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="job-card-footer">
+                            <lightning-button
+                                label="View Screening Results"
+                                icon-name="utility:preview"
+                                variant="brand"
+                                data-id={jobApp.jobApplicationId}
+                                data-jobtitle={jobApp.jobTitle}
+                                onclick={handleJobSelect}>
+                            </lightning-button>
+                        </div>
+                    </div>
+                </template>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>
+
+
+<!-- 🔥 NEW: Wrap existing card inside this condition -->
+<template if:true={showScreeningView}>
+
+    <!-- 🔥 NEW: Back Button -->
+    <div class="slds-m-bottom_small slds-p-horizontal_medium">
+        <lightning-button
+            label="Back to Applied Jobs"
+            icon-name="utility:back"
+            onclick={handleBackToJobs}>
+        </lightning-button>
+        <span class="slds-m-left_medium slds-text-heading_small">
+            {selectedJobTitle}
+        </span>
+    </div>
     <lightning-card icon-name="standard:assessment">
         <!-- Dynamic Title with Menu -->
         <div slot="title">
@@ -670,7 +784,7 @@
                     </div>
                 </template>
                 
-                <!-- Candidate Info Header -->
+                <!-- Candidate Info Header
                 <div class="candidate-header slds-m-bottom_large slds-m-horizontal_medium">
                     <div class="slds-grid slds-gutters slds-wrap">
                         <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
@@ -715,7 +829,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Tabs for Different Views -->
                 <lightning-tabset active-tab-value={activeTab} onselect={handleTabChange}>

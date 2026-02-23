@@ -469,17 +469,14 @@
 // AI SCREENING CONTROLLER - UPDATED WITH BALANCED PROMPTS
 // Gemini AI-powered candidate screening
 // =====================================================
-
 public with sharing class AIScreeningController {
     
     @InvocableMethod(label='Run AI Screening' description='Analyze candidate using Gemini AI')
     public static List<AIScreeningResult> runAIScreening(List<AIScreeningRequest> requests) {
         List<AIScreeningResult> results = new List<AIScreeningResult>();
-        
         for (AIScreeningRequest req : requests) {
-            results.add(performAIScreening(req.candidateId, req.correlationId));
+            results.add(performAIScreening(req.candidateId, req.correlationId, null, null));
         }
-        
         return results;
     }
     
@@ -492,59 +489,223 @@ public with sharing class AIScreeningController {
     }
     
     public class AIScreeningResult {
-        @InvocableVariable
-        public Boolean success;
-        
-        @InvocableVariable
-        public String message;
-        
-        @InvocableVariable
-        public Id resultId;
-        
-        @InvocableVariable
-        public Decimal aiScore;
-        
-        @InvocableVariable
-        public String recommendation;
+        @InvocableVariable public Boolean success;
+        @InvocableVariable public String message;
+        @InvocableVariable public Id resultId;
+        @InvocableVariable public Decimal aiScore;
+        @InvocableVariable public String recommendation;
     }
     
     @AuraEnabled
-    public static Map<String, Object> runAIScreeningForCandidate(Id candidateId) {
+public static Map<String, Object> runAIScreeningForCandidate(
+    Id candidateId,
+    Id jobApplicationId  
+) {
+    try {
+        // Resolve jobPostingId from jobApplicationId upfront
+        Id jobPostingId = null;
+        if (jobApplicationId != null) {
+            List<Job_Application__c> jobApps = [
+                SELECT Job_Posting__c
+                FROM Job_Application__c
+                WHERE Id = :jobApplicationId
+                LIMIT 1
+            ];
+            if (!jobApps.isEmpty()) {
+                jobPostingId = jobApps[0].Job_Posting__c;
+            }
+        }
+
+        // 🔥 FIX: Check if active rules exist for this job BEFORE calling AI
+        if (jobPostingId != null) {
+            List<Screening_Rule__c> activeRules = [
+                SELECT Id 
+                FROM Screening_Rule__c
+                WHERE Applied_Role__c     = :jobPostingId
+                AND Active__c             = true
+                AND Is_Current_Version__c = true
+                AND (Test_Mode_Only__c    = false OR Test_Mode_Only__c = null)
+                LIMIT 1
+            ];
+
+            if (activeRules.isEmpty()) {
+                throw new AuraHandledException(
+                    'No active screening rules are defined for this job posting. AI screening requires at least one rule to evaluate against.'
+                );
+            }
+        }
+
+        // Get correlation ID filtered by the correct job posting
+        String correlationId = jobPostingId != null
+            ? getCorrelationIdByJobPosting(candidateId, jobPostingId)
+            : getLatestCorrelationId(candidateId);
+
+        AIScreeningResult result = performAIScreening(
+            candidateId,
+            correlationId,
+            jobApplicationId,
+            jobPostingId
+        );
+
+        return new Map<String, Object>{
+            'success'        => result.success,
+            'message'        => result.message,
+            'resultId'       => result.resultId,
+            'aiScore'        => result.aiScore,
+            'recommendation' => result.recommendation
+        };
+
+    } catch (AuraHandledException e) {
+        throw e; // Re-throw AuraHandledExceptions as-is so message reaches UI
+    } catch (Exception e) {
+        throw new AuraHandledException('AI Screening failed: ' + e.getMessage());
+    }
+}
+    // 🔥 RENAMED & FIXED: Get correlation by Job Posting ID directly
+    private static String getCorrelationIdByJobPosting(Id candidateId, Id jobPostingId) {
         try {
-            String correlationId = getLatestCorrelationId(candidateId);
-            AIScreeningResult result = performAIScreening(candidateId, correlationId);
-            
-            return new Map<String, Object>{
-                'success' => result.success,
-                'message' => result.message,
-                'resultId' => result.resultId,
-                'aiScore' => result.aiScore,
-                'recommendation' => result.recommendation
-            };
+            List<Screening_Result__c> results = [
+                SELECT Correlation_Id__c
+                FROM Screening_Result__c
+                WHERE Candidate__c     = :candidateId
+                AND Job_Posting__c     = :jobPostingId
+                AND Correlation_Id__c != null
+                ORDER BY CreatedDate DESC
+                LIMIT 1
+            ];
+
+            if (!results.isEmpty()) {
+                return results[0].Correlation_Id__c;
+            }
+
+            // Fallback to latest only if no job-specific result exists
+            return getLatestCorrelationId(candidateId);
+
         } catch (Exception e) {
-            throw new AuraHandledException('AI Screening failed: ' + e.getMessage());
+            System.debug('getCorrelationIdByJobPosting error: ' + e.getMessage());
+            return getLatestCorrelationId(candidateId);
         }
     }
-    
+
+    // Keep old method for backward compatibility with Flow invocable
+    private static String getCorrelationIdByJobApp(Id candidateId, Id jobApplicationId) {
+        try {
+            Job_Application__c jobApp = [
+                SELECT Job_Posting__c
+                FROM Job_Application__c
+                WHERE Id = :jobApplicationId
+                LIMIT 1
+            ];
+
+            if (jobApp.Job_Posting__c == null) {
+                return getLatestCorrelationId(candidateId);
+            }
+
+            return getCorrelationIdByJobPosting(candidateId, jobApp.Job_Posting__c);
+
+        } catch (Exception e) {
+            System.debug('getCorrelationIdByJobApp error: ' + e.getMessage());
+            return getLatestCorrelationId(candidateId);
+        }
+    }
+
     @AuraEnabled(cacheable=true)
-    public static AI_Screening_Result__c getLatestAIResult(Id candidateId) {
-        List<AI_Screening_Result__c> results = [
-            SELECT Id, Overall_Score__c, Confidence_Level__c, Recommendation__c,
-                   Quick_Summary__c, Full_Analysis__c, Strengths__c, Concerns__c,
-                   Traditional_Score__c, Combined_Score__c, Rules_Evaluated__c,
-                   Status__c, Execution_Time__c, CreatedDate, Top_3_Strengths__c,
-                   Top_3_Concerns__c, AI_Model__c, Correlation_Id__c
-            FROM AI_Screening_Result__c
-            WHERE Candidate__c = :candidateId
-            AND Status__c = 'Completed'
-            ORDER BY CreatedDate DESC
-            LIMIT 1
-        ];
-        
+    public static AI_Screening_Result__c getLatestAIResult(Id candidateId, Id jobApplicationId) {
+
+        Id jobPostingId = null;
+        if (jobApplicationId != null) {
+            List<Job_Application__c> jobApps = [
+                SELECT Job_Posting__c 
+                FROM Job_Application__c 
+                WHERE Id = :jobApplicationId 
+                LIMIT 1
+            ];
+            if (!jobApps.isEmpty()) {
+                jobPostingId = jobApps[0].Job_Posting__c;
+            }
+        }
+
+        List<AI_Screening_Result__c> results;
+
+        if (jobPostingId != null) {
+            // 🔥 FIX: Now works correctly because save also uses jobPostingId
+            results = [
+                SELECT Id, Overall_Score__c, Confidence_Level__c, Recommendation__c,
+                       Quick_Summary__c, Full_Analysis__c, Strengths__c, Concerns__c,
+                       Traditional_Score__c, Combined_Score__c, Rules_Evaluated__c,
+                       Status__c, Execution_Time__c, CreatedDate, Top_3_Strengths__c,
+                       Top_3_Concerns__c, AI_Model__c, Correlation_Id__c
+                FROM AI_Screening_Result__c
+                WHERE Candidate__c  = :candidateId
+                AND Job_Posting__c  = :jobPostingId
+                AND Status__c       = 'Completed'
+                ORDER BY CreatedDate DESC
+                LIMIT 1
+            ];
+        } else {
+            results = [
+                SELECT Id, Overall_Score__c, Confidence_Level__c, Recommendation__c,
+                       Quick_Summary__c, Full_Analysis__c, Strengths__c, Concerns__c,
+                       Traditional_Score__c, Combined_Score__c, Rules_Evaluated__c,
+                       Status__c, Execution_Time__c, CreatedDate, Top_3_Strengths__c,
+                       Top_3_Concerns__c, AI_Model__c, Correlation_Id__c
+                FROM AI_Screening_Result__c
+                WHERE Candidate__c = :candidateId
+                AND Status__c      = 'Completed'
+                ORDER BY CreatedDate DESC
+                LIMIT 1
+            ];
+        }
+
         return results.isEmpty() ? null : results[0];
     }
-    
-    private static AIScreeningResult performAIScreening(Id candidateId, String correlationId) {
+
+    private static List<Screening_Rule__c> getApplicableRulesByJobPosting(Id jobPostingId) {
+        try {
+            if (jobPostingId == null) return new List<Screening_Rule__c>();
+
+            return [
+                SELECT Name, Target_Object__c, Field_API_Name__c, 
+                       Operator__c, Expected_Value__c, Rule_Category__c
+                FROM Screening_Rule__c
+                WHERE Applied_Role__c     = :jobPostingId
+                AND Active__c             = true
+                AND Is_Current_Version__c = true
+                ORDER BY Priority__c ASC
+                LIMIT 50
+            ];
+        } catch (Exception e) {
+            System.debug('getApplicableRulesByJobPosting error: ' + e.getMessage());
+            return new List<Screening_Rule__c>();
+        }
+    }
+
+    private static List<Screening_Rule__c> getApplicableRulesByJobApp(Id jobApplicationId) {
+        try {
+            Job_Application__c jobApp = [
+                SELECT Job_Posting__c
+                FROM Job_Application__c
+                WHERE Id = :jobApplicationId
+                LIMIT 1
+            ];
+
+            if (jobApp.Job_Posting__c == null) return new List<Screening_Rule__c>();
+
+            return getApplicableRulesByJobPosting(jobApp.Job_Posting__c);
+
+        } catch (Exception e) {
+            System.debug('getApplicableRulesByJobApp error: ' + e.getMessage());
+            return new List<Screening_Rule__c>();
+        }
+    }
+
+    // 🔥 FIX: Added jobPostingId parameter — used to correctly save Job_Posting__c on result
+    private static AIScreeningResult performAIScreening(
+        Id candidateId, 
+        String correlationId, 
+        Id jobApplicationId,
+        Id jobPostingId        // 🔥 NEW param
+    ) {
         AIScreeningResult result = new AIScreeningResult();
         result.success = false;
         
@@ -552,18 +713,28 @@ public with sharing class AIScreeningController {
         
         try {
             Candidate__c candidate = ScreeningDataLoader.loadCandidateWithAllRelations(candidateId);
-            List<Screening_Rule__c> rules = getApplicableRules(candidate);
+
+            // 🔥 FIX: Use jobPostingId to get rules — most accurate source
+            List<Screening_Rule__c> rules;
+            if (jobPostingId != null) {
+                rules = getApplicableRulesByJobPosting(jobPostingId);
+            } else if (jobApplicationId != null) {
+                rules = getApplicableRulesByJobApp(jobApplicationId);
+            } else {
+                rules = getApplicableRules(candidate);
+            }
+
             Decimal traditionalScore = getTraditionalScore(candidateId, correlationId);
             
-            String systemPrompt = buildSystemPrompt();
-            String userPrompt = buildUserPrompt(candidate, rules, traditionalScore);
-            
+            String systemPrompt  = buildSystemPrompt();
+            String userPrompt    = buildUserPrompt(candidate, rules, traditionalScore);
+            String combinedPrompt = systemPrompt + '\n\n' + userPrompt;
+
             System.debug('=== AI SCREENING STARTED ===');
             System.debug('Candidate: ' + candidate.Name);
             System.debug('Rules to consider: ' + rules.size());
-            // COMBINE PROMPTS
-            String combinedPrompt = systemPrompt + '\n\n' + userPrompt;
-            // Call Gemini API
+            System.debug('Job Posting ID: ' + jobPostingId);
+
             GeminiAPIService.GeminiResponse apiResponse = GeminiAPIService.callGeminiAPI(
                 combinedPrompt, 
                 'gemini-2.0-flash-exp'
@@ -571,7 +742,7 @@ public with sharing class AIScreeningController {
             
             if (!apiResponse.success) {
                 result.message = 'API call failed: ' + apiResponse.errorMessage;
-                createFailedResult(candidateId, correlationId, apiResponse.errorMessage);
+                createFailedResult(candidateId, correlationId, jobPostingId, apiResponse.errorMessage);
                 return result;
             }
             
@@ -580,79 +751,79 @@ public with sharing class AIScreeningController {
             System.debug('=== RAW AI RESPONSE ===');
             System.debug(aiContent);
             
-            // Parse AI response with markdown fence removal
             AIAnalysis analysis = parseAIResponse(aiContent);
             
             System.debug('=== PARSED ANALYSIS ===');
-            System.debug('Score: ' + analysis.overallScore);
+            System.debug('Score: '          + analysis.overallScore);
             System.debug('Recommendation: ' + analysis.recommendation);
-            System.debug('Confidence: ' + analysis.confidenceLevel);
+            System.debug('Confidence: '     + analysis.confidenceLevel);
             System.debug('Strengths count: ' + analysis.strengths.size());
-            System.debug('Concerns count: ' + analysis.concerns.size());
+            System.debug('Concerns count: '  + analysis.concerns.size());
             
             AI_Screening_Result__c aiResult = new AI_Screening_Result__c();
-            aiResult.Candidate__c = candidateId;
-            aiResult.Job_Posting__c = candidate.Interested_In_Job__c;
-            aiResult.Correlation_Id__c = correlationId;
-            aiResult.AI_Model__c = 'gemini-2.0-flash-exp';
-            aiResult.Overall_Score__c = analysis.overallScore;
-            aiResult.Confidence_Level__c = analysis.confidenceLevel;
-            aiResult.Recommendation__c = analysis.recommendation;
-            aiResult.Quick_Summary__c = analysis.quickSummary;
-            aiResult.Full_Analysis__c = analysis.fullAnalysis;
-            aiResult.Strengths__c = JSON.serialize(analysis.strengths);
-            aiResult.Concerns__c = JSON.serialize(analysis.concerns);
+            aiResult.Candidate__c      = candidateId;
+
+            // 🔥 FIX: Save the CORRECT job posting — use jobPostingId if available,
+            //         otherwise fall back to candidate's default job
+            aiResult.Job_Posting__c    = jobPostingId != null 
+                                         ? jobPostingId 
+                                         : candidate.Interested_In_Job__c;
+
+            aiResult.Correlation_Id__c    = correlationId;
+            aiResult.AI_Model__c          = 'gemini-2.0-flash-exp';
+            aiResult.Overall_Score__c     = analysis.overallScore;
+            aiResult.Confidence_Level__c  = analysis.confidenceLevel;
+            aiResult.Recommendation__c    = analysis.recommendation;
+            aiResult.Quick_Summary__c     = analysis.quickSummary;
+            aiResult.Full_Analysis__c     = analysis.fullAnalysis;
+            aiResult.Strengths__c         = JSON.serialize(analysis.strengths);
+            aiResult.Concerns__c          = JSON.serialize(analysis.concerns);
             
-            // Top 3 strengths
             List<String> topStrengths = new List<String>();
-            if (analysis.strengths.size() > 0) {
-                Integer strengthLimit = Math.min(3, analysis.strengths.size());
-                for (Integer i = 0; i < strengthLimit; i++) {
-                    topStrengths.add(analysis.strengths[i]);
-                }
+            Integer strengthLimit = Math.min(3, analysis.strengths.size());
+            for (Integer i = 0; i < strengthLimit; i++) {
+                topStrengths.add(analysis.strengths[i]);
             }
             aiResult.Top_3_Strengths__c = String.join(topStrengths, ', ');
             
-            // Top 3 concerns
             List<String> topConcerns = new List<String>();
-            if (analysis.concerns.size() > 0) {
-                Integer concernLimit = Math.min(3, analysis.concerns.size());
-                for (Integer i = 0; i < concernLimit; i++) {
-                    topConcerns.add(analysis.concerns[i]);
-                }
+            Integer concernLimit = Math.min(3, analysis.concerns.size());
+            for (Integer i = 0; i < concernLimit; i++) {
+                topConcerns.add(analysis.concerns[i]);
             }
             aiResult.Top_3_Concerns__c = String.join(topConcerns, ', ');
             
             aiResult.Traditional_Score__c = traditionalScore;
-            aiResult.Rules_Evaluated__c = rules.size();
-            aiResult.Status__c = 'Completed';
-            aiResult.Execution_Time__c = System.currentTimeMillis() - startTime;
-            aiResult.Tokens_Used__c = apiResponse.usageMetadata != null ? apiResponse.usageMetadata.totalTokenCount : 0;
-            aiResult.Response_Raw__c = JSON.serialize(apiResponse);
-            aiResult.Prompt_Version__c = 'v1.1'; // Updated version
+            aiResult.Rules_Evaluated__c   = rules.size();
+            aiResult.Status__c            = 'Completed';
+            aiResult.Execution_Time__c    = System.currentTimeMillis() - startTime;
+            aiResult.Tokens_Used__c       = apiResponse.usageMetadata != null 
+                                            ? apiResponse.usageMetadata.totalTokenCount : 0;
+            aiResult.Response_Raw__c      = JSON.serialize(apiResponse);
+            aiResult.Prompt_Version__c    = 'v1.1';
             
             insert aiResult;
             
-            result.success = true;
-            result.message = 'AI screening completed successfully';
-            result.resultId = aiResult.Id;
-            result.aiScore = analysis.overallScore;
+            result.success        = true;
+            result.message        = 'AI screening completed successfully';
+            result.resultId       = aiResult.Id;
+            result.aiScore        = analysis.overallScore;
             result.recommendation = analysis.recommendation;
             
             System.debug('AI Screening completed: Score=' + analysis.overallScore + 
-                        ', Recommendation=' + analysis.recommendation);
+                        ', Recommendation=' + analysis.recommendation +
+                        ', Job_Posting__c saved=' + aiResult.Job_Posting__c);
             
         } catch (Exception e) {
             result.message = 'Exception: ' + e.getMessage();
             System.debug('ERROR in AI Screening: ' + e.getMessage());
             System.debug('Stack trace: ' + e.getStackTraceString());
-            createFailedResult(candidateId, correlationId, e.getMessage());
+            createFailedResult(candidateId, correlationId, jobPostingId, e.getMessage());
         }
         
         return result;
     }
     
-    // 🔥 UPDATED: More balanced AI prompt
     private static String buildSystemPrompt() {
         return 'You are an expert healthcare recruitment AI assistant specializing in candidate evaluation. ' +
                'Your role is to analyze healthcare candidates against job requirements and screening rules. ' +
@@ -764,34 +935,26 @@ public with sharing class AIScreeningController {
         return prompt;
     }
     
-    // Enhanced JSON parsing with markdown fence removal
     private static AIAnalysis parseAIResponse(String content) {
         AIAnalysis analysis = new AIAnalysis();
         
         try {
-            // Remove markdown code fences if present
             String cleanContent = content;
             
             if (cleanContent.contains('```json')) {
-                System.debug('Detected ```json fence, removing...');
                 cleanContent = cleanContent.substringAfter('```json').trim();
                 if (cleanContent.contains('```')) {
                     cleanContent = cleanContent.substringBefore('```').trim();
                 }
             } else if (cleanContent.contains('```')) {
-                System.debug('Detected ``` fence, removing...');
                 cleanContent = cleanContent.substringAfter('```').trim();
                 if (cleanContent.contains('```')) {
                     cleanContent = cleanContent.substringBefore('```').trim();
                 }
             }
             
-            System.debug('=== CLEANED JSON ===');
-            System.debug(cleanContent);
-            
             Map<String, Object> jsonData = (Map<String, Object>) JSON.deserializeUntyped(cleanContent);
             
-            // Parse overall score
             if (jsonData.containsKey('overallScore')) {
                 Object scoreObj = jsonData.get('overallScore');
                 if (scoreObj instanceof Integer) {
@@ -805,161 +968,103 @@ public with sharing class AIScreeningController {
                 analysis.overallScore = 50.0;
             }
             
-            // Parse confidence level with validation
-            if (jsonData.containsKey('confidenceLevel')) {
-                String rawConfidence = (String) jsonData.get('confidenceLevel');
-                analysis.confidenceLevel = normalizeConfidenceLevel(rawConfidence);
-            } else {
-                analysis.confidenceLevel = 'Medium';
-            }
+            analysis.confidenceLevel = jsonData.containsKey('confidenceLevel')
+                ? normalizeConfidenceLevel((String) jsonData.get('confidenceLevel'))
+                : 'Medium';
             
-            // Parse recommendation with validation
-            if (jsonData.containsKey('recommendation')) {
-                String rawRecommendation = (String) jsonData.get('recommendation');
-                analysis.recommendation = normalizeRecommendation(rawRecommendation);
-            } else {
-                analysis.recommendation = 'NEUTRAL';
-            }
+            analysis.recommendation = jsonData.containsKey('recommendation')
+                ? normalizeRecommendation((String) jsonData.get('recommendation'))
+                : 'NEUTRAL';
             
-            // Parse quick summary
-            analysis.quickSummary = jsonData.containsKey('quickSummary') ? 
-                                   (String) jsonData.get('quickSummary') : '';
+            analysis.quickSummary = jsonData.containsKey('quickSummary') 
+                ? (String) jsonData.get('quickSummary') : '';
             
-            // Parse full analysis
-            analysis.fullAnalysis = jsonData.containsKey('fullAnalysis') ? 
-                                   (String) jsonData.get('fullAnalysis') : content;
+            analysis.fullAnalysis = jsonData.containsKey('fullAnalysis') 
+                ? (String) jsonData.get('fullAnalysis') : content;
             
-            // Parse strengths array
             if (jsonData.containsKey('strengths')) {
-                List<Object> strengthsList = (List<Object>) jsonData.get('strengths');
-                for (Object s : strengthsList) {
+                for (Object s : (List<Object>) jsonData.get('strengths')) {
                     analysis.strengths.add(String.valueOf(s));
                 }
             }
             
-            // Parse concerns array
             if (jsonData.containsKey('concerns')) {
-                List<Object> concernsList = (List<Object>) jsonData.get('concerns');
-                for (Object c : concernsList) {
+                for (Object c : (List<Object>) jsonData.get('concerns')) {
                     analysis.concerns.add(String.valueOf(c));
                 }
             }
             
-            System.debug('✅ Successfully parsed AI response');
-            System.debug('Score: ' + analysis.overallScore);
-            System.debug('Strengths: ' + analysis.strengths.size());
-            System.debug('Concerns: ' + analysis.concerns.size());
-            
         } catch (Exception e) {
-            System.debug('⚠️ Could not parse as JSON: ' + e.getMessage());
-            System.debug('Error type: ' + e.getTypeName());
-            System.debug('Raw content length: ' + (content != null ? content.length() : 0));
-            
-            // Fallback to safe defaults
-            analysis.overallScore = 50.0;
+            System.debug('Could not parse as JSON: ' + e.getMessage());
+            analysis.overallScore    = 50.0;
             analysis.confidenceLevel = 'Low';
-            analysis.recommendation = 'NEUTRAL';
-            analysis.fullAnalysis = content;
-            
-            if (content != null && content.length() > 500) {
-                analysis.quickSummary = content.substring(0, 500) + '...';
-            } else if (content != null) {
-                analysis.quickSummary = content;
-            } else {
-                analysis.quickSummary = 'No summary available';
-            }
+            analysis.recommendation  = 'NEUTRAL';
+            analysis.fullAnalysis    = content;
+            analysis.quickSummary    = content != null && content.length() > 500 
+                                       ? content.substring(0, 500) + '...' 
+                                       : (content != null ? content : 'No summary available');
         }
         
         return analysis;
     }
     
-    // Normalize recommendation to valid picklist values
     private static String normalizeRecommendation(String rawRecommendation) {
-        if (String.isBlank(rawRecommendation)) {
-            return 'NEUTRAL';
-        }
+        if (String.isBlank(rawRecommendation)) return 'NEUTRAL';
         
         String normalized = rawRecommendation.trim().toUpperCase();
-        
-        // Valid values: STRONGLY_RECOMMEND, RECOMMEND, NEUTRAL, NOT_RECOMMEND, STRONGLY_NOT_RECOMMEND
         Set<String> validValues = new Set<String>{
-            'STRONGLY_RECOMMEND', 
-            'RECOMMEND', 
-            'NEUTRAL', 
-            'NOT_RECOMMEND', 
-            'STRONGLY_NOT_RECOMMEND'
+            'STRONGLY_RECOMMEND', 'RECOMMEND', 'NEUTRAL', 
+            'NOT_RECOMMEND', 'STRONGLY_NOT_RECOMMEND'
         };
         
-        // If exact match, return it
-        if (validValues.contains(normalized)) {
-            return normalized;
-        }
+        if (validValues.contains(normalized)) return normalized;
         
-        // Map variations
-        if (normalized.contains('STRONGLY') && normalized.contains('RECOMMEND')) {
+        if (normalized.contains('STRONGLY') && normalized.contains('RECOMMEND') && !normalized.contains('NOT')) {
             return 'STRONGLY_RECOMMEND';
         } else if (normalized.contains('STRONGLY') && (normalized.contains('NOT') || normalized.contains('REJECT'))) {
             return 'STRONGLY_NOT_RECOMMEND';
-        } else if (normalized.contains('RECOMMEND') && !normalized.contains('NOT')) {
-            return 'RECOMMEND';
         } else if (normalized.contains('NOT') && normalized.contains('RECOMMEND')) {
             return 'NOT_RECOMMEND';
+        } else if (normalized.contains('RECOMMEND')) {
+            return 'RECOMMEND';
         } else if (normalized.contains('NEUTRAL') || normalized.contains('MAYBE')) {
             return 'NEUTRAL';
         }
         
-        // Default fallback
-        System.debug('⚠️ Unknown recommendation: ' + rawRecommendation + ', defaulting to NEUTRAL');
         return 'NEUTRAL';
     }
     
-    // Normalize confidence level to valid picklist values
     private static String normalizeConfidenceLevel(String rawConfidence) {
-        if (String.isBlank(rawConfidence)) {
-            return 'Medium';
-        }
+        if (String.isBlank(rawConfidence)) return 'Medium';
         
         String normalized = rawConfidence.trim();
-        
-        // Valid values: Very High, High, Medium, Low
         Set<String> validValues = new Set<String>{'Very High', 'High', 'Medium', 'Low'};
         
-        // If exact match, return it
-        if (validValues.contains(normalized)) {
-            return normalized;
-        }
+        if (validValues.contains(normalized)) return normalized;
         
-        // Map variations to valid values
         String lower = normalized.toLowerCase();
-        
         if (lower.contains('very high') || lower.contains('veryhigh') || lower.contains('excellent')) {
             return 'Very High';
         } else if (lower.contains('high') || lower.contains('strong')) {
             return 'High';
-        } else if (lower.contains('very low') || lower.contains('verylow') || lower.contains('poor')) {
-            return 'Low'; // Map "Very Low" to "Low"
-        } else if (lower.contains('low') || lower.contains('weak')) {
+        } else if (lower.contains('low')) {
             return 'Low';
         } else if (lower.contains('medium') || lower.contains('moderate') || lower.contains('average')) {
             return 'Medium';
         }
         
-        // Default fallback
-        System.debug('⚠️ Unknown confidence level: ' + rawConfidence + ', defaulting to Medium');
         return 'Medium';
     }
     
     private static List<Screening_Rule__c> getApplicableRules(Candidate__c candidate) {
-        if (candidate.Interested_In_Job__c == null) {
-            return new List<Screening_Rule__c>();
-        }
+        if (candidate.Interested_In_Job__c == null) return new List<Screening_Rule__c>();
         
         return [
             SELECT Name, Target_Object__c, Field_API_Name__c, Operator__c, 
                    Expected_Value__c, Rule_Category__c
             FROM Screening_Rule__c
-            WHERE Applied_Role__c = :candidate.Interested_In_Job__c
-            AND Active__c = true
+            WHERE Applied_Role__c     = :candidate.Interested_In_Job__c
+            AND Active__c             = true
             AND Is_Current_Version__c = true
             ORDER BY Priority__c ASC
             LIMIT 50
@@ -975,7 +1080,6 @@ public with sharing class AIScreeningController {
                 ORDER BY CreatedDate DESC
                 LIMIT 1
             ];
-            
             if (latestResults.isEmpty()) return null;
             correlationId = latestResults[0].Correlation_Id__c;
         }
@@ -983,19 +1087,16 @@ public with sharing class AIScreeningController {
         List<Screening_Result__c> results = [
             SELECT Outcome__c
             FROM Screening_Result__c
-            WHERE Candidate__c = :candidateId
+            WHERE Candidate__c    = :candidateId
             AND Correlation_Id__c = :correlationId
         ];
         
         if (results.isEmpty()) return null;
         
-        Integer total = results.size();
+        Integer total  = results.size();
         Integer passed = 0;
-        
-        for (Screening_Result__c result : results) {
-            if (result.Outcome__c == 'Pass') {
-                passed++;
-            }
+        for (Screening_Result__c res : results) {
+            if (res.Outcome__c == 'Pass') passed++;
         }
         
         return (Decimal.valueOf(passed) / Decimal.valueOf(total)) * 100;
@@ -1009,18 +1110,19 @@ public with sharing class AIScreeningController {
             ORDER BY CreatedDate DESC
             LIMIT 1
         ];
-        
         return results.isEmpty() ? null : results[0].Correlation_Id__c;
     }
     
-    private static void createFailedResult(Id candidateId, String correlationId, String errorMessage) {
+    // 🔥 FIX: Added jobPostingId param so failed result also saves correct Job_Posting__c
+    private static void createFailedResult(Id candidateId, String correlationId, Id jobPostingId, String errorMessage) {
         try {
             AI_Screening_Result__c failedResult = new AI_Screening_Result__c();
-            failedResult.Candidate__c = candidateId;
+            failedResult.Candidate__c      = candidateId;
+            failedResult.Job_Posting__c    = jobPostingId; // 🔥 FIXED
             failedResult.Correlation_Id__c = correlationId;
-            failedResult.Status__c = 'Failed';
-            failedResult.Error_Message__c = errorMessage;
-            failedResult.AI_Model__c = 'gemini-2.0-flash-exp';
+            failedResult.Status__c         = 'Failed';
+            failedResult.Error_Message__c  = errorMessage;
+            failedResult.AI_Model__c       = 'gemini-2.0-flash-exp';
             insert failedResult;
         } catch (Exception e) {
             System.debug('Could not create failed result record: ' + e.getMessage());
@@ -1038,7 +1140,7 @@ public with sharing class AIScreeningController {
         
         public AIAnalysis() {
             this.strengths = new List<String>();
-            this.concerns = new List<String>();
+            this.concerns  = new List<String>();
         }
     }
 }

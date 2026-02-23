@@ -517,11 +517,19 @@
             </div>
         </lightning-card>
 
-        <!-- Dynamic Form Modal -->
-        <c-dynamic-form-modal
-            candidate-id={currentCandidateId}
-            onsave={handleModalSave}
-        ></c-dynamic-form-modal>
+ <c-dynamic-form-modal
+    candidate-id={currentCandidateId}
+    existing-work-experiences={profileData.workExperiences}
+    existing-educations={profileData.educations}
+    existing-licenses={profileData.licenses}
+    existing-clinical-skills={profileData.clinicalSkills}
+    existing-technical-skills={profileData.technicalSkills}
+    existing-procedures={profileData.procedures}
+    existing-internships={profileData.internships}
+    existing-research={profileData.researchPublications}
+    existing-memberships={profileData.memberships}
+    onsave={handleModalSave}
+></c-dynamic-form-modal>
         
         <!-- ✅ NEW: Resume Preview Modal -->
         <template if:true={showPreviewModal}>

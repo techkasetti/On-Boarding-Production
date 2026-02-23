@@ -10,7 +10,7 @@ public with sharing class JobPostingAdminController {
     public static List<Job_Posting__c> getJobPostings() {
         try {
             return [
-                SELECT Id, Name, Job_Title__c, Description__c, 
+                SELECT Id, Name, Job_Title__c, Account__c , Description__c, 
                        Category__c, Role_Type__c, Department__c,
                        Employment_Type__c, Shift_Type__c,
                        Min_Experience_Years__c, Max_Experience_Years__c,
@@ -260,7 +260,7 @@ public static Map<String, Object> createJobsFromCSV(String csvContent) {
     public static Map<String, Object> getJobPostingWithDetails(String jobId) {
         try {
             Job_Posting__c job = [
-                SELECT Id, Name, Job_Title__c, Description__c,
+                SELECT Id, Name, Job_Title__c, Account__c , Description__c,
                        Category__c, Role_Type__c, Department__c,
                        Employment_Type__c, Shift_Type__c,
                        Min_Experience_Years__c, Max_Experience_Years__c,
@@ -397,7 +397,11 @@ public static Map<String, Object> createJobsFromCSV(String csvContent) {
         if (jobMap.containsKey('Id') && jobMap.get('Id') != null) {
             job.Id = (Id) jobMap.get('Id');
         }
-        
+        //organization
+        if (jobMap.containsKey('Account__c') && jobMap.get('Account__c') != null) {
+            job.Account__c = (Id) jobMap.get('Account__c');
+        }
+
         job.Job_Title__c = (String) jobMap.get('Job_Title__c');
         job.Description__c = (String) jobMap.get('Description__c');
         job.Category__c = (String) jobMap.get('Category__c');

@@ -23,7 +23,7 @@
                                 <lightning-button 
                                     label="AI Console" 
                                     variant="neutral" 
-                                    icon-name="utility:sparkles"
+                                    icon-name="utility:sparkles"     
                                     onclick={handleNavigateToAIConsole}
                                     class="ai-console-button">
                                 </lightning-button>
@@ -75,13 +75,50 @@
                 <template if:false={isLoading}>
                     <template if:true={hasJobs}>
                         <div class="datatable-container">
-                            <lightning-datatable
+                            <!-- <lightning-datatable
                                 key-field="Id"
                                 data={filteredJobPostings}
                                 columns={columns}
                                 onrowaction={handleRowAction}
                                 hide-checkbox-column>
+                            </lightning-datatable> -->
+                            <lightning-datatable
+                                key-field="Id"
+                                data={paginatedJobs}
+                                columns={columns}
+                                onrowaction={handleRowAction}
+                                hide-checkbox-column>
                             </lightning-datatable>
+
+                            <!-- Pagination Controls -->
+                            <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-p-around_small">
+                                <div class="slds-col">
+                                    <p class="slds-text-body_small">
+                                        Showing {startRecord} - {endRecord} of {totalJobs} jobs
+                                    </p>
+                                </div>
+                                <div class="slds-col slds-no-flex">
+                                    <lightning-button-group>
+                                        <lightning-button
+                                            label="Previous"
+                                            icon-name="utility:chevronleft"
+                                            onclick={handlePrevious}
+                                            disabled={isFirstPage}>
+                                        </lightning-button>
+                                        <lightning-button
+                                            label={pageInfo}
+                                            disabled>
+                                        </lightning-button>
+                                        <lightning-button
+                                            label="Next"
+                                            icon-name="utility:chevronright"
+                                            icon-position="right"
+                                            onclick={handleNext}
+                                            disabled={isLastPage}>
+                                        </lightning-button>
+                                    </lightning-button-group>
+                                </div>
+                            </div>
                         </div>
                     </template>
 
@@ -139,7 +176,19 @@
                                             </lightning-input>
                                         </div>
 
-                                        <!-- Category -->
+                                        <!-- Organization -->
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <lightning-record-picker
+                                                label="Organization"
+                                                placeholder="Search Organization..."
+                                                object-api-name="Account"
+                                                value={currentJob.Account__c}
+                                                onchange={handleAccountChange}
+                                                data-field="Account__c">
+                                            </lightning-record-picker>
+                                        </div>
+
+                                         <!-- Category -->
                                         <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
                                             <lightning-combobox
                                                 name="category"

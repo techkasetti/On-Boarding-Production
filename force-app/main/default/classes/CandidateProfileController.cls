@@ -617,4 +617,176 @@ public without sharing class CandidateProfileController {
             throw new AuraHandledException('Failed to reset resume status: ' + e.getMessage());
         }
     }
+
+@AuraEnabled
+public static String checkDuplicate(
+    String candidateId,
+    String recordType,
+    String fieldsJson,
+    String excludeId
+) {
+    try {
+        if (String.isBlank(candidateId) || String.isBlank(recordType) || String.isBlank(fieldsJson)) {
+            return null;
+        }
+
+        Map<String, Object> fields = (Map<String, Object>) JSON.deserializeUntyped(fieldsJson);
+        String dupMessage = null;
+
+        switch on recordType {
+
+            when 'workExperience' {
+                String role = getStr(fields, 'Role__c');
+                String org  = getStr(fields, 'Organization__c');
+                if (String.isNotBlank(role) && String.isNotBlank(org)) {
+                    List<Work_Experience__c> dups = [
+                        SELECT Id FROM Work_Experience__c
+                        WHERE Candidate__c = :candidateId
+                          AND Role__c = :role
+                          AND Organization__c = :org
+                        LIMIT 1
+                    ];
+                    if (!dups.isEmpty() && (String.isBlank(excludeId) || dups[0].Id != excludeId)) {
+                        dupMessage = 'A work experience entry for "' + role + '" at "' + org + '" already exists.';
+                    }
+                }
+            }
+
+            when 'education' {
+                String degree      = getStr(fields, 'Degree__c');
+                String institution = getStr(fields, 'Institution__c');
+                if (String.isNotBlank(degree) && String.isNotBlank(institution)) {
+                    List<Education__c> dups = [
+                        SELECT Id FROM Education__c
+                        WHERE Candidate__c = :candidateId
+                          AND Degree__c = :degree
+                          AND Institution__c = :institution
+                        LIMIT 1
+                    ];
+                    if (!dups.isEmpty() && (String.isBlank(excludeId) || dups[0].Id != excludeId)) {
+                        dupMessage = 'Education "' + degree + '" at "' + institution + '" already exists.';
+                    }
+                }
+            }
+
+            when 'license' {
+                String name = getStr(fields, 'Name');
+                if (String.isNotBlank(name)) {
+                    List<License_Certification__c> dups = [
+                        SELECT Id FROM License_Certification__c
+                        WHERE Candidate__c = :candidateId
+                          AND Name = :name
+                        LIMIT 1
+                    ];
+                    if (!dups.isEmpty() && (String.isBlank(excludeId) || dups[0].Id != excludeId)) {
+                        dupMessage = 'License/Certification "' + name + '" already exists.';
+                    }
+                }
+            }
+
+            when 'clinicalSkill' {
+                String name = getStr(fields, 'Name');
+                if (String.isNotBlank(name)) {
+                    List<Clinical_Skill__c> dups = [
+                        SELECT Id FROM Clinical_Skill__c
+                        WHERE Candidate__c = :candidateId
+                          AND Name = :name
+                        LIMIT 1
+                    ];
+                    if (!dups.isEmpty() && (String.isBlank(excludeId) || dups[0].Id != excludeId)) {
+                        dupMessage = 'Clinical Skill "' + name + '" already exists.';
+                    }
+                }
+            }
+
+            when 'technicalSkill' {
+                String name = getStr(fields, 'Name');
+                if (String.isNotBlank(name)) {
+                    List<Technical_Skill__c> dups = [
+                        SELECT Id FROM Technical_Skill__c
+                        WHERE Candidate__c = :candidateId
+                          AND Name = :name
+                        LIMIT 1
+                    ];
+                    if (!dups.isEmpty() && (String.isBlank(excludeId) || dups[0].Id != excludeId)) {
+                        dupMessage = 'Technical Skill "' + name + '" already exists.';
+                    }
+                }
+            }
+
+            when 'procedure' {
+                String name = getStr(fields, 'Name');
+                if (String.isNotBlank(name)) {
+                    List<Procedure__c> dups = [
+                        SELECT Id FROM Procedure__c
+                        WHERE Candidate__c = :candidateId
+                          AND Name = :name
+                        LIMIT 1
+                    ];
+                    if (!dups.isEmpty() && (String.isBlank(excludeId) || dups[0].Id != excludeId)) {
+                        dupMessage = 'Procedure "' + name + '" already exists.';
+                    }
+                }
+            }
+
+            when 'internship' {
+                String org = getStr(fields, 'Organization__c');
+                if (String.isNotBlank(org)) {
+                    List<Internship__c> dups = [
+                        SELECT Id FROM Internship__c
+                        WHERE Candidate__c = :candidateId
+                          AND Organization__c = :org
+                        LIMIT 1
+                    ];
+                    if (!dups.isEmpty() && (String.isBlank(excludeId) || dups[0].Id != excludeId)) {
+                        dupMessage = 'Internship at "' + org + '" already exists.';
+                    }
+                }
+            }
+
+            when 'research' {
+                String title = getStr(fields, 'Title__c');
+                if (String.isNotBlank(title)) {
+                    List<Research_Publication__c> dups = [
+                        SELECT Id FROM Research_Publication__c
+                        WHERE Candidate__c = :candidateId
+                          AND Title__c = :title
+                        LIMIT 1
+                    ];
+                    if (!dups.isEmpty() && (String.isBlank(excludeId) || dups[0].Id != excludeId)) {
+                        dupMessage = 'Publication/Research "' + title + '" already exists.';
+                    }
+                }
+            }
+
+            when 'membership' {
+                String org = getStr(fields, 'Organization_Name__c');
+                if (String.isNotBlank(org)) {
+                    List<Membership__c> dups = [
+                        SELECT Id FROM Membership__c
+                        WHERE Candidate__c = :candidateId
+                          AND Organization_Name__c = :org
+                        LIMIT 1
+                    ];
+                    if (!dups.isEmpty() && (String.isBlank(excludeId) || dups[0].Id != excludeId)) {
+                        dupMessage = 'Membership for "' + org + '" already exists.';
+                    }
+                }
+            }
+        }
+
+        return dupMessage;
+
+    } catch (Exception e) {
+        System.debug('checkDuplicate error: ' + e.getMessage());
+        // On unexpected error, return null (allow save — don't block user)
+        return null;
+    }
+}
+
+// Safely extract a trimmed string from the deserialised fields map
+private static String getStr(Map<String, Object> fields, String key) {
+    Object val = fields.get(key);
+    return val != null ? String.valueOf(val).trim() : '';
+}
 }
