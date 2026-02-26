@@ -1,28 +1,59 @@
 public without sharing class EligibilityAICaller {
 
     /* ============================================================
-       RESPONSE WRAPPER
+       FLOW INPUT/OUTPUT WRAPPERS
     ============================================================ */
-    public class AIResult {
-        @AuraEnabled public Boolean success;
-        @AuraEnabled public String rawResponse;
-        @AuraEnabled public String cleanedJson;
-        @AuraEnabled public String error;
-
-        public AIResult() { success = false; }
+    public class FlowInput {
+        @InvocableVariable(
+            label='Job Application ID' 
+            description='The ID of the Job Application record'
+            required=true
+        )
+        public Id jobApplicationId;
+    }
+    
+    public class FlowOutput {
+        @InvocableVariable(label='Success')
+        public Boolean success;
+        
+        @InvocableVariable(label='Message')
+        public String message;
     }
 
     /* ============================================================
-       MAIN ENTRY — JOB APPLICATION ID
+       INVOCABLE METHOD - CALLED FROM FLOW (NO CALLOUT)
     ============================================================ */
-    @AuraEnabled
-    public static AIResult callEligibilityAI(Id jobApplicationId) {
+    @InvocableMethod(
+        label='Run AI Eligibility Check' 
+        description='Evaluates candidate eligibility using AI'
+        category='Job Application'
+    )
+    public static List<FlowOutput> callEligibilityAIFromFlow(List<FlowInput> inputs) {
+        
+        List<FlowOutput> outputs = new List<FlowOutput>();
+        
+        for (FlowInput input : inputs) {
+            FlowOutput output = new FlowOutput();
+            
+            // Call the @future method asynchronously
+            callEligibilityAIAsync(input.jobApplicationId);
+            
+            output.success = true;
+            output.message = 'AI eligibility check queued successfully';
+            outputs.add(output);
+        }
+        
+        return outputs;
+    }
 
-        AIResult result = new AIResult();
-
+    /* ============================================================
+       FUTURE METHOD - RUNS ASYNCHRONOUSLY WITH CALLOUT
+    ============================================================ */
+    @future(callout=true)
+    public static void callEligibilityAIAsync(Id jobApplicationId) {
+        
         try {
-
-            System.debug('=== AI Eligibility START ===');
+            System.debug('=== AI Eligibility START (Async) ===');
 
             // 1️⃣ Fetch Job Application
             Job_Application__c app = [
@@ -33,8 +64,8 @@ public without sharing class EligibilityAICaller {
             ];
 
             if (app.Candidate__c == null || app.Job_Posting__c == null) {
-                result.error = 'Missing Candidate or Job Posting';
-                return result;
+                System.debug('❌ ERROR: Missing Candidate or Job Posting');
+                return;
             }
 
             // 2️⃣ Gather Full Data
@@ -42,8 +73,8 @@ public without sharing class EligibilityAICaller {
             CandidateQualifications cand = gatherCandidateQualifications(app.Candidate__c);
 
             if (jobReq == null || cand == null) {
-                result.error = 'Unable to gather job or candidate data';
-                return result;
+                System.debug('❌ ERROR: Unable to gather data');
+                return;
             }
 
             // 3️⃣ Build Prompt
@@ -55,33 +86,32 @@ public without sharing class EligibilityAICaller {
             Integer attempts = 0;
 
             while (attempts < 3) {
-
                 attempts++;
-                System.debug('AI Attempt #' + attempts);
+                System.debug('🔄 AI Attempt #' + attempts);
 
                 GeminiAPIService.GeminiResponse aiRes =
                     GeminiAPIService.callGeminiAPIWithPrompt(prompt);
 
                 if (!aiRes.success) {
-                    result.error = aiRes.errorMessage;
-                    return result;
+                    System.debug('❌ API Error: ' + aiRes.errorMessage);
+                    if (attempts == 3) {
+                        return;
+                    }
+                    continue;
                 }
 
                 rawText = GeminiAPIService.extractContent(aiRes);
-                result.rawResponse = rawText;
 
                 try {
                     parsed = safeParseAIResponse(rawText);
+                    System.debug('✅ JSON Parsed Successfully');
                     break;
                 } catch (Exception ex) {
-
-                    System.debug('Parse failed: ' + ex.getMessage());
-
+                    System.debug('⚠️ Parse failed: ' + ex.getMessage());
                     if (attempts == 3) {
-                        result.error = 'AI returned invalid JSON after retries';
-                        return result;
+                        System.debug('❌ All retry attempts exhausted');
+                        return;
                     }
-
                     prompt = buildRepairPrompt(rawText);
                 }
             }
@@ -91,8 +121,10 @@ public without sharing class EligibilityAICaller {
             if (parsed.containsKey('eligibilityScore')) {
                 score = Decimal.valueOf(String.valueOf(parsed.get('eligibilityScore')));
             }
+            System.debug('Eligibility Score: ' + score);
 
             String finalStatus = (score > 70) ? 'Eligibility Passed' : 'Eligibility Failed';
+            System.debug('Final Status: ' + finalStatus);
 
             // 6️⃣ Store Results
             app.Eligibility_Score__c = score.setScale(2);
@@ -103,53 +135,25 @@ public without sharing class EligibilityAICaller {
 
             update app;
 
-            result.success = true;
-            result.cleanedJson = JSON.serializePretty(parsed);
-
-            System.debug('=== STORED SUCCESSFULLY ===');
-
-            return result;
+            System.debug('✅ === RECORD UPDATED SUCCESSFULLY ===');
 
         } catch (Exception e) {
-            result.error = e.getMessage();
-            System.debug('Exception: ' + e.getMessage());
-            return result;
+            System.debug('❌ EXCEPTION: ' + e.getMessage());
+            System.debug('Stack Trace: ' + e.getStackTraceString());
         }
     }
 
     /* ============================================================
-       SAFE JSON PARSER
+       INTERNAL CLASSES (NO CHANGES)
     ============================================================ */
-    private static Map<String, Object> safeParseAIResponse(String raw) {
-
-        String cleaned = raw.trim();
-
-        if (cleaned.startsWith('```json'))
-            cleaned = cleaned.substring(7);
-        if (cleaned.startsWith('```'))
-            cleaned = cleaned.substring(3);
-        if (cleaned.endsWith('```'))
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
-
-        Integer firstBrace = cleaned.indexOf('{');
-        Integer lastBrace = cleaned.lastIndexOf('}');
-
-        if (firstBrace == -1 || lastBrace == -1)
-            throw new AuraHandledException('Invalid JSON structure');
-
-        String jsonOnly = cleaned.substring(firstBrace, lastBrace + 1);
-
-        return (Map<String, Object>) JSON.deserializeUntyped(jsonOnly);
+    public class AIResult {
+        public Boolean success;
+        public String rawResponse;
+        public String cleanedJson;
+        public String error;
+        public AIResult() { success = false; }
     }
 
-    private static String buildRepairPrompt(String broken) {
-
-        return 'Fix the following JSON and return valid JSON only:\n' + broken;
-    }
-
-    /* ============================================================
-       DATA STRUCTURES
-    ============================================================ */
     public class JobRequirements {
         public String title;
         public Decimal minExp;
@@ -173,10 +177,33 @@ public without sharing class EligibilityAICaller {
     }
 
     /* ============================================================
-       FULL DATA GATHERING — JOB
+       HELPER METHODS (NO CHANGES - keeping your existing code)
     ============================================================ */
-    private static JobRequirements gatherJobRequirements(Id jobPostingId) {
+    
+    private static Map<String, Object> safeParseAIResponse(String raw) {
+        String cleaned = raw.trim();
+        if (cleaned.startsWith('```json'))
+            cleaned = cleaned.substring(7);
+        if (cleaned.startsWith('```'))
+            cleaned = cleaned.substring(3);
+        if (cleaned.endsWith('```'))
+            cleaned = cleaned.substring(0, cleaned.length() - 3);
 
+        Integer firstBrace = cleaned.indexOf('{');
+        Integer lastBrace = cleaned.lastIndexOf('}');
+
+        if (firstBrace == -1 || lastBrace == -1)
+            throw new AuraHandledException('Invalid JSON structure');
+
+        String jsonOnly = cleaned.substring(firstBrace, lastBrace + 1);
+        return (Map<String, Object>) JSON.deserializeUntyped(jsonOnly);
+    }
+
+    private static String buildRepairPrompt(String broken) {
+        return 'Fix the following JSON and return valid JSON only:\n' + broken;
+    }
+
+    private static JobRequirements gatherJobRequirements(Id jobPostingId) {
         Job_Posting__c jp = [
             SELECT Job_Title__c, Min_Experience_Years__c,
                    Max_Experience_Years__c, Description__c
@@ -224,11 +251,7 @@ public without sharing class EligibilityAICaller {
         return req;
     }
 
-    /* ============================================================
-       FULL DATA GATHERING — CANDIDATE
-    ============================================================ */
     private static CandidateQualifications gatherCandidateQualifications(Id candidateId) {
-
         CandidateQualifications c = new CandidateQualifications();
 
         for (Education__c e :
@@ -270,64 +293,59 @@ public without sharing class EligibilityAICaller {
         return c;
     }
 
-    /* ============================================================
-       PROMPT BUILDER
-    ============================================================ */
     private static String buildPrompt(JobRequirements j, CandidateQualifications c) {
+        String p = '';
 
-    String p = '';
+        p += 'You are an enterprise medical credential evaluator for a large healthcare network.\n';
+        p += 'Perform a strict but fair eligibility evaluation.\n\n';
 
-    p += 'You are an enterprise medical credential evaluator for a large healthcare network.\n';
-    p += 'Perform a strict but fair eligibility evaluation.\n\n';
+        p += '=== EQUIVALENCY RULES (MANDATORY) ===\n';
+        p += '- Treat abbreviations and full forms as equivalent Example: (ACLS = Advanced Cardiac Life Support).\n';
+        p += '- Treat BLS = Basic Life Support.\n';
+        p += '- Treat MBBS = Bachelor of Medicine and Bachelor of Surgery.\n';
+        p += '- Treat MD = Doctor of Medicine.\n';
+        p += '- Treat licensing naming variations as equivalent if governing body matches.\n';
+        p += '- Do NOT penalize formatting differences.\n';
+        p += '- Focus on competency equivalence, not wording differences.\n\n';
 
-    p += '=== EQUIVALENCY RULES (MANDATORY) ===\n';
-    p += '- Treat abbreviations and full forms as equivalent Example: (ACLS = Advanced Cardiac Life Support).\n';
-    p += '- Treat BLS = Basic Life Support.\n';
-    p += '- Treat MBBS = Bachelor of Medicine and Bachelor of Surgery.\n';
-    p += '- Treat MD = Doctor of Medicine.\n';
-    p += '- Treat licensing naming variations as equivalent if governing body matches.\n';
-    p += '- Do NOT penalize formatting differences.\n';
-    p += '- Focus on competency equivalence, not wording differences.\n\n';
+        p += '=== MANDATORY REQUIREMENT LOGIC ===\n';
+        p += '- If mandatory education is missing → major penalty.\n';
+        p += '- If required license is missing or expired → major penalty.\n';
+        p += '- If critical procedures are missing → significant penalty.\n';
+        p += '- Experience range should be interpreted reasonably.\n\n';
 
-    p += '=== MANDATORY REQUIREMENT LOGIC ===\n';
-    p += '- If mandatory education is missing → major penalty.\n';
-    p += '- If required license is missing or expired → major penalty.\n';
-    p += '- If critical procedures are missing → significant penalty.\n';
-    p += '- Experience range should be interpreted reasonably.\n\n';
+        p += '=== JOB REQUIREMENTS ===\n';
+        p += 'Title: ' + j.title + '\n';
+        p += 'Experience Required: ' + j.minExp + '-' + j.maxExp + ' years\n';
+        p += 'Required Education: ' + String.join(j.education, ', ') + '\n';
+        p += 'Required Licenses: ' + String.join(j.licenses, ', ') + '\n';
+        p += 'Required Certifications: ' + String.join(j.certifications, ', ') + '\n';
+        p += 'Required Clinical Skills: ' + String.join(j.skills, ', ') + '\n';
+        p += 'Required Procedures: ' + String.join(j.procedures, ', ') + '\n\n';
 
-    p += '=== JOB REQUIREMENTS ===\n';
-    p += 'Title: ' + j.title + '\n';
-    p += 'Experience Required: ' + j.minExp + '-' + j.maxExp + ' years\n';
-    p += 'Required Education: ' + String.join(j.education, ', ') + '\n';
-    p += 'Required Licenses: ' + String.join(j.licenses, ', ') + '\n';
-    p += 'Required Certifications: ' + String.join(j.certifications, ', ') + '\n';
-    p += 'Required Clinical Skills: ' + String.join(j.skills, ', ') + '\n';
-    p += 'Required Procedures: ' + String.join(j.procedures, ', ') + '\n\n';
+        p += '=== CANDIDATE QUALIFICATIONS ===\n';
+        p += 'Education: ' + String.join(c.education, ', ') + '\n';
+        p += 'Licenses: ' + String.join(c.licenses, ', ') + '\n';
+        p += 'Certifications: ' + String.join(c.certifications, ', ') + '\n';
+        p += 'Clinical Skills: ' + String.join(c.skills, ', ') + '\n';
+        p += 'Technical Skills: ' + String.join(c.techSkills, ', ') + '\n';
+        p += 'Experience: ' + String.join(c.experience, ', ') + '\n';
+        p += 'Procedures: ' + String.join(c.procedures, ', ') + '\n\n';
 
-    p += '=== CANDIDATE QUALIFICATIONS ===\n';
-    p += 'Education: ' + String.join(c.education, ', ') + '\n';
-    p += 'Licenses: ' + String.join(c.licenses, ', ') + '\n';
-    p += 'Certifications: ' + String.join(c.certifications, ', ') + '\n';
-    p += 'Clinical Skills: ' + String.join(c.skills, ', ') + '\n';
-    p += 'Technical Skills: ' + String.join(c.techSkills, ', ') + '\n';
-    p += 'Experience: ' + String.join(c.experience, ', ') + '\n';
-    p += 'Procedures: ' + String.join(c.procedures, ', ') + '\n\n';
+        p += '=== SCORING SCALE ===\n';
+        p += '90–100 = Fully meets or exceeds all major requirements.\n';
+        p += '75–89 = Meets core requirements with minor gaps.\n';
+        p += '60–74 = Partial alignment.\n';
+        p += 'Below 60 = Significant qualification gaps.\n\n';
 
-    p += '=== SCORING SCALE ===\n';
-    p += '90–100 = Fully meets or exceeds all major requirements.\n';
-    p += '75–89 = Meets core requirements with minor gaps.\n';
-    p += '60–74 = Partial alignment.\n';
-    p += 'Below 60 = Significant qualification gaps.\n\n';
+        p += 'Return STRICT JSON only:\n';
+        p += '{\n';
+        p += '  "eligibilityScore": <0-100>,\n';
+        p += '  "summary": "<short professional summary>",\n';
+        p += '  "pros": "<bullet-style strengths>",\n';
+        p += '  "cons": "<bullet-style gaps>"\n';
+        p += '}';
 
-    p += 'Return STRICT JSON only:\n';
-    p += '{\n';
-    p += '  "eligibilityScore": <0-100>,\n';
-    p += '  "summary": "<short professional summary>",\n';
-    p += '  "pros": "<bullet-style strengths>",\n';
-    p += '  "cons": "<bullet-style gaps>"\n';
-    p += '}';
-
-    return p;
-}
-
+        return p;
+    }
 }

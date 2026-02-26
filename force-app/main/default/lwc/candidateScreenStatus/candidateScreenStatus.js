@@ -335,7 +335,6 @@
 //     }
 // }
 // candidateScreenStatus.js - WITH APPROVAL EMAIL LOGIC
-
 import { LightningElement, api, wire, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
@@ -352,6 +351,8 @@ import getLatestAIResult from '@salesforce/apex/AIScreeningController.getLatestA
 import createManualOverride from '@salesforce/apex/ScreeningController.createManualOverride';
 import getOverridesForCandidate from '@salesforce/apex/ScreeningController.getOverridesForCandidate';
 
+import getJobApplicationsForCandidate from '@salesforce/apex/CandidateStatusController.getJobApplicationsForCandidate';
+
 export default class CandidateScreenStatus extends LightningElement {
     @api recordId;
     
@@ -360,11 +361,8 @@ export default class CandidateScreenStatus extends LightningElement {
     @track error;
     @track dataLoaded = false;
     @track activeTab = 'rules';
-    @track lastScreeningDate = null;
     
     // Traditional screening data
-    @track candidateName = '';
-    @track jobTitle = '';
     @track traditionalScore = 0;
     @track traditionalStatus = 'Not Screened';
     @track totalRules = 0;
@@ -398,29 +396,64 @@ export default class CandidateScreenStatus extends LightningElement {
         overrideReason: ''
     };
     
+    // Job Application list
+    @track showJobList        = true;  
+    @track showScreeningView  = false; 
+    @track jobApplications    = [];    
+    @track selectedJobAppId   = null;  
+    @track selectedJobTitle   = '';    
+    @track isLoadingJobs      = true;
+
     _wiredStatusResult;
     _wiredAIResult;
     _allScreeningResults = [];
 
-    // Wire traditional screening data
-    @wire(getCandidateStatus, { candidateId: '$recordId' })
+    // ── Wire: Job Applications list ───────────────────────────────────────────
+    @wire(getJobApplicationsForCandidate, { candidateId: '$recordId' })
+    wiredJobApps({ data, error }) {
+        this.isLoadingJobs = false;
+        if (data) {
+            this.jobApplications = data.map(app => ({
+                ...app,
+                cardClass          : this.getJobCardClass(app.screeningResult),
+                statusBadgeClass   : this.getStatusBadgeClass(app.status),
+                screeningBadgeClass: this.getScreeningBadgeClass(app.screeningResult),
+                screeningScore     : app.screeningScore 
+                                     ? app.screeningScore.toFixed(1) : '0.0',
+                screeningResult    : app.screeningResult || 'Pending'
+            }));
+        }
+        if (error) {
+            console.error('Error loading job applications:', error);
+        }
+    }
+
+    // ── Wire: Screening results — only fires when selectedJobAppId is set ─────
+    @wire(getCandidateStatus, { 
+        candidateId     : '$recordId', 
+        jobApplicationId: '$selectedJobAppId' 
+    })
     wiredStatus(result) {
         this._wiredStatusResult = result;
+
+        // 🔥 Skip if no job is selected yet — prevents loading data for wrong job
+        if (!this.selectedJobAppId) {
+            return;
+        }
         
         if (result.data) {
             const data = result.data;
             
-            this.candidateName = data.name || '';
-            this.jobTitle = data.jobTitle || 'Not Assigned';
             this.traditionalStatus = data.status || 'Not Screened';
-            this.totalRules = data.totalRules || 0;
-            this.rulesPassed = data.rulesPassed || 0;
-            this.rulesFailed = data.rulesFailed || 0;
-            this.rulesReview = data.rulesReview || 0;
-            this.lastScreeningDate = data.lastScreeningDate;
+            this.totalRules        = data.totalRules || 0;
+            this.rulesPassed       = data.rulesPassed || 0;
+            this.rulesFailed       = data.rulesFailed || 0;
+            this.rulesReview       = data.rulesReview || 0;
             
             if (this.totalRules > 0) {
                 this.traditionalScore = Math.round((this.rulesPassed / this.totalRules) * 100);
+            } else {
+                this.traditionalScore = 0;
             }
             
             if (data.results) {
@@ -439,7 +472,6 @@ export default class CandidateScreenStatus extends LightningElement {
                     
                     if (res.action) {
                         const actionLower = res.action.toLowerCase();
-                        
                         if (actionLower.includes('reject')) {
                             actionBadgeClass += 'action-badge-reject';
                             actionLabel = 'Auto Reject';
@@ -460,10 +492,10 @@ export default class CandidateScreenStatus extends LightningElement {
                     
                     return {
                         ...res,
-                        rowClass: rowClass,
-                        outcomeClass: this.getOutcomeBadgeClass(res.outcome),
-                        actionBadgeClass: actionBadgeClass,
-                        actionLabel: actionLabel
+                        rowClass,
+                        outcomeClass    : this.getOutcomeBadgeClass(res.outcome),
+                        actionBadgeClass,
+                        actionLabel
                     };
                 });
                 
@@ -472,28 +504,38 @@ export default class CandidateScreenStatus extends LightningElement {
             
             if (data.routingInfo) {
                 this.routingInfo = {
-                    path: data.routingInfo.journeyPath,
+                    path : data.routingInfo.journeyPath,
                     queue: data.routingInfo.queue,
                     level: data.routingInfo.escalationLevel
                 };
+            } else {
+                this.routingInfo = null;
             }
             
             this.dataLoaded = true;
-            this.error = undefined;
+            this.error      = undefined;
             
             this.loadExistingOverrides();
             
         } else if (result.error) {
-            this.error = result.error;
+            this.error      = result.error;
             this.dataLoaded = false;
         }
     }
 
-    // Wire AI screening data
-    @wire(getLatestAIResult, { candidateId: '$recordId' })
+    // ── Wire: AI result — only fires when selectedJobAppId is set ─────────────
+    @wire(getLatestAIResult, { 
+        candidateId     : '$recordId', 
+        jobApplicationId: '$selectedJobAppId'  
+    })
     wiredAIResult(result) {
         this._wiredAIResult = result;
-        
+
+        // 🔥 Skip if no job is selected yet
+        if (!this.selectedJobAppId) {
+            return;
+        }
+
         if (result.data) {
             this.aiResult = result.data;
             this.processAIData(result.data);
@@ -503,25 +545,102 @@ export default class CandidateScreenStatus extends LightningElement {
         }
     }
 
+    // ── Job selection handlers ────────────────────────────────────────────────
+
+    handleJobSelect(event) {
+        const newJobAppId = event.currentTarget.dataset.id;
+        const newJobTitle = event.currentTarget.dataset.jobtitle;
+
+        // 🔥 Reset ALL screening data before loading new job's results
+        this.resetScreeningData();
+
+        this.selectedJobAppId  = newJobAppId;
+        this.selectedJobTitle  = newJobTitle;
+        this.showJobList       = false;
+        this.showScreeningView = true;
+    }
+
+    handleBackToJobs() {
+        // 🔥 Reset everything so stale data doesn't show next time
+        this.resetScreeningData();
+
+        this.showJobList       = true;
+        this.showScreeningView = false;
+        this.selectedJobAppId  = null;
+        this.selectedJobTitle  = '';
+    }
+
+    // 🔥 NEW: Central reset method — clears all screening state
+    resetScreeningData() {
+        this.dataLoaded        = false;
+        this.traditionalScore  = 0;
+        this.traditionalStatus = 'Not Screened';
+        this.totalRules        = 0;
+        this.rulesPassed       = 0;
+        this.rulesFailed       = 0;
+        this.rulesReview       = 0;
+        this.ruleResults       = [];
+        this.routingInfo       = null;
+        this.overrideableRules = [];
+        this.existingOverrides = [];
+        this.aiResult          = null;
+        this.aiScore           = 0;
+        this.aiRecommendation  = '';
+        this.aiConfidence      = '';
+        this.aiQuickSummary    = '';
+        this.aiFullAnalysis    = '';
+        this.aiStrengths       = [];
+        this.aiConcerns        = [];
+        this.error             = undefined;
+        this.activeTab         = 'rules';
+        this._allScreeningResults = [];
+    }
+
+    // ── Badge helpers ─────────────────────────────────────────────────────────
+
+    getJobCardClass(screeningResult) {
+        const base = 'job-card slds-m-bottom_medium';
+        if (screeningResult === 'Pass') return base + ' card-pass';
+        if (screeningResult === 'Fail') return base + ' card-fail';
+        return base + ' card-pending';
+    }
+
+    getStatusBadgeClass(status) {
+        if (!status) return 'slds-badge';
+        const s = status.toLowerCase();
+        if (s.includes('cleared') || s.includes('passed')) return 'slds-badge badge-success';
+        if (s.includes('failed')  || s.includes('rejected')) return 'slds-badge badge-error';
+        return 'slds-badge badge-warning';
+    }
+
+    getScreeningBadgeClass(result) {
+        if (result === 'Pass') return 'slds-badge badge-success';
+        if (result === 'Fail') return 'slds-badge badge-error';
+        return 'slds-badge badge-warning';
+    }
+
+    get hasJobApplications() {
+        return this.jobApplications && this.jobApplications.length > 0;
+    }
+
+    // ── Overrides ─────────────────────────────────────────────────────────────
+
     async loadExistingOverrides() {
         try {
             const overrides = await getOverridesForCandidate({ candidateId: this.recordId });
-            
-            this.existingOverrides = overrides.map(ov => {
-                return {
-                    overrideId: ov.overrideId,
-                    ruleName: ov.ruleName,
-                    originalOutcome: ov.originalOutcome,
-                    newOutcome: ov.newOutcome,
-                    reason: ov.overrideReason,
-                    approvalStatus: ov.approvalStatus,
-                    overrideBy: ov.overrideBy,
-                    overrideDate: ov.overrideDate,
-                    originalOutcomeClass: this.getOutcomeBadgeClass(ov.originalOutcome),
-                    newOutcomeClass: this.getOutcomeBadgeClass(ov.newOutcome),
-                    statusBadgeClass: this.getApprovalStatusClass(ov.approvalStatus)
-                };
-            });
+            this.existingOverrides = overrides.map(ov => ({
+                overrideId          : ov.overrideId,
+                ruleName            : ov.ruleName,
+                originalOutcome     : ov.originalOutcome,
+                newOutcome          : ov.newOutcome,
+                reason              : ov.overrideReason,
+                approvalStatus      : ov.approvalStatus,
+                overrideBy          : ov.overrideBy,
+                overrideDate        : ov.overrideDate,
+                originalOutcomeClass: this.getOutcomeBadgeClass(ov.originalOutcome),
+                newOutcomeClass     : this.getOutcomeBadgeClass(ov.newOutcome),
+                statusBadgeClass    : this.getApprovalStatusClass(ov.approvalStatus)
+            }));
         } catch (error) {
             console.error('Error loading overrides:', error);
         }
@@ -529,149 +648,167 @@ export default class CandidateScreenStatus extends LightningElement {
 
     processOverrideableRules(results) {
         this.overrideableRules = results
-            .filter(res => {
-                return (res.outcome === 'Fail' || res.outcome === 'Review') 
-                       && res.allowManualOverride === true
-                       && !res.overrideApplied;
-            })
-            .map(res => {
-                const cardClass = res.outcome === 'Fail' 
-                    ? 'override-card override-card-fail' 
-                    : 'override-card override-card-review';
-                
-                return {
-                    resultId: res.resultId || null,
-                    ruleId: res.ruleId || null,
-                    ruleName: res.ruleName,
-                    category: res.ruleCategory,
-                    outcome: res.outcome,
-                    details: res.details,
-                    outcomeClass: this.getOutcomeBadgeClass(res.outcome),
-                    cardClass: cardClass,
-                    buttonLabel: 'Override Result',
-                    alreadyOverridden: false,
-                    allowManualOverride: res.allowManualOverride,
-                    _rawData: res
-                };
-            });
+            .filter(res => (res.outcome === 'Fail' || res.outcome === 'Review') 
+                           && res.allowManualOverride === true
+                           && !res.overrideApplied)
+            .map(res => ({
+                resultId          : res.resultId || null,
+                ruleId            : res.ruleId || null,
+                ruleName          : res.ruleName,
+                category          : res.ruleCategory,
+                outcome           : res.outcome,
+                details           : res.details,
+                outcomeClass      : this.getOutcomeBadgeClass(res.outcome),
+                cardClass         : res.outcome === 'Fail' 
+                                    ? 'override-card override-card-fail' 
+                                    : 'override-card override-card-review',
+                buttonLabel       : 'Override Result',
+                alreadyOverridden : false,
+                allowManualOverride: res.allowManualOverride,
+                _rawData          : res
+            }));
         
-        console.log('Overrideable rules (Allow_Manual_Override__c = true):', this.overrideableRules.length);
+        console.log('Overrideable rules:', this.overrideableRules.length);
     }
 
+    // ── AI data ───────────────────────────────────────────────────────────────
+
     processAIData(data) {
-        this.aiScore = Math.round(data.Overall_Score__c || 0);
+        this.aiScore         = Math.round(data.Overall_Score__c || 0);
         this.aiRecommendation = data.Recommendation__c || '';
-        this.aiConfidence = data.Confidence_Level__c || '';
-        this.aiQuickSummary = data.Quick_Summary__c || '';
-        this.aiFullAnalysis = data.Full_Analysis__c || '';
+        this.aiConfidence    = data.Confidence_Level__c || '';
+        this.aiQuickSummary  = data.Quick_Summary__c || '';
+        this.aiFullAnalysis  = data.Full_Analysis__c || '';
         
         try {
-            const strengthsArray = JSON.parse(data.Strengths__c || '[]');
-            this.aiStrengths = strengthsArray.slice(0, 5);
+            this.aiStrengths = JSON.parse(data.Strengths__c || '[]').slice(0, 5);
         } catch (e) {
             this.aiStrengths = [];
         }
         
         try {
-            const concernsArray = JSON.parse(data.Concerns__c || '[]');
-            this.aiConcerns = concernsArray.slice(0, 5);
+            this.aiConcerns = JSON.parse(data.Concerns__c || '[]').slice(0, 5);
         } catch (e) {
             this.aiConcerns = [];
         }
     }
 
+    // ── Button handlers ───────────────────────────────────────────────────────
+
     async handleRerun() {
-        this.isRunning = true;
-        this.showToast('In Progress', 'Re-running screening...', 'info');
+    this.isRunning = true;
 
-        try {
-            await rerunScreening({ candidateId: this.recordId });
-            await this.handleRefresh();
-            this.showToast('Success', 'Screening process started', 'success');
-        } catch (error) {
-            console.error('Error rerunning screening:', error);
-            this.showToast('Error', 'Failed to start screening: ' + this.extractError(error), 'error');
-        } finally {
-            this.isRunning = false;
-        }
-    }
+    try {
+        await rerunScreening({ 
+            candidateId     : this.recordId,
+            jobApplicationId: this.selectedJobAppId  
+        });
 
-    async handleRunAIScreening() {
-        this.isAIRunning = true;
-        this.showToast('AI Analysis', 'Running AI-powered screening...', 'info');
+       
+        this.showToast('Success', 'Screening started. Results will refresh in 5 seconds.', 'success');
 
-        try {
-            const result = await runAIScreeningForCandidate({ candidateId: this.recordId });
-            
-            if (result.success) {
-                this.showToast('Success', 'AI screening completed', 'success');
-                
+        // 🔥 FIX 3: Queueable is async — wait for it to finish before refreshing
+        setTimeout(async () => {
+            try {
                 await Promise.all([
-                    refreshApex(this._wiredAIResult),
-                    this.handleRefresh()
+                    refreshApex(this._wiredStatusResult),
+                    refreshApex(this._wiredAIResult)
                 ]);
-                
-                this.activeTab = 'ai';
-            } else {
-                this.showToast('Error', result.message, 'error');
+            } catch (refreshError) {
+                console.error('Error refreshing after screening:', refreshError);
             }
-        } catch (error) {
-            console.error('Error running AI screening:', error);
-            this.showToast('Error', 'AI screening failed: ' + this.extractError(error), 'error');
-        } finally {
-            this.isAIRunning = false;
-        }
-    }
+        }, 5000); // 5 seconds — enough for queueable to complete
 
-    async handleRefresh() {
-        try {
-            await Promise.all([
-                refreshApex(this._wiredStatusResult),
-                refreshApex(this._wiredAIResult)
-            ]);
-            this.showToast('Success', 'Data refreshed', 'success');
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-        }
+    } catch (error) {
+       
+        this.showToast('Error', this.extractError(error), 'error');
+    } finally {
+        this.isRunning = false;
     }
+}
+
+async handleRefresh() {
+    try {
+        await Promise.all([
+            refreshApex(this._wiredStatusResult),
+            refreshApex(this._wiredAIResult)
+        ]);
+        // Only show toast when user manually clicks refresh
+        this.showToast('Success', 'Data refreshed', 'success');
+    } catch (error) {
+        console.error('Error refreshing data:', error);
+    }
+}
+   async handleRunAIScreening() {
+    this.isAIRunning = true;
+
+    try {
+        const result = await runAIScreeningForCandidate({ 
+            candidateId     : this.recordId, 
+            jobApplicationId: this.selectedJobAppId 
+        });
+        
+        if (result.success) {
+            // 🔥 FIX: Only ONE toast, only after successful call
+            this.showToast('Success', 'AI screening completed. Results will refresh in 5 seconds.', 'success');
+            
+            this.activeTab = 'ai';
+
+            // 🔥 AI takes longer — wait 5 seconds before refreshing
+            setTimeout(async () => {
+                try {
+                    await Promise.all([
+                        refreshApex(this._wiredAIResult),
+                        refreshApex(this._wiredStatusResult)
+                    ]);
+                } catch (refreshError) {
+                    console.error('Error refreshing after AI screening:', refreshError);
+                }
+            }, 5000);
+
+        } else {
+            this.showToast('Error', result.message, 'error');
+        }
+
+    } catch (error) {
+        // 🔥 FIX: Error toast only when something actually fails
+        this.showToast('Error', this.extractError(error), 'error');
+    } finally {
+        this.isAIRunning = false;
+    }
+}
+
 
     handleTabChange(event) {
         this.activeTab = event.target.value;
     }
-    
+
+    // ── Override modal handlers ───────────────────────────────────────────────
+
     handleOpenOverrideModal(event) {
         const resultId = event.currentTarget.dataset.resultId;
-        const ruleId = event.currentTarget.dataset.ruleId;
+        const ruleId   = event.currentTarget.dataset.ruleId;
         const ruleName = event.currentTarget.dataset.ruleName;
-        const outcome = event.currentTarget.dataset.outcome;
+        const outcome  = event.currentTarget.dataset.outcome;
         
         console.log('Opening override modal with:', { resultId, ruleId, ruleName, outcome });
         
         this.selectedOverrideRule = {
-            resultId: resultId,
-            ruleId: ruleId,
-            ruleName: ruleName,
-            currentOutcome: outcome,
+            resultId,
+            ruleId,
+            ruleName,
+            currentOutcome     : outcome,
             currentOutcomeClass: this.getOutcomeBadgeClass(outcome)
         };
         
-        this.overrideForm = {
-            newOutcome: '',
-            overrideType: '',
-            overrideReason: ''
-        };
-        
+        this.overrideForm = { newOutcome: '', overrideType: '', overrideReason: '' };
         this.showOverrideModal = true;
     }
     
     handleCloseOverrideModal() {
-        this.showOverrideModal = false;
+        this.showOverrideModal    = false;
         this.selectedOverrideRule = {};
-        this.overrideForm = {
-            newOutcome: '',
-            overrideType: '',
-            overrideReason: ''
-        };
+        this.overrideForm         = { newOutcome: '', overrideType: '', overrideReason: '' };
     }
     
     handleOverrideFormChange(event) {
@@ -680,19 +817,15 @@ export default class CandidateScreenStatus extends LightningElement {
         this.overrideForm = { ...this.overrideForm, [field]: value };
     }
     
-    // 🔥 UPDATED: Handle submit with approval email notification
     async handleSubmitOverride() {
-        // Validation
         if (!this.overrideForm.newOutcome || !this.overrideForm.overrideType || !this.overrideForm.overrideReason) {
             this.showToast('Error', 'Please fill in all required fields', 'error');
             return;
         }
-        
         if (this.overrideForm.overrideReason.trim().length < 10) {
             this.showToast('Error', 'Override reason must be at least 10 characters', 'error');
             return;
         }
-        
         if (!this.selectedOverrideRule.ruleId) {
             this.showToast('Error', 'Invalid rule ID. Please refresh and try again.', 'error');
             console.error('Missing ruleId:', this.selectedOverrideRule);
@@ -702,51 +835,34 @@ export default class CandidateScreenStatus extends LightningElement {
         this.isSubmittingOverride = true;
         
         try {
-            console.log('Submitting override with:', {
-                candidateId: this.recordId,
-                ruleId: this.selectedOverrideRule.ruleId,
-                overrideReason: this.overrideForm.overrideReason,
-                newOutcome: this.overrideForm.newOutcome,
-                overrideType: this.overrideForm.overrideType
-            });
-            
-            // 🔥 UPDATED: Receive response with approval info
             const response = await createManualOverride({
-                candidateId: this.recordId,
-                ruleId: this.selectedOverrideRule.ruleId,
+                candidateId   : this.recordId,
+                ruleId        : this.selectedOverrideRule.ruleId,
                 overrideReason: this.overrideForm.overrideReason,
-                newOutcome: this.overrideForm.newOutcome,
-                overrideType: this.overrideForm.overrideType
+                newOutcome    : this.overrideForm.newOutcome,
+                overrideType  : this.overrideForm.overrideType
             });
             
-            // 🔥 NEW: Show appropriate success message based on approval requirement
             if (response.approvalRequired) {
                 if (response.emailSent) {
-                    this.showToast(
-                        'Approval Required', 
+                    this.showToast('Approval Required', 
                         `Override submitted successfully. Approval email sent to ${response.approverName || 'manager'}.`, 
-                        'warning'
-                    );
+                        'warning');
                 } else {
-                    this.showToast(
-                        'Approval Required', 
+                    this.showToast('Approval Required', 
                         'Override submitted successfully and is pending approval. Note: Email notification could not be sent.', 
-                        'warning'
-                    );
+                        'warning');
                 }
             } else {
                 this.showToast('Success', 'Override applied successfully', 'success');
             }
             
             this.handleCloseOverrideModal();
-            
-            // Refresh data
             await this.handleRefresh();
             await this.loadExistingOverrides();
             
         } catch (error) {
             console.error('Error submitting override:', error);
-            console.error('Error details:', JSON.stringify(error));
             this.showToast('Error', 'Failed to submit override: ' + this.extractError(error), 'error');
         } finally {
             this.isSubmittingOverride = false;
@@ -762,7 +878,8 @@ export default class CandidateScreenStatus extends LightningElement {
         this.showConfidenceModal = false;
     }
 
-    // Computed properties
+    // ── Computed properties ───────────────────────────────────────────────────
+
     get hasAIResult() {
         return this.aiResult !== null;
     }
@@ -801,8 +918,8 @@ export default class CandidateScreenStatus extends LightningElement {
     
     get outcomeOptions() {
         return [
-            { label: 'Pass', value: 'Pass' },
-            { label: 'Fail', value: 'Fail' },
+            { label: 'Pass',   value: 'Pass'   },
+            { label: 'Fail',   value: 'Fail'   },
             { label: 'Review', value: 'Review' }
         ];
     }
@@ -810,9 +927,9 @@ export default class CandidateScreenStatus extends LightningElement {
     get overrideTypeOptions() {
         return [
             { label: 'Manager Override', value: 'Manager Override' },
-            { label: 'Exception', value: 'Exception' },
-            { label: 'Data Correction', value: 'Data Correction' },
-            { label: 'Other', value: 'Other' }
+            { label: 'Exception',        value: 'Exception'        },
+            { label: 'Data Correction',  value: 'Data Correction'  },
+            { label: 'Other',            value: 'Other'            }
         ];
     }
     
@@ -822,53 +939,54 @@ export default class CandidateScreenStatus extends LightningElement {
         if (this.traditionalScore >= 40) return 'slds-badge slds-theme_warning score-badge-fair';
         return 'slds-badge slds-theme_error score-badge-poor';
     }
+
     get aiRecommendationBadgeClass() {
-    const rec = this.aiRecommendation;
-    if (rec === 'STRONGLY_RECOMMEND') return 'slds-badge ai-badge-strong-recommend';
-    if (rec === 'RECOMMEND') return 'slds-badge ai-badge-recommend';
-    if (rec === 'NEUTRAL') return 'slds-badge ai-badge-neutral';
-    if (rec === 'NOT_RECOMMEND') return 'slds-badge ai-badge-not-recommend';
-    if (rec === 'STRONGLY_NOT_RECOMMEND') return 'slds-badge ai-badge-reject';
-    return 'slds-badge';
-}
-
-get aiRecommendationLabel() {
-    const labels = {
-        'STRONGLY_RECOMMEND': 'STRONG RECOMMEND',
-        'RECOMMEND': 'RECOMMEND',
-        'NEUTRAL': 'NEUTRAL',
-        'NOT_RECOMMEND': 'NOT RECOMMEND',
-        'STRONGLY_NOT_RECOMMEND': 'STRONGLY NOT RECOMMEND'
-    };
-    return labels[this.aiRecommendation] || this.aiRecommendation;
-}
-
-getOutcomeBadgeClass(outcome) {
-    const classes = {
-        'Pass': 'outcome-badge outcome-badge-pass',
-        'Fail': 'outcome-badge outcome-badge-fail',
-        'Review': 'outcome-badge outcome-badge-review'
-    };
-    return classes[outcome] || 'slds-badge';
-}
-
-getApprovalStatusClass(status) {
-    const classes = {
-        'Pending': 'slds-badge slds-theme_warning',
-        'Approved': 'slds-badge slds-theme_success',
-        'Rejected': 'slds-badge slds-theme_error'
-    };
-    return classes[status] || 'slds-badge';
-}
-
-showToast(title, message, variant) {
-    this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
-}
-
-extractError(error) {
-    if (error && error.body && error.body.message) {
-        return error.body.message;
+        const rec = this.aiRecommendation;
+        if (rec === 'STRONGLY_RECOMMEND')     return 'slds-badge ai-badge-strong-recommend';
+        if (rec === 'RECOMMEND')              return 'slds-badge ai-badge-recommend';
+        if (rec === 'NEUTRAL')                return 'slds-badge ai-badge-neutral';
+        if (rec === 'NOT_RECOMMEND')          return 'slds-badge ai-badge-not-recommend';
+        if (rec === 'STRONGLY_NOT_RECOMMEND') return 'slds-badge ai-badge-reject';
+        return 'slds-badge';
     }
-    return 'An unknown error occurred';
-}
+
+    get aiRecommendationLabel() {
+        const labels = {
+            'STRONGLY_RECOMMEND'    : 'STRONG RECOMMEND',
+            'RECOMMEND'             : 'RECOMMEND',
+            'NEUTRAL'               : 'NEUTRAL',
+            'NOT_RECOMMEND'         : 'NOT RECOMMEND',
+            'STRONGLY_NOT_RECOMMEND': 'STRONGLY NOT RECOMMEND'
+        };
+        return labels[this.aiRecommendation] || this.aiRecommendation;
+    }
+
+    getOutcomeBadgeClass(outcome) {
+        const classes = {
+            'Pass'  : 'outcome-badge outcome-badge-pass',
+            'Fail'  : 'outcome-badge outcome-badge-fail',
+            'Review': 'outcome-badge outcome-badge-review'
+        };
+        return classes[outcome] || 'slds-badge';
+    }
+
+    getApprovalStatusClass(status) {
+        const classes = {
+            'Pending' : 'slds-badge slds-theme_warning',
+            'Approved': 'slds-badge slds-theme_success',
+            'Rejected': 'slds-badge slds-theme_error'
+        };
+        return classes[status] || 'slds-badge';
+    }
+
+    showToast(title, message, variant) {
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+    }
+
+    extractError(error) {
+        if (error && error.body && error.body.message) {
+            return error.body.message;
+        }
+        return 'An unknown error occurred';
+    }
 }

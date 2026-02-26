@@ -1,587 +1,829 @@
 <!-- candidateProfileHub.html - UPDATED WITH RESUME PREVIEW MODAL -->
 <template>
-    <div class="profile-hub-container">
-        <lightning-card title="Candidate Profile" icon-name="standard:user">
-            <div class="slds-p-around_medium">
-                <!-- Loading Spinner -->
-                <template if:true={isLoading}>
-                    <div class="loading-container slds-align_absolute-center slds-m-vertical_xx-large">
-                        <lightning-spinner alternative-text="Loading..." variant="brand" size="medium"></lightning-spinner>
-                        <p class="slds-m-top_medium slds-text-color_weak">Loading profile...</p>
+  <div class="profile-hub-container">
+    <lightning-card title="Candidate Profile" icon-name="standard:user">
+      <div class="slds-p-around_medium">
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+          <div
+            class="loading-container slds-align_absolute-center slds-m-vertical_xx-large"
+          >
+            <lightning-spinner
+              alternative-text="Loading..."
+              variant="brand"
+              size="medium"
+            ></lightning-spinner>
+            <p class="slds-m-top_medium slds-text-color_weak">
+              Loading profile...
+            </p>
+          </div>
+        </template>
+
+        <!-- Error Message -->
+        <template if:true={error}>
+          <div class="slds-m-top_medium">
+            <div
+              class="error-alert slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error"
+              role="alert"
+            >
+              <lightning-icon
+                icon-name="utility:error"
+                size="x-small"
+                variant="inverse"
+                class="slds-m-right_x-small"
+              ></lightning-icon>
+              <h2>{errorText}</h2>
+            </div>
+          </div>
+        </template>
+
+        <!-- Profile Display -->
+        <template if:true={showProfile}>
+          <!-- Header Card with Banner -->
+          <div class="profile-header slds-box slds-m-bottom_medium">
+            <div class="profile-banner"></div>
+
+            <div class="profile-info slds-p-around_medium">
+              <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size_1-of-1">
+                  <div class="slds-media">
+                    <div class="slds-media__figure">
+                      <div class="profile-avatar">
+                        <lightning-icon
+                          icon-name="standard:user"
+                          size="large"
+                        ></lightning-icon>
+                      </div>
                     </div>
+                    <div
+                      class="slds-media__body slds-p-left_medium profile-details"
+                    >
+                      <h1
+                        class="slds-text-heading_large slds-m-bottom_xx-small profile-name"
+                      >
+                        {profileData.candidate.Full_Name__c}
+                      </h1>
+                      <div class="contact-info">
+                        <template if:true={profileData.candidate.Email__c}>
+                          <p
+                            class="slds-text-body_regular slds-text-color_weak slds-m-bottom_x-small contact-item"
+                          >
+                            <lightning-icon
+                              icon-name="utility:email"
+                              size="xx-small"
+                            ></lightning-icon>
+                            <span>{profileData.candidate.Email__c}</span>
+                          </p>
+                        </template>
+                        <p
+                          class="slds-text-body_regular slds-text-color_weak contact-item"
+                        >
+                          <template if:true={profileData.candidate.Location__c}>
+                            <lightning-icon
+                              icon-name="utility:location"
+                              size="xx-small"
+                            ></lightning-icon>
+                            <span>{profileData.candidate.Location__c}</span>
+                          </template>
+                          <template if:true={profileData.candidate.Phone__c}>
+                            <span class="slds-m-left_small">
+                              <lightning-icon
+                                icon-name="utility:phone_portrait"
+                                size="xx-small"
+                              ></lightning-icon>
+                              <span>{profileData.candidate.Phone__c}</span>
+                            </span>
+                          </template>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Profile Completeness -->
+          <div class="completeness-card slds-box slds-m-bottom_medium">
+            <div class="slds-grid slds-grid_vertical-align-center">
+              <div class="slds-col slds-grow">
+                <h3 class="slds-text-heading_small slds-m-bottom_x-small">
+                  <lightning-icon
+                    icon-name="utility:chart"
+                    size="x-small"
+                    class="slds-m-right_xx-small"
+                  ></lightning-icon>
+                  Profile Strength
+                </h3>
+                <div
+                  class="custom-progress-bar"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow={completenessPercentage}
+                >
+                  <div class="progress-value" style={completenessStyle}>
+                    <span class="slds-assistive-text"
+                      >Progress: {completenessPercentage}%</span
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="slds-col slds-no-flex slds-m-left_medium">
+                <span class="completeness-badge">
+                  {completenessPercentage}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <c-viral-referral-panel
+            candidate-id={candidateId}
+          ></c-viral-referral-panel>
+
+          <!-- Resume Upload Section -->
+          <div class="resume-section slds-box slds-m-bottom_medium">
+            <div
+              class="slds-grid slds-grid_vertical-align-center slds-m-bottom_small"
+            >
+              <div class="slds-col slds-grow">
+                <h3 class="slds-text-heading_small">
+                  <lightning-icon
+                    icon-name="doctype:pdf"
+                    size="x-small"
+                    class="slds-m-right_xx-small"
+                  ></lightning-icon>
+                  Resume
+                </h3>
+              </div>
+              <div class="slds-col slds-no-flex">
+                <template if:true={hasResume}>
+                  <lightning-button
+                    label="Change Resume"
+                    variant="neutral"
+                    onclick={handleChangeResume}
+                  ></lightning-button>
                 </template>
-
-                <!-- Error Message -->
-                <template if:true={error}>
-                    <div class="slds-m-top_medium">
-                        <div class="error-alert slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
-                            <lightning-icon icon-name="utility:error" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
-                            <h2>{errorText}</h2>
-                        </div>
-                    </div>
+                <template if:false={hasResume}>
+                  <lightning-button
+                    label="Upload Resume"
+                    variant="brand"
+                    onclick={handleUploadResume}
+                  ></lightning-button>
                 </template>
+              </div>
+            </div>
 
-                <!-- Profile Display -->
-                <template if:true={showProfile}>
-                    <!-- Header Card with Banner -->
-                    <div class="profile-header slds-box slds-m-bottom_medium">
-                        <div class="profile-banner"></div>
-                        
-                        <div class="profile-info slds-p-around_medium">
-                            <div class="slds-grid slds-wrap">
-                                <div class="slds-col slds-size_1-of-1">
-                                    <div class="slds-media">
-                                        <div class="slds-media__figure">
-                                            <div class="profile-avatar">
-                                                <lightning-icon icon-name="standard:user" size="large"></lightning-icon>
-                                            </div>
-                                        </div>
-                                        <div class="slds-media__body slds-p-left_medium profile-details">
-                                            <h1 class="slds-text-heading_large slds-m-bottom_xx-small profile-name">{profileData.candidate.Full_Name__c}</h1>
-                                            <div class="contact-info">
-                                                <template if:true={profileData.candidate.Email__c}>
-                                                    <p class="slds-text-body_regular slds-text-color_weak slds-m-bottom_x-small contact-item">
-                                                        <lightning-icon icon-name="utility:email" size="xx-small"></lightning-icon>
-                                                        <span>{profileData.candidate.Email__c}</span>
-                                                    </p>
-                                                </template>
-                                                <p class="slds-text-body_regular slds-text-color_weak contact-item">
-                                                    <template if:true={profileData.candidate.Location__c}>
-                                                        <lightning-icon icon-name="utility:location" size="xx-small"></lightning-icon>
-                                                        <span>{profileData.candidate.Location__c}</span>
-                                                    </template>
-                                                    <template if:true={profileData.candidate.Phone__c}>
-                                                        <span class="slds-m-left_small">
-                                                            <lightning-icon icon-name="utility:phone_portrait" size="xx-small"></lightning-icon>
-                                                            <span>{profileData.candidate.Phone__c}</span>
-                                                        </span>
-                                                    </template>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Profile Completeness -->
-                    <div class="completeness-card slds-box slds-m-bottom_medium">
-                        <div class="slds-grid slds-grid_vertical-align-center">
-                            <div class="slds-col slds-grow">
-                                <h3 class="slds-text-heading_small slds-m-bottom_x-small">
-                                    <lightning-icon icon-name="utility:chart" size="x-small" class="slds-m-right_xx-small"></lightning-icon>
-                                    Profile Strength
-                                </h3>
-                                <div class="custom-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={completenessPercentage}>
-                                    <div class="progress-value" style={completenessStyle}>
-                                        <span class="slds-assistive-text">Progress: {completenessPercentage}%</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="slds-col slds-no-flex slds-m-left_medium">
-                                <span class="completeness-badge">
-                                    {completenessPercentage}%
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Resume Upload Section -->
-                    <div class="resume-section slds-box slds-m-bottom_medium">
-                        <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_small">
-                            <div class="slds-col slds-grow">
-                                <h3 class="slds-text-heading_small">
-                                    <lightning-icon icon-name="doctype:pdf" size="x-small" class="slds-m-right_xx-small"></lightning-icon>
-                                    Resume
-                                </h3>
-                            </div>
-                            <div class="slds-col slds-no-flex">
-                                <template if:true={hasResume}>
-                                    <lightning-button
-                                        label="Change Resume"
-                                        variant="neutral"
-                                        onclick={handleChangeResume}
-                                    ></lightning-button>
-                                </template>
-                                <template if:false={hasResume}>
-                                    <lightning-button
-                                        label="Upload Resume"
-                                        variant="brand"
-                                        onclick={handleUploadResume}
-                                    ></lightning-button>
-                                </template>
-                            </div>
-                        </div>
-
-                        <!-- Current Resume Display -->
-                        <template if:true={hasResume}>
-                            <div class="current-resume-card">
-                                <div class="slds-media slds-media_center">
-                                    <div class="slds-media__figure">
-                                        <lightning-icon icon-name="doctype:pdf" size="medium"></lightning-icon>
-                                    </div>
-                                    <div class="slds-media__body">
-                                        <h4 class="slds-text-body_regular slds-m-bottom_xx-small">{resumeFileName}</h4>
-                                        <p class="slds-text-body_small slds-text-color_weak">Uploaded: {resumeUploadDate}</p>
-                                        <!-- <template if:true={s3ResumeUrl}>
+            <!-- Current Resume Display -->
+            <template if:true={hasResume}>
+              <div class="current-resume-card">
+                <div class="slds-media slds-media_center">
+                  <div class="slds-media__figure">
+                    <lightning-icon
+                      icon-name="doctype:pdf"
+                      size="medium"
+                    ></lightning-icon>
+                  </div>
+                  <div class="slds-media__body">
+                    <h4 class="slds-text-body_regular slds-m-bottom_xx-small">
+                      {resumeFileName}
+                    </h4>
+                    <p class="slds-text-body_small slds-text-color_weak">
+                      Uploaded: {resumeUploadDate}
+                    </p>
+                    <!-- <template if:true={s3ResumeUrl}>
                                             <a href={s3ResumeUrl} target="_blank" class="slds-text-body_small">View Resume</a>
                                         </template> -->
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-
-                        <!-- No Resume -->
-                        <template if:false={hasResume}>
-                            <div class="slds-text-align_center slds-p-vertical_medium">
-                                <lightning-icon icon-name="utility:upload" size="large" class="slds-m-bottom_small"></lightning-icon>
-                                <p class="slds-text-color_weak">No resume uploaded yet</p>
-                            </div>
-                        </template>
-
-                        <!-- Upload UI -->
-                        <template if:true={showResumeUpload}>
-                            <div class="slds-box slds-theme_shade slds-m-top_medium upload-container">
-                                <h4 class="slds-text-heading_small slds-m-bottom_small">Upload New Resume</h4>
-                                
-                                <template if:true={useAiParsing}>
-                                    <div class="slds-notify slds-notify_alert slds-theme_info slds-m-bottom_small" role="alert">
-                                        <lightning-icon icon-name="utility:info" size="x-small" variant="inverse" class="slds-m-right_xx-small"></lightning-icon>
-                                        AI Parsing Enabled - Resume will be uploaded to S3 and analyzed
-                                    </div>
-                                </template>
-                                
-                                <lightning-file-upload
-                                    label="Upload Resume"
-                                    record-id={currentCandidateId}
-                                    onuploadfinished={handleUploadFinished}
-                                    multiple="false"
-                                    accept=".pdf,.doc,.docx">
-                                </lightning-file-upload>
-                                
-                                <div class="slds-m-top_small">
-                                    <lightning-button
-                                        variant="neutral"
-                                        label="Cancel"
-                                        onclick={handleCancelUpload}>
-                                    </lightning-button>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <!-- Work Experience Section -->
-                    <c-profile-section
-                        icon-name="standard:work_order"
-                        add-button-label="Add Experience"
-                        empty-state-message="No work experience added yet"
-                        items={profileData.workExperiences}
-                        onaddnew={handleAddWorkExperience}
-                        class="animated-section"
-                    >
-                        <span slot="title">Experience</span>
-                        <div slot="items">
-                            <template for:each={profileData.workExperiences} for:item="work">
-                                <c-profile-item-card
-                                    key={work.Id}
-                                    icon-name="standard:work_order_item"
-                                    record-id={work.Id}
-                                    onedit={handleEditWorkExperience}
-                                    ondelete={handleDeleteWorkExperience}
-                                >
-                                    <div slot="content">
-                                        <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{work.Role__c}</h3>
-                                        <p class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle">{work.Organization__c}</p>
-                                        <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{work.durationDisplay}</p>
-                                        <template if:true={work.Responsibilities__c}>
-                                            <p class="slds-text-body_regular item-description">{work.Responsibilities__c}</p>
-                                        </template>
-                                    </div>
-                                </c-profile-item-card>
-                            </template>
-                        </div>
-                    </c-profile-section>
-
-                    <!-- Education Section -->
-                    <c-profile-section
-                        icon-name="standard:education"
-                        add-button-label="Add Education"
-                        empty-state-message="No education added yet"
-                        items={profileData.educations}
-                        onaddnew={handleAddEducation}
-                        class="animated-section"
-                    >
-                        <span slot="title">Education</span>
-                        <div slot="items">
-                            <template for:each={profileData.educations} for:item="edu">
-                                <c-profile-item-card
-                                    key={edu.Id}
-                                    icon-name="standard:education"
-                                    record-id={edu.Id}
-                                    onedit={handleEditEducation}
-                                    ondelete={handleDeleteEducation}
-                                >
-                                    <div slot="content">
-                                        <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{edu.Institution__c}</h3>
-                                        <p class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle">{edu.Degree__c}</p>
-                                        <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{edu.durationDisplay}</p>
-                                        <template if:true={edu.Details__c}>
-                                            <p class="slds-text-body_regular item-description">{edu.Details__c}</p>
-                                        </template>
-                                    </div>
-                                </c-profile-item-card>
-                            </template>
-                        </div>
-                    </c-profile-section>
-
-                                    
-                    <!-- Licenses Section -->
-                    <c-profile-section
-                        icon-name="standard:endorsement"
-                        add-button-label="Add Certification"
-                        empty-state-message="No licenses or certifications added yet"
-                        items={profileData.licenses}
-                        onaddnew={handleAddLicense}
-                        class="animated-section"
-                    >
-                        <span slot="title">Licenses & Certifications</span>
-                        <div slot="items">
-                            <div class="slds-grid slds-wrap slds-grid_pull-padded">
-                                <template for:each={profileData.licenses} for:item="license">
-                                    <div key={license.Id} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small">
-                                        <div class="license-card slds-box slds-box_x-small">
-                                            <lightning-button-icon
-                                                icon-name="utility:edit"
-                                                alternative-text="Edit"
-                                                title="Edit"
-                                                variant="bare"
-                                                onclick={handleEditLicense}
-                                                data-id={license.Id}
-                                                class="edit-icon-badge"
-                                            ></lightning-button-icon>
-                                            <lightning-button-icon
-                                                icon-name="utility:delete"
-                                                alternative-text="Delete"
-                                                title="Delete"
-                                                variant="bare"
-                                                onclick={handleDeleteLicense}
-                                                data-id={license.Id}
-                                                class="delete-icon-badge"
-                                            ></lightning-button-icon>
-                                            <div class="slds-media slds-media_center">
-                                                <div class="slds-media__figure">
-                                                    <lightning-icon icon-name="standard:endorsement" size="small"></lightning-icon>
-                                                </div>
-                                                <div class="slds-media__body">
-                                                    <h3 class="slds-text-body_regular slds-truncate" title={license.Name}>{license.Name}</h3>
-                                                    <p class="slds-text-body_small slds-text-color_weak">{license.Type__c}</p>
-                                                    <template if:true={license.dateDisplay}>
-                                                        <p class="slds-text-body_small slds-m-top_xx-small slds-text-color_weak">{license.dateDisplay}</p>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </c-profile-section>
-                    <!-- Clinical Skills Section -->
-                    <c-profile-section
-                        icon-name="standard:skill"
-                        add-button-label="Add Clinical Skill"
-                        empty-state-message="No clinical skills added yet"
-                        items={profileData.clinicalSkills}
-                        onaddnew={handleAddClinicalSkill}
-                        class="animated-section"
-                    >
-                        <span slot="title">Clinical Skills</span>
-                        <div slot="items">
-                            <div class="skills-container slds-grid slds-wrap slds-grid_pull-padded">
-                                <template for:each={profileData.clinicalSkills} for:item="skill">
-                                    <div key={skill.Id} class="slds-col slds-p-horizontal_small slds-m-bottom_small">
-                                        <span class="skill-badge clinical-skill" onclick={handleEditClinicalSkill} data-id={skill.Id}>
-                                            {skill.Name}
-                                            <lightning-button-icon
-                                                icon-name="utility:close"
-                                                alternative-text="Delete"
-                                                title="Delete"
-                                                variant="bare-inverse"
-                                                size="x-small"
-                                                onclick={handleDeleteClinicalSkill}
-                                                data-id={skill.Id}
-                                                class="skill-delete-btn"
-                                            ></lightning-button-icon>
-                                        </span>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </c-profile-section>
-
-                    <!-- Technical Skills Section -->
-                    <c-profile-section
-                        icon-name="standard:apex"
-                        add-button-label="Add Technical Skill"
-                        empty-state-message="No technical skills added yet"
-                        items={profileData.technicalSkills}
-                        onaddnew={handleAddTechnicalSkill}
-                        class="animated-section"
-                    >
-                        <span slot="title">Technical Skills</span>
-                        <div slot="items">
-                            <div class="skills-container slds-grid slds-wrap slds-grid_pull-padded">
-                                <template for:each={profileData.technicalSkills} for:item="skill">
-                                    <div key={skill.Id} class="slds-col slds-p-horizontal_small slds-m-bottom_small">
-                                        <span class="skill-badge technical-skill" onclick={handleEditTechnicalSkill} data-id={skill.Id}>
-                                            {skill.Name}
-                                            <lightning-button-icon
-                                                icon-name="utility:close"
-                                                alternative-text="Delete"
-                                                title="Delete"
-                                                variant="bare-inverse"
-                                                size="x-small"
-                                                onclick={handleDeleteTechnicalSkill}
-                                                data-id={skill.Id}
-                                                class="skill-delete-btn"
-                                            ></lightning-button-icon>
-                                        </span>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </c-profile-section>
-
-                    <!-- Procedures Section -->
-                    <c-profile-section
-                        icon-name="standard:service_report"
-                        add-button-label="Add Procedure"
-                        empty-state-message="No procedures added yet"
-                        items={profileData.procedures}
-                        onaddnew={handleAddProcedure}
-                        class="animated-section"
-                    >
-                        <span slot="title">Procedures Performed</span>
-                        <div slot="items">
-                            <div class="slds-grid slds-wrap slds-grid_pull-padded">
-                                <template for:each={profileData.procedures} for:item="procedure">
-                                    <div key={procedure.Id} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small">
-                                        <div class="license-card slds-box slds-box_x-small">
-                                            <lightning-button-icon
-                                                icon-name="utility:edit"
-                                                alternative-text="Edit"
-                                                title="Edit"
-                                                variant="bare"
-                                                onclick={handleEditProcedure}
-                                                data-id={procedure.Id}
-                                                class="edit-icon-badge"
-                                            ></lightning-button-icon>
-                                            <lightning-button-icon
-                                                icon-name="utility:delete"
-                                                alternative-text="Delete"
-                                                title="Delete"
-                                                variant="bare"
-                                                onclick={handleDeleteProcedure}
-                                                data-id={procedure.Id}
-                                                class="delete-icon-badge"
-                                            ></lightning-button-icon>
-                                            <div class="slds-media slds-media_center">
-                                                <div class="slds-media__figure">
-                                                    <lightning-icon icon-name="standard:service_report" size="small"></lightning-icon>
-                                                </div>
-                                                <div class="slds-media__body">
-                                                    <h3 class="slds-text-body_regular slds-truncate" title={procedure.Name}>{procedure.Name}</h3>
-                                                    <p class="slds-text-body_small slds-text-color_weak">{procedure.Category__c}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </c-profile-section>
-
-                    <!-- Internships Section -->
-                    <c-profile-section
-                        icon-name="standard:entity"
-                        add-button-label="Add Internship"
-                        empty-state-message="No internships added yet"
-                        items={profileData.internships}
-                        onaddnew={handleAddInternship}
-                        class="animated-section"
-                    >
-                        <span slot="title">Internships / Clinical Rotations</span>
-                        <div slot="items">
-                            <template for:each={profileData.internships} for:item="intern">
-                                <c-profile-item-card
-                                    key={intern.Id}
-                                    icon-name="standard:entity"
-                                    record-id={intern.Id}
-                                    onedit={handleEditInternship}
-                                    ondelete={handleDeleteInternship}
-                                >
-                                    <div slot="content">
-                                        <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{intern.Organization__c}</h3>
-                                        <p class="slds-text-color_weak slds-text-body_small item-meta">{intern.durationDisplay}</p>
-                                    </div>
-                                </c-profile-item-card>
-                            </template>
-                        </div>
-                    </c-profile-section>
-
-                    <!-- Research & Publications Section -->
-                    <c-profile-section
-                        icon-name="standard:article"
-                        add-button-label="Add Publication"
-                        empty-state-message="No research or publications added yet"
-                        items={profileData.researchPublications}
-                        onaddnew={handleAddResearch}
-                        class="animated-section"
-                    >
-                        <span slot="title">Research, Publications & Conferences</span>
-                        <div slot="items">
-                            <template for:each={profileData.researchPublications} for:item="research">
-                                <c-profile-item-card
-                                    key={research.Id}
-                                    icon-name="standard:article"
-                                    record-id={research.Id}
-                                    onedit={handleEditResearch}
-                                    ondelete={handleDeleteResearch}
-                                >
-                                    <div slot="content">
-                                        <h3 class="slds-text-heading_small slds-m-bottom_xx-small item-title">{research.Title__c}</h3>
-                                        <p class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle">{research.Type__c}</p>
-                                        <template if:true={research.dateDisplay}>
-                                            <p class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta">{research.dateDisplay}</p>
-                                        </template>
-                                    </div>
-                                </c-profile-item-card>
-                            </template>
-                        </div>
-                    </c-profile-section>
-
-                    <!-- Professional Memberships Section -->
-                    <c-profile-section
-                        icon-name="standard:groups"
-                        add-button-label="Add Membership"
-                        empty-state-message="No professional memberships added yet"
-                        items={profileData.memberships}
-                        onaddnew={handleAddMembership}
-                        class="animated-section"
-                    >
-                        <span slot="title">Professional Memberships</span>
-                        <div slot="items">
-                            <div class="slds-grid slds-wrap slds-grid_pull-padded">
-                                <template for:each={profileData.memberships} for:item="member">
-                                    <div key={member.Id} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small">
-                                        <div class="license-card slds-box slds-box_x-small">
-                                            <lightning-button-icon
-                                                icon-name="utility:edit"
-                                                alternative-text="Edit"
-                                                title="Edit"
-                                                variant="bare"
-                                                onclick={handleEditMembership}
-                                                data-id={member.Id}
-                                                class="edit-icon-badge"
-                                            ></lightning-button-icon>
-                                            <lightning-button-icon
-                                                icon-name="utility:delete"
-                                                alternative-text="Delete"
-                                                title="Delete"
-                                                variant="bare"
-                                                onclick={handleDeleteMembership}
-                                                data-id={member.Id}
-                                                class="delete-icon-badge"
-                                            ></lightning-button-icon>
-                                            <div class="slds-media slds-media_center">
-                                                <div class="slds-media__figure">
-                                                    <lightning-icon icon-name="standard:groups" size="small"></lightning-icon>
-                                                </div>
-                                                <div class="slds-media__body">
-                                                    <h3 class="slds-text-body_regular slds-truncate" title={member.Organization_Name__c}>{member.Organization_Name__c}</h3>
-                                                    <p class="slds-text-body_small slds-text-color_weak">{member.Membership_Type__c}</p>
-                                                    <template if:true={member.dateDisplay}>
-                                                        <p class="slds-text-body_small slds-m-top_xx-small slds-text-color_weak">{member.dateDisplay}</p>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </c-profile-section>
-
-                </template>
-            </div>
-        </lightning-card>
-
-        <!-- Dynamic Form Modal -->
-        <c-dynamic-form-modal
-            candidate-id={currentCandidateId}
-            onsave={handleModalSave}
-        ></c-dynamic-form-modal>
-        
-        <!-- ✅ NEW: Resume Preview Modal -->
-        <template if:true={showPreviewModal}>
-            <div class="slds-backdrop slds-backdrop_open resume-preview-backdrop"></div>
-            
-            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large resume-preview-modal">
-                <div class="slds-modal__container">
-                    <!-- Modal Header -->
-                    <header class="slds-modal__header">
-                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
-                                title="Close" 
-                                onclick={handleClosePreviewModal}>
-                            <lightning-icon icon-name="utility:close" size="small" alternative-text="Close"></lightning-icon>
-                            <span class="slds-assistive-text">Close</span>
-                        </button>
-                        <h2 class="slds-modal__title slds-hyphenate">
-                            <lightning-icon icon-name="custom:custom41" size="small" class="slds-m-right_small"></lightning-icon>
-                            AI Resume Analysis
-                        </h2>
-                    </header>
-
-                    <!-- Modal Body -->
-                    <div class="slds-modal__content slds-p-around_medium">
-                        <!-- ✅ Loading/Analyzing State -->
-                        <template if:true={isAnalyzingResume}>
-                            <div class="analyzing-container-v2">
-                                <!-- Spinner, Text, and Dots on Same Line -->
-                                <div class="analyzing-header">
-                                    <div class="spinner-inline">
-                                        <lightning-spinner alternative-text="Analyzing..." variant="brand" size="medium"></lightning-spinner>
-                                    </div>
-                                    <div class="analyzing-title">
-                                        <lightning-icon icon-name="utility:einstein" size="small" class="einstein-icon"></lightning-icon>
-                                        <span class="title-text">Analyzing Resume Using AI</span>
-                                    </div>
-                                    <div class="dots-inline">
-                                        <span class="dot"></span>
-                                        <span class="dot"></span>
-                                        <span class="dot"></span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Subtitle Below -->
-                                <p class="analyzing-subtitle">
-                                    Please wait while we extract and analyze your resume data...
-                                </p>
-                            </div>
-                        </template>
-                        
-                        <!-- ✅ Resume Preview Component (shown after analysis) -->
-                        <template if:false={isAnalyzingResume}>
-                            <c-resume-preview-panel-v2
-                                candidate-id={currentCandidateId}
-                                onconfirmed={handleResumeConfirmed}
-                                oncancelled={handleResumeCancelled}>
-                            </c-resume-preview-panel-v2>
-                        </template>
-                    </div>
+                  </div>
                 </div>
-            </section>
+              </div>
+            </template>
+
+            <!-- No Resume -->
+            <template if:false={hasResume}>
+              <div class="slds-text-align_center slds-p-vertical_medium">
+                <lightning-icon
+                  icon-name="utility:upload"
+                  size="large"
+                  class="slds-m-bottom_small"
+                ></lightning-icon>
+                <p class="slds-text-color_weak">No resume uploaded yet</p>
+              </div>
+            </template>
+
+            <!-- Upload UI -->
+            <template if:true={showResumeUpload}>
+              <div
+                class="slds-box slds-theme_shade slds-m-top_medium upload-container"
+              >
+                <h4 class="slds-text-heading_small slds-m-bottom_small">
+                  Upload New Resume
+                </h4>
+
+                <template if:true={useAiParsing}>
+                  <div
+                    class="slds-notify slds-notify_alert slds-theme_info slds-m-bottom_small"
+                    role="alert"
+                  >
+                    <lightning-icon
+                      icon-name="utility:info"
+                      size="x-small"
+                      variant="inverse"
+                      class="slds-m-right_xx-small"
+                    ></lightning-icon>
+                    AI Parsing Enabled - Resume will be uploaded to S3 and
+                    analyzed
+                  </div>
+                </template>
+
+                <lightning-file-upload
+                  label="Upload Resume"
+                  record-id={currentCandidateId}
+                  onuploadfinished={handleUploadFinished}
+                  multiple="false"
+                  accept=".pdf,.doc,.docx"
+                >
+                </lightning-file-upload>
+
+                <div class="slds-m-top_small">
+                  <lightning-button
+                    variant="neutral"
+                    label="Cancel"
+                    onclick={handleCancelUpload}
+                  >
+                  </lightning-button>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Work Experience Section -->
+          <c-profile-section
+            icon-name="standard:work_order"
+            add-button-label="Add Experience"
+            empty-state-message="No work experience added yet"
+            items={profileData.workExperiences}
+            onaddnew={handleAddWorkExperience}
+            class="animated-section"
+          >
+            <span slot="title">Experience</span>
+            <div slot="items">
+              <template for:each={profileData.workExperiences} for:item="work">
+                <c-profile-item-card
+                  key={work.Id}
+                  icon-name="standard:work_order_item"
+                  record-id={work.Id}
+                  onedit={handleEditWorkExperience}
+                  ondelete={handleDeleteWorkExperience}
+                >
+                  <div slot="content">
+                    <h3
+                      class="slds-text-heading_small slds-m-bottom_xx-small item-title"
+                    >
+                      {work.Role__c}
+                    </h3>
+                    <p
+                      class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle"
+                    >
+                      {work.Organization__c}
+                    </p>
+                    <p
+                      class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta"
+                    >
+                      {work.durationDisplay}
+                    </p>
+                    <template if:true={work.Responsibilities__c}>
+                      <p class="slds-text-body_regular item-description">
+                        {work.Responsibilities__c}
+                      </p>
+                    </template>
+                  </div>
+                </c-profile-item-card>
+              </template>
+            </div>
+          </c-profile-section>
+
+          <!-- Education Section -->
+          <c-profile-section
+            icon-name="standard:education"
+            add-button-label="Add Education"
+            empty-state-message="No education added yet"
+            items={profileData.educations}
+            onaddnew={handleAddEducation}
+            class="animated-section"
+          >
+            <span slot="title">Education</span>
+            <div slot="items">
+              <template for:each={profileData.educations} for:item="edu">
+                <c-profile-item-card
+                  key={edu.Id}
+                  icon-name="standard:education"
+                  record-id={edu.Id}
+                  onedit={handleEditEducation}
+                  ondelete={handleDeleteEducation}
+                >
+                  <div slot="content">
+                    <h3
+                      class="slds-text-heading_small slds-m-bottom_xx-small item-title"
+                    >
+                      {edu.Institution__c}
+                    </h3>
+                    <p
+                      class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle"
+                    >
+                      {edu.Degree__c}
+                    </p>
+                    <p
+                      class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta"
+                    >
+                      {edu.durationDisplay}
+                    </p>
+                    <template if:true={edu.Details__c}>
+                      <p class="slds-text-body_regular item-description">
+                        {edu.Details__c}
+                      </p>
+                    </template>
+                  </div>
+                </c-profile-item-card>
+              </template>
+            </div>
+          </c-profile-section>
+
+          <!-- Licenses Section -->
+          <c-profile-section
+            icon-name="standard:endorsement"
+            add-button-label="Add Certification"
+            empty-state-message="No licenses or certifications added yet"
+            items={profileData.licenses}
+            onaddnew={handleAddLicense}
+            class="animated-section"
+          >
+            <span slot="title">Licenses & Certifications</span>
+            <div slot="items">
+              <div class="slds-grid slds-wrap slds-grid_pull-padded">
+                <template for:each={profileData.licenses} for:item="license">
+                  <div
+                    key={license.Id}
+                    class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small"
+                  >
+                    <div class="license-card slds-box slds-box_x-small">
+                      <lightning-button-icon
+                        icon-name="utility:edit"
+                        alternative-text="Edit"
+                        title="Edit"
+                        variant="bare"
+                        onclick={handleEditLicense}
+                        data-id={license.Id}
+                        class="edit-icon-badge"
+                      ></lightning-button-icon>
+                      <lightning-button-icon
+                        icon-name="utility:delete"
+                        alternative-text="Delete"
+                        title="Delete"
+                        variant="bare"
+                        onclick={handleDeleteLicense}
+                        data-id={license.Id}
+                        class="delete-icon-badge"
+                      ></lightning-button-icon>
+                      <div class="slds-media slds-media_center">
+                        <div class="slds-media__figure">
+                          <lightning-icon
+                            icon-name="standard:endorsement"
+                            size="small"
+                          ></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                          <h3
+                            class="slds-text-body_regular slds-truncate"
+                            title={license.Name}
+                          >
+                            {license.Name}
+                          </h3>
+                          <p class="slds-text-body_small slds-text-color_weak">
+                            {license.Type__c}
+                          </p>
+                          <template if:true={license.dateDisplay}>
+                            <p
+                              class="slds-text-body_small slds-m-top_xx-small slds-text-color_weak"
+                            >
+                              {license.dateDisplay}
+                            </p>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </c-profile-section>
+          <!-- Clinical Skills Section -->
+          <c-profile-section
+            icon-name="standard:skill"
+            add-button-label="Add Clinical Skill"
+            empty-state-message="No clinical skills added yet"
+            items={profileData.clinicalSkills}
+            onaddnew={handleAddClinicalSkill}
+            class="animated-section"
+          >
+            <span slot="title">Clinical Skills</span>
+            <div slot="items">
+              <div
+                class="skills-container slds-grid slds-wrap slds-grid_pull-padded"
+              >
+                <template
+                  for:each={profileData.clinicalSkills}
+                  for:item="skill"
+                >
+                  <div
+                    key={skill.Id}
+                    class="slds-col slds-p-horizontal_small slds-m-bottom_small"
+                  >
+                    <span
+                      class="skill-badge clinical-skill"
+                      onclick={handleEditClinicalSkill}
+                      data-id={skill.Id}
+                    >
+                      {skill.Name}
+                      <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text="Delete"
+                        title="Delete"
+                        variant="bare-inverse"
+                        size="x-small"
+                        onclick={handleDeleteClinicalSkill}
+                        data-id={skill.Id}
+                        class="skill-delete-btn"
+                      ></lightning-button-icon>
+                    </span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </c-profile-section>
+
+          <!-- Technical Skills Section -->
+          <c-profile-section
+            icon-name="standard:apex"
+            add-button-label="Add Technical Skill"
+            empty-state-message="No technical skills added yet"
+            items={profileData.technicalSkills}
+            onaddnew={handleAddTechnicalSkill}
+            class="animated-section"
+          >
+            <span slot="title">Technical Skills</span>
+            <div slot="items">
+              <div
+                class="skills-container slds-grid slds-wrap slds-grid_pull-padded"
+              >
+                <template
+                  for:each={profileData.technicalSkills}
+                  for:item="skill"
+                >
+                  <div
+                    key={skill.Id}
+                    class="slds-col slds-p-horizontal_small slds-m-bottom_small"
+                  >
+                    <span
+                      class="skill-badge technical-skill"
+                      onclick={handleEditTechnicalSkill}
+                      data-id={skill.Id}
+                    >
+                      {skill.Name}
+                      <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text="Delete"
+                        title="Delete"
+                        variant="bare-inverse"
+                        size="x-small"
+                        onclick={handleDeleteTechnicalSkill}
+                        data-id={skill.Id}
+                        class="skill-delete-btn"
+                      ></lightning-button-icon>
+                    </span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </c-profile-section>
+
+          <!-- Procedures Section -->
+          <c-profile-section
+            icon-name="standard:service_report"
+            add-button-label="Add Procedure"
+            empty-state-message="No procedures added yet"
+            items={profileData.procedures}
+            onaddnew={handleAddProcedure}
+            class="animated-section"
+          >
+            <span slot="title">Procedures Performed</span>
+            <div slot="items">
+              <div class="slds-grid slds-wrap slds-grid_pull-padded">
+                <template
+                  for:each={profileData.procedures}
+                  for:item="procedure"
+                >
+                  <div
+                    key={procedure.Id}
+                    class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small"
+                  >
+                    <div class="license-card slds-box slds-box_x-small">
+                      <lightning-button-icon
+                        icon-name="utility:edit"
+                        alternative-text="Edit"
+                        title="Edit"
+                        variant="bare"
+                        onclick={handleEditProcedure}
+                        data-id={procedure.Id}
+                        class="edit-icon-badge"
+                      ></lightning-button-icon>
+                      <lightning-button-icon
+                        icon-name="utility:delete"
+                        alternative-text="Delete"
+                        title="Delete"
+                        variant="bare"
+                        onclick={handleDeleteProcedure}
+                        data-id={procedure.Id}
+                        class="delete-icon-badge"
+                      ></lightning-button-icon>
+                      <div class="slds-media slds-media_center">
+                        <div class="slds-media__figure">
+                          <lightning-icon
+                            icon-name="standard:service_report"
+                            size="small"
+                          ></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                          <h3
+                            class="slds-text-body_regular slds-truncate"
+                            title={procedure.Name}
+                          >
+                            {procedure.Name}
+                          </h3>
+                          <p class="slds-text-body_small slds-text-color_weak">
+                            {procedure.Category__c}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </c-profile-section>
+
+          <!-- Internships Section -->
+          <c-profile-section
+            icon-name="standard:entity"
+            add-button-label="Add Internship"
+            empty-state-message="No internships added yet"
+            items={profileData.internships}
+            onaddnew={handleAddInternship}
+            class="animated-section"
+          >
+            <span slot="title">Internships / Clinical Rotations</span>
+            <div slot="items">
+              <template for:each={profileData.internships} for:item="intern">
+                <c-profile-item-card
+                  key={intern.Id}
+                  icon-name="standard:entity"
+                  record-id={intern.Id}
+                  onedit={handleEditInternship}
+                  ondelete={handleDeleteInternship}
+                >
+                  <div slot="content">
+                    <h3
+                      class="slds-text-heading_small slds-m-bottom_xx-small item-title"
+                    >
+                      {intern.Organization__c}
+                    </h3>
+                    <p
+                      class="slds-text-color_weak slds-text-body_small item-meta"
+                    >
+                      {intern.durationDisplay}
+                    </p>
+                  </div>
+                </c-profile-item-card>
+              </template>
+            </div>
+          </c-profile-section>
+
+          <!-- Research & Publications Section -->
+          <c-profile-section
+            icon-name="standard:article"
+            add-button-label="Add Publication"
+            empty-state-message="No research or publications added yet"
+            items={profileData.researchPublications}
+            onaddnew={handleAddResearch}
+            class="animated-section"
+          >
+            <span slot="title">Research, Publications & Conferences</span>
+            <div slot="items">
+              <template
+                for:each={profileData.researchPublications}
+                for:item="research"
+              >
+                <c-profile-item-card
+                  key={research.Id}
+                  icon-name="standard:article"
+                  record-id={research.Id}
+                  onedit={handleEditResearch}
+                  ondelete={handleDeleteResearch}
+                >
+                  <div slot="content">
+                    <h3
+                      class="slds-text-heading_small slds-m-bottom_xx-small item-title"
+                    >
+                      {research.Title__c}
+                    </h3>
+                    <p
+                      class="slds-text-body_regular slds-m-bottom_xx-small item-subtitle"
+                    >
+                      {research.Type__c}
+                    </p>
+                    <template if:true={research.dateDisplay}>
+                      <p
+                        class="slds-text-color_weak slds-text-body_small slds-m-bottom_small item-meta"
+                      >
+                        {research.dateDisplay}
+                      </p>
+                    </template>
+                  </div>
+                </c-profile-item-card>
+              </template>
+            </div>
+          </c-profile-section>
+
+          <!-- Professional Memberships Section -->
+          <c-profile-section
+            icon-name="standard:groups"
+            add-button-label="Add Membership"
+            empty-state-message="No professional memberships added yet"
+            items={profileData.memberships}
+            onaddnew={handleAddMembership}
+            class="animated-section"
+          >
+            <span slot="title">Professional Memberships</span>
+            <div slot="items">
+              <div class="slds-grid slds-wrap slds-grid_pull-padded">
+                <template for:each={profileData.memberships} for:item="member">
+                  <div
+                    key={member.Id}
+                    class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small"
+                  >
+                    <div class="license-card slds-box slds-box_x-small">
+                      <lightning-button-icon
+                        icon-name="utility:edit"
+                        alternative-text="Edit"
+                        title="Edit"
+                        variant="bare"
+                        onclick={handleEditMembership}
+                        data-id={member.Id}
+                        class="edit-icon-badge"
+                      ></lightning-button-icon>
+                      <lightning-button-icon
+                        icon-name="utility:delete"
+                        alternative-text="Delete"
+                        title="Delete"
+                        variant="bare"
+                        onclick={handleDeleteMembership}
+                        data-id={member.Id}
+                        class="delete-icon-badge"
+                      ></lightning-button-icon>
+                      <div class="slds-media slds-media_center">
+                        <div class="slds-media__figure">
+                          <lightning-icon
+                            icon-name="standard:groups"
+                            size="small"
+                          ></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                          <h3
+                            class="slds-text-body_regular slds-truncate"
+                            title={member.Organization_Name__c}
+                          >
+                            {member.Organization_Name__c}
+                          </h3>
+                          <p class="slds-text-body_small slds-text-color_weak">
+                            {member.Membership_Type__c}
+                          </p>
+                          <template if:true={member.dateDisplay}>
+                            <p
+                              class="slds-text-body_small slds-m-top_xx-small slds-text-color_weak"
+                            >
+                              {member.dateDisplay}
+                            </p>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </c-profile-section>
         </template>
-    </div>
+      </div>
+    </lightning-card>
+
+    <c-dynamic-form-modal
+      candidate-id={currentCandidateId}
+      existing-work-experiences={profileData.workExperiences}
+      existing-educations={profileData.educations}
+      existing-licenses={profileData.licenses}
+      existing-clinical-skills={profileData.clinicalSkills}
+      existing-technical-skills={profileData.technicalSkills}
+      existing-procedures={profileData.procedures}
+      existing-internships={profileData.internships}
+      existing-research={profileData.researchPublications}
+      existing-memberships={profileData.memberships}
+      onsave={handleModalSave}
+    ></c-dynamic-form-modal>
+
+    <!-- ✅ NEW: Resume Preview Modal -->
+    <template if:true={showPreviewModal}>
+      <div
+        class="slds-backdrop slds-backdrop_open resume-preview-backdrop"
+      ></div>
+
+      <section
+        role="dialog"
+        tabindex="-1"
+        class="slds-modal slds-fade-in-open slds-modal_large resume-preview-modal"
+      >
+        <div class="slds-modal__container">
+          <!-- Modal Header -->
+          <header class="slds-modal__header">
+            <button
+              class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+              title="Close"
+              onclick={handleClosePreviewModal}
+            >
+              <lightning-icon
+                icon-name="utility:close"
+                size="small"
+                alternative-text="Close"
+              ></lightning-icon>
+              <span class="slds-assistive-text">Close</span>
+            </button>
+            <h2 class="slds-modal__title slds-hyphenate">
+              <lightning-icon
+                icon-name="custom:custom41"
+                size="small"
+                class="slds-m-right_small"
+              ></lightning-icon>
+              AI Resume Analysis
+            </h2>
+          </header>
+
+          <!-- Modal Body -->
+          <div class="slds-modal__content slds-p-around_medium">
+            <!-- ✅ Loading/Analyzing State -->
+            <template if:true={isAnalyzingResume}>
+              <div class="analyzing-container-v2">
+                <!-- Spinner, Text, and Dots on Same Line -->
+                <div class="analyzing-header">
+                  <div class="spinner-inline">
+                    <lightning-spinner
+                      alternative-text="Analyzing..."
+                      variant="brand"
+                      size="medium"
+                    ></lightning-spinner>
+                  </div>
+                  <div class="analyzing-title">
+                    <lightning-icon
+                      icon-name="utility:einstein"
+                      size="small"
+                      class="einstein-icon"
+                    ></lightning-icon>
+                    <span class="title-text">Analyzing Resume Using AI</span>
+                  </div>
+                  <div class="dots-inline">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                  </div>
+                </div>
+
+                <!-- Subtitle Below -->
+                <p class="analyzing-subtitle">
+                  Please wait while we extract and analyze your resume data...
+                </p>
+              </div>
+            </template>
+
+            <!-- ✅ Resume Preview Component (shown after analysis) -->
+            <template if:false={isAnalyzingResume}>
+              <c-resume-preview-panel-v2
+                candidate-id={currentCandidateId}
+                onconfirmed={handleResumeConfirmed}
+                oncancelled={handleResumeCancelled}
+              >
+              </c-resume-preview-panel-v2>
+            </template>
+          </div>
+        </div>
+      </section>
+    </template>
+  </div>
 </template>
