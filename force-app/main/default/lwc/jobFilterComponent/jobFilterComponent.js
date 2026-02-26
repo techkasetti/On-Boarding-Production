@@ -350,196 +350,208 @@ export default class JobFilterComponent extends NavigationMixin(LightningElement
     }
 
     async handleApply(event) {
-        event.preventDefault();
+    event.preventDefault();
+    
+    const jobId = event.currentTarget.dataset.id;
+    const jobName = this.jobs.find(job => job.Id === jobId)?.Job_Title__c;
+    
+    this.handleCloseModal();
+    
+    if (!this.isGuest && this.appliedJobIds.has(jobId)) {
+        this.displayNotification(
+            'Already Applied',
+            'You have already applied for this position',
+            'info'
+        );
+        return;
+    }
+    
+    if (this.isGuest) {
+        sessionStorage.setItem('pendingJobApplication', jobId);
+        sessionStorage.setItem('pendingJobName', jobName);
         
-        const jobId = event.currentTarget.dataset.id;
-        const jobName = this.jobs.find(job => job.Id === jobId)?.Job_Title__c;
+        this.displayNotification(
+            'Login Required',
+            'Please login or register to apply for this position',
+            'warning'
+        );
         
-        this.handleCloseModal();
+        this.dispatchEvent(new ShowToastEvent({
+            title: 'Login Required',
+            message: 'Please login or register to apply for this position',
+            variant: 'warning',
+            mode: 'sticky'
+        }));
         
-        if (!this.isGuest && this.appliedJobIds.has(jobId)) {
-            this.displayNotification(
-                'Already Applied',
-                'You have already applied for this position',
-                'info'
-            );
-            return;
-        }
+        setTimeout(() => {
+            window.location.href = '/candidate/login';
+        }, 1500);
+    } else {
+        this.isLoading = true;
         
-        if (this.isGuest) {
-            sessionStorage.setItem('pendingJobApplication', jobId);
-            sessionStorage.setItem('pendingJobName', jobName);
+        try {
+            const eligibility = await checkCandidateEligibility({ candidateId: this.candidateId });
             
-            this.displayNotification(
-                'Login Required',
-                'Please login or register to apply for this position',
-                'warning'
-            );
+            console.log('Eligibility check:', eligibility);
             
-            this.dispatchEvent(new ShowToastEvent({
-                title: 'Login Required',
-                message: 'Please login or register to apply for this position',
-                variant: 'warning',
-                mode: 'sticky'
-            }));
-            
-            setTimeout(() => {
-                window.location.href = '/candidate/login';
-            }, 1500);
-        } else {
-            this.isLoading = true;
-            
-            try {
-                const eligibility = await checkCandidateEligibility({ candidateId: this.candidateId });
-                
-                console.log('Eligibility check:', eligibility);
-                
-                if (!eligibility.eligible) {
-                    const completeness = eligibility.completeness || 0;
-                    
-                    let message = `Your profile is ${completeness}% complete. To apply for jobs, you need:\n\n`;
-                    
-                    if (!eligibility.hasResume) {
-                        message += '✗ Resume uploaded\n';
-                    }
-                    if (!eligibility.hasEducation) {
-                        message += '✗ At least one Education entry\n';
-                    }
-                    if (!eligibility.hasSkills) {
-                        message += '✗ At least one Clinical Skill\n';
-                    }
-                    if (completeness < 75) {
-                        message += `✗ ${75 - completeness}% more profile completion\n`;
-                    }
-                    
-                    message += '\nPlease complete your profile to apply for jobs.';
-                    
+            if (!eligibility.eligible) {
+                const completeness = eligibility.completeness || 0;
+
+                // ✅ SPECIFIC RESUME CHECK FIRST
+                if (!eligibility.hasResume) {
                     this.displayNotification(
-                        'Profile Incomplete',
-                        'Please complete your profile before applying',
+                        'Resume Required',
+                        'Please upload your resume before applying for a job. Go to Profile → Upload Resume.',
                         'warning'
                     );
-                    
+
                     this.dispatchEvent(new ShowToastEvent({
-                        title: 'Profile Incomplete',
-                        message: message,
+                        title: 'Resume Required',
+                        message: 'Please upload your resume before applying for a job. Go to Profile → Upload Resume.',
                         variant: 'warning',
                         mode: 'sticky'
                     }));
-                    
+
                     this.showProfileView = true;
                     this.showAppliedJobsView = false;
-                    
                     this.isLoading = false;
                     return;
                 }
+
+                // ✅ OTHER PROFILE INCOMPLETE CHECKS
+                let missingItems = [];
+                if (!eligibility.hasEducation) missingItems.push('Education');
+                if (!eligibility.hasSkills)    missingItems.push('Clinical Skills');
+                if (completeness < 75)         missingItems.push(`${75 - completeness}% more profile completion`);
+
+                const missingText = missingItems.length > 0
+                    ? 'Missing: ' + missingItems.join(', ')
+                    : 'Your profile is ' + completeness + '% complete (75% required).';
+
+                this.displayNotification(
+                    'Profile Incomplete',
+                    missingText + ' Please complete your profile before applying.',
+                    'warning'
+                );
+
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Profile Incomplete',
+                    message: missingText,
+                    variant: 'warning',
+                    mode: 'sticky'
+                }));
+
+                this.showProfileView = true;
+                this.showAppliedJobsView = false;
+                this.isLoading = false;
+                return;
+            }
+            
+            const result = await createJobApplication({ 
+                jobPostingId: jobId, 
+                candidateId: this.candidateId 
+            });
+            
+            if (result.success) {
+                console.log('✅ Application created successfully');
                 
-                const result = await createJobApplication({ 
-                    jobPostingId: jobId, 
-                    candidateId: this.candidateId 
+                // ✅ STEP 1: Add to Set
+                this.appliedJobIds.add(jobId);
+                console.log('✅ Added to appliedJobIds Set:', Array.from(this.appliedJobIds));
+                
+                // ✅ STEP 2: Force reactive update by creating NEW array with spread operator
+                this.jobs = [...this.jobs].map(job => {
+                    if (job.Id === jobId) {
+                        console.log('✅ Marking job as applied:', job.Job_Title__c);
+                        return { ...job, isAlreadyApplied: true };
+                    }
+                    return job;
                 });
                 
-                if (result.success) {
-                    console.log('✅ Application created successfully');
+                console.log('✅ Jobs array recreated with new reference');
+                
+                this.displayNotification(
+                    'Application Submitted!',
+                    result.message,
+                    'success'
+                );
+                
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Success',
+                    message: result.message,
+                    variant: 'success',
+                    mode: 'dismissable'
+                }));
+                
+                // ✅ STEP 3: Reload applied jobs in background
+                await this.loadAppliedJobs();
+                
+                console.log('✅ UI should now show "Already Applied" badge');
+                
+            } else {
+                if (result.existingStatus) {
+                    console.log('⚠️ Application already exists');
                     
-                    // ✅ STEP 1: Add to Set
+                    // Update UI for existing application
                     this.appliedJobIds.add(jobId);
-                    console.log('✅ Added to appliedJobIds Set:', Array.from(this.appliedJobIds));
                     
-                    // ✅ STEP 2: Force reactive update by creating NEW array with spread operator
+                    // ✅ Force reactive update with NEW array
                     this.jobs = [...this.jobs].map(job => {
                         if (job.Id === jobId) {
-                            console.log('✅ Marking job as applied:', job.Job_Title__c);
                             return { ...job, isAlreadyApplied: true };
                         }
                         return job;
                     });
                     
-                    console.log('✅ Jobs array recreated with new reference');
-                    
                     this.displayNotification(
-                        'Application Submitted!',
-                        result.message,
-                        'success'
+                        'Already Applied',
+                        'You have already applied for this position',
+                        'info'
                     );
                     
                     this.dispatchEvent(new ShowToastEvent({
-                        title: 'Success',
+                        title: 'Already Applied',
                         message: result.message,
-                        variant: 'success',
+                        variant: 'info',
                         mode: 'dismissable'
                     }));
                     
-                    // ✅ STEP 3: Reload applied jobs in background
-                    await this.loadAppliedJobs();
-                    
-                    console.log('✅ UI should now show "Already Applied" badge');
-                    
                 } else {
-                    if (result.existingStatus) {
-                        console.log('⚠️ Application already exists');
-                        
-                        // Update UI for existing application
-                        this.appliedJobIds.add(jobId);
-                        
-                        // ✅ Force reactive update with NEW array
-                        this.jobs = [...this.jobs].map(job => {
-                            if (job.Id === jobId) {
-                                return { ...job, isAlreadyApplied: true };
-                            }
-                            return job;
-                        });
-                        
-                        this.displayNotification(
-                            'Already Applied',
-                            'You have already applied for this position',
-                            'info'
-                        );
-                        
-                        this.dispatchEvent(new ShowToastEvent({
-                            title: 'Already Applied',
-                            message: result.message,
-                            variant: 'info',
-                            mode: 'dismissable'
-                        }));
-                        
-                    } else {
-                        this.displayNotification(
-                            'Application Error',
-                            result.message,
-                            'error'
-                        );
-                        
-                        this.dispatchEvent(new ShowToastEvent({
-                            title: 'Application Error',
-                            message: result.message,
-                            variant: 'error',
-                            mode: 'sticky'
-                        }));
-                    }
+                    this.displayNotification(
+                        'Application Error',
+                        result.message,
+                        'error'
+                    );
+                    
+                    this.dispatchEvent(new ShowToastEvent({
+                        title: 'Application Error',
+                        message: result.message,
+                        variant: 'error',
+                        mode: 'sticky'
+                    }));
                 }
-                
-            } catch (error) {
-                console.error('Application error:', error);
-                
-                this.displayNotification(
-                    'Error',
-                    'Failed to submit application',
-                    'error'
-                );
-                
-                this.dispatchEvent(new ShowToastEvent({
-                    title: 'Error',
-                    message: 'Failed to submit application: ' + (error.body?.message || error.message),
-                    variant: 'error',
-                    mode: 'sticky'
-                }));
-            } finally {
-                this.isLoading = false;
             }
+            
+        } catch (error) {
+            console.error('Application error:', error);
+            
+            this.displayNotification(
+                'Error',
+                'Failed to submit application',
+                'error'
+            );
+            
+            this.dispatchEvent(new ShowToastEvent({
+                title: 'Error',
+                message: 'Failed to submit application: ' + (error.body?.message || error.message),
+                variant: 'error',
+                mode: 'sticky'
+            }));
+        } finally {
+            this.isLoading = false;
         }
     }
-
+}
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }

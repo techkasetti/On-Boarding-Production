@@ -278,13 +278,11 @@ public without sharing class JobPostingController {
     }
     /**
  * Check if candidate profile meets minimum requirements for job application
- */
-@AuraEnabled(cacheable=false)
+ */@AuraEnabled(cacheable=false)
 public static Map<String, Object> checkCandidateEligibility(Id candidateId) {
     Map<String, Object> result = new Map<String, Object>();
     
     try {
-        // Query candidate with resume fields
         List<Candidate__c> candidates = [
             SELECT Id, Name, Email__c, Phone__c, Location__c, 
                    S3_Resume_URL__c, Resume_Status__c
@@ -302,12 +300,11 @@ public static Map<String, Object> checkCandidateEligibility(Id candidateId) {
         
         Candidate__c candidate = candidates[0];
         
-        // Check required profile sections
         Integer totalSections = 8;
         Integer completedSections = 0;
         List<String> missingSections = new List<String>();
         
-        // 1. Basic Info (Email, Phone, Location)
+        // 1. Basic Info
         if (String.isNotBlank(candidate.Email__c) && 
             String.isNotBlank(candidate.Phone__c) && 
             String.isNotBlank(candidate.Location__c)) {
@@ -316,7 +313,7 @@ public static Map<String, Object> checkCandidateEligibility(Id candidateId) {
             missingSections.add('Basic Information (Email, Phone, Location)');
         }
         
-        // 2. Resume (REQUIRED)
+        // 2. Resume — ONLY count if actual file exists, ignore Resume_Status__c checkbox
         Boolean hasResume = false;
         List<ContentDocumentLink> resumeDocs = [
             SELECT Id 
@@ -326,7 +323,7 @@ public static Map<String, Object> checkCandidateEligibility(Id candidateId) {
             LIMIT 1
         ];
         
-        if (!resumeDocs.isEmpty() || candidate.Resume_Status__c == true) {
+        if (!resumeDocs.isEmpty()) {
             completedSections++;
             hasResume = true;
         } else {
@@ -409,10 +406,11 @@ public static Map<String, Object> checkCandidateEligibility(Id candidateId) {
             completedSections++;
         }
         
-        // Calculate completion percentage
-        Integer completenessPercentage = (Integer) Math.round((Decimal.valueOf(completedSections) / Decimal.valueOf(totalSections)) * 100);
+        Integer completenessPercentage = (Integer) Math.round(
+            (Decimal.valueOf(completedSections) / Decimal.valueOf(totalSections)) * 100
+        );
         
-        // Check eligibility: Must have Resume + Education + Skills + 75% completion
+        // eligible = must have real resume file + education + skills + 75% completion
         Boolean eligible = hasResume && 
                           educationCount > 0 && 
                           clinicalSkillsCount > 0 && 
@@ -432,7 +430,9 @@ public static Map<String, Object> checkCandidateEligibility(Id candidateId) {
             if (!hasResume) required.add('Resume');
             if (educationCount == 0) required.add('Education');
             if (clinicalSkillsCount == 0) required.add('Clinical Skills');
-            if (completenessPercentage < 75) required.add(String.valueOf(75 - completenessPercentage) + '% more profile completion');
+            if (completenessPercentage < 75) required.add(
+                String.valueOf(75 - completenessPercentage) + '% more profile completion'
+            );
             
             message += String.join(required, ', ');
             result.put('message', message);

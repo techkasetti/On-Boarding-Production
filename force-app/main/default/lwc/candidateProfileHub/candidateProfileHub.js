@@ -527,11 +527,14 @@ export default class CandidateProfileHub extends LightningElement {
         return startStr;
     }
     
-    formatEducationDuration(edu) {
-        if (!edu.Start_Year__c) return '';
-        if (edu.End_Year__c) return `${edu.Start_Year__c} - ${edu.End_Year__c}`;
-        return String(edu.Start_Year__c);
-    }
+ formatEducationDuration(edu) {
+    // parseInt removes any comma formatting Salesforce adds to Number fields
+    const startYear = edu.Start_Year__c ? parseInt(edu.Start_Year__c, 10) : null;
+    const endYear   = edu.End_Year__c   ? parseInt(edu.End_Year__c,   10) : null;
+    if (!startYear) return '';
+    if (endYear)    return `${startYear} – ${endYear}`;
+    return String(startYear);
+}
     
     formatLicenseDates(license) {
         const parts = [];
@@ -587,13 +590,13 @@ export default class CandidateProfileHub extends LightningElement {
         const record = this.profileData.workExperiences.find(w => w.Id === recordId);
         this.openModal('workExperience', recordId, record);
     }
-    
+   
     handleEditEducation(event) {
-        const recordId = event.detail.recordId;
-        const record = this.profileData.educations.find(e => e.Id === recordId);
-        this.openModal('education', recordId, record);
-    }
-    
+    const recordId = event.detail.recordId;
+    // Find the full record so year values can be pre-populated in the modal
+    const record = this.profileData.educations.find(e => e.Id === recordId);
+    this.openModal('education', recordId, record);
+}
     handleEditLicense(event) {
         const recordId = event.currentTarget.dataset.id;
         const record = this.profileData.licenses.find(l => l.Id === recordId);

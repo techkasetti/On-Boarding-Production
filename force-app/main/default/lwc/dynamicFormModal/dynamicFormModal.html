@@ -1,15 +1,17 @@
-
-<!-- dynamicFormModal.html - FIXED VERSION -->
+<!-- dynamicFormModal.html -->
 <template>
-    <!-- ✅ INLINE NOTIFICATION - INCREASED Z-INDEX -->
+
+    <!-- ══════════════════════════════════════════════════
+         INLINE NOTIFICATION
+    ══════════════════════════════════════════════════ -->
     <template if:true={showNotification}>
         <div class={notificationClass} role="alert">
             <div class="slds-notify__content">
                 <div class="slds-grid slds-grid_vertical-align-center">
                     <div class="slds-col slds-no-flex">
-                        <lightning-icon 
-                            icon-name={notificationIcon} 
-                            size="small" 
+                        <lightning-icon
+                            icon-name={notificationIcon}
+                            size="small"
                             variant="inverse"
                             class="slds-m-right_small">
                         </lightning-icon>
@@ -34,16 +36,24 @@
         </div>
     </template>
 
+    <!-- ══════════════════════════════════════════════════
+         MODAL
+    ══════════════════════════════════════════════════ -->
     <template if:true={isOpen}>
         <div class="slds-backdrop slds-backdrop_open modal-backdrop"></div>
-        
-        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium modal-container">
+
+        <section
+            role="dialog"
+            tabindex="-1"
+            class="slds-modal slds-fade-in-open slds-modal_medium modal-container">
             <div class="slds-modal__container">
+
                 <!-- Header -->
                 <header class="slds-modal__header">
-                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
-                            title="Close" 
-                            onclick={handleClose}>
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close"
+                        onclick={handleClose}>
                         <lightning-icon icon-name="utility:close" size="small" alternative-text="Close"></lightning-icon>
                         <span class="slds-assistive-text">Close</span>
                     </button>
@@ -52,6 +62,7 @@
 
                 <!-- Body -->
                 <div class="slds-modal__content slds-p-around_medium">
+
                     <template if:true={isLoading}>
                         <div class="slds-align_absolute-center slds-p-vertical_large">
                             <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
@@ -59,15 +70,43 @@
                     </template>
 
                     <template if:false={isLoading}>
+
+                        <!-- ── Duplicate error banner ─────────────────────── -->
+                        <template if:true={hasDuplicateError}>
+                            <div class="duplicate-error-banner slds-m-bottom_medium" role="alert">
+                                <lightning-icon
+                                    icon-name="utility:error"
+                                    size="x-small"
+                                    class="slds-m-right_x-small">
+                                </lightning-icon>
+                                <span>{duplicateError}</span>
+                            </div>
+                        </template>
+
+                        <!-- ── Date validation error banner ──────────────── -->
+                        <template if:true={hasDateValidationError}>
+                            <div class="date-error-banner slds-m-bottom_medium" role="alert">
+                                <lightning-icon
+                                    icon-name="utility:error"
+                                    size="x-small"
+                                    class="slds-m-right_x-small">
+                                </lightning-icon>
+                                <span>{dateValidationError}</span>
+                            </div>
+                        </template>
+
                         <lightning-record-edit-form
                             record-id={recordId}
                             object-api-name={objectApiName}
                             onsuccess={handleSuccess}
                             onerror={handleError}
-                        >
+                            onsubmit={handleFormSubmit}>
+
                             <lightning-messages></lightning-messages>
-                            
-                            <!-- Work Experience Fields -->
+
+                            <!-- ══════════════════════════════════════════════
+                                 WORK EXPERIENCE
+                            ══════════════════════════════════════════════ -->
                             <template if:true={isWorkExperience}>
                                 <div class="slds-grid slds-wrap slds-gutters">
                                     <div class="slds-col slds-size_1-of-1">
@@ -82,17 +121,30 @@
                                     <div class="slds-col slds-size_1-of-2">
                                         <lightning-input-field field-name="End_Date__c"></lightning-input-field>
                                     </div>
+                                    <!-- Date validation hint -->
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <p class="date-validation-hint">
+                                            <lightning-icon icon-name="utility:info" size="xx-small" class="hint-icon-inline"></lightning-icon>
+                                            End Date must be on or after Start Date.
+                                        </p>
+                                    </div>
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Is_Current__c"></lightning-input-field>
                                     </div>
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Responsibilities__c"></lightning-input-field>
                                     </div>
-                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                    <lightning-input-field
+                                        field-name="Candidate__c"
+                                        value={candidateId}
+                                        class="slds-hide">
+                                    </lightning-input-field>
                                 </div>
                             </template>
 
-                            <!-- Education Fields -->
+                            <!-- ══════════════════════════════════════════════
+                                 EDUCATION
+                            ══════════════════════════════════════════════ -->
                             <template if:true={isEducation}>
                                 <div class="slds-grid slds-wrap slds-gutters">
                                     <div class="slds-col slds-size_1-of-1">
@@ -101,20 +153,84 @@
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Degree__c" required></lightning-input-field>
                                     </div>
+
+                                    <!-- Start Year -->
                                     <div class="slds-col slds-size_1-of-2">
-                                        <lightning-input-field field-name="Start_Year__c"></lightning-input-field>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label">
+                                                <abbr class="slds-required" title="required">*</abbr>
+                                                Start Year
+                                            </label>
+                                            <div class="slds-form-element__control">
+                                                <input
+                                                    type="text"
+                                                    class={startYearInputClass}
+                                                    placeholder="e.g. 2018"
+                                                    maxlength="4"
+                                                    value={startYearValue}
+                                                    onchange={handleStartYearChange}
+                                                    onkeypress={handleYearKeyPress}
+                                                />
+                                            </div>
+                                            <template if:true={startYearError}>
+                                                <p class="field-error">{startYearError}</p>
+                                            </template>
+                                        </div>
                                     </div>
+
+                                    <!-- End Year -->
                                     <div class="slds-col slds-size_1-of-2">
-                                        <lightning-input-field field-name="End_Year__c"></lightning-input-field>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label">End Year</label>
+                                            <div class="slds-form-element__control">
+                                                <input
+                                                    type="text"
+                                                    class={endYearInputClass}
+                                                    placeholder="e.g. 2022"
+                                                    maxlength="4"
+                                                    value={endYearValue}
+                                                    onchange={handleEndYearChange}
+                                                    onkeypress={handleYearKeyPress}
+                                                />
+                                            </div>
+                                            <template if:true={endYearError}>
+                                                <p class="field-error">{endYearError}</p>
+                                            </template>
+                                            <template if:true={showDurationHint}>
+                                                <p class="duration-hint">
+                                                    <lightning-icon icon-name="utility:check" size="xx-small"></lightning-icon>
+                                                    {durationDisplay}
+                                                </p>
+                                            </template>
+                                        </div>
                                     </div>
+
+                                    <!-- Cross-field year error -->
+                                    <template if:true={yearValidationError}>
+                                        <div class="slds-col slds-size_1-of-1">
+                                            <div class="year-cross-error">
+                                                <lightning-icon icon-name="utility:error" size="x-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                {yearValidationError}
+                                            </div>
+                                        </div>
+                                    </template>
+
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Details__c"></lightning-input-field>
                                     </div>
-                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                    <lightning-input-field
+                                        field-name="Candidate__c"
+                                        value={candidateId}
+                                        class="slds-hide">
+                                    </lightning-input-field>
+                                    <lightning-input-field field-name="Start_Year__c" class="slds-hide"></lightning-input-field>
+                                    <lightning-input-field field-name="End_Year__c"   class="slds-hide"></lightning-input-field>
                                 </div>
                             </template>
 
-                            <!-- License Fields -->
+                            <!-- ══════════════════════════════════════════════
+                                 LICENSE / CERTIFICATION
+                            ══════════════════════════════════════════════ -->
                             <template if:true={isLicense}>
                                 <div class="slds-grid slds-wrap slds-gutters">
                                     <div class="slds-col slds-size_1-of-1">
@@ -129,25 +245,39 @@
                                     <div class="slds-col slds-size_1-of-2">
                                         <lightning-input-field field-name="Expiry_Date__c"></lightning-input-field>
                                     </div>
+                                    <!-- Date validation hint for license -->
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <p class="date-validation-hint">
+                                            <lightning-icon icon-name="utility:info" size="xx-small" class="hint-icon-inline"></lightning-icon>
+                                            Expiry Date must be on or after Issue Date.
+                                        </p>
+                                    </div>
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Notes__c"></lightning-input-field>
                                     </div>
-                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
-                                    
-                                    <!-- ✅ Document Upload Section - ALWAYS SHOWN -->
+                                    <lightning-input-field
+                                        field-name="Candidate__c"
+                                        value={candidateId}
+                                        class="slds-hide">
+                                    </lightning-input-field>
+
+                                    <!-- Document Upload Section -->
                                     <div class="slds-col slds-size_1-of-1 slds-m-top_medium">
                                         <div class="slds-box slds-theme_shade">
                                             <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_small">
                                                 <div class="slds-col slds-grow">
                                                     <h3 class="slds-text-heading_small">
-                                                        <lightning-icon icon-name="doctype:attachment" size="x-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        <lightning-icon
+                                                            icon-name="doctype:attachment"
+                                                            size="x-small"
+                                                            class="slds-m-right_xx-small">
+                                                        </lightning-icon>
                                                         License Documents
                                                         <span class="optional-badge">Optional</span>
                                                     </h3>
                                                 </div>
                                             </div>
-                                            
-                                            <!-- Existing Documents List (only if recordId exists) -->
+
                                             <template if:true={recordId}>
                                                 <template if:true={hasExistingDocuments}>
                                                     <div class="documents-list slds-m-bottom_small">
@@ -175,48 +305,43 @@
                                                                             variant="bare"
                                                                             class="delete-doc-btn"
                                                                             data-doc-id={doc.Id}
-                                                                            onclick={handleDeleteDocument}
-                                                                        ></lightning-button-icon>
+                                                                            onclick={handleDeleteDocument}>
+                                                                        </lightning-button-icon>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </template>
                                                     </div>
                                                 </template>
+
+                                                <lightning-file-upload
+                                                    label="Upload Documents"
+                                                    name="licenseDocument"
+                                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                                    record-id={recordId}
+                                                    onuploadfinished={handleLicenseUploadFinished}
+                                                    multiple="true">
+                                                </lightning-file-upload>
                                             </template>
-                                            
-                                            <!-- Upload Component - SHOWN FOR BOTH NEW AND EDIT -->
-                                            <div class="upload-section">
-                                                <template if:true={recordId}>
-                                                    <!-- Upload available for existing records -->
-                                                    <lightning-file-upload
-                                                        label="Upload Documents"
-                                                        name="licenseDocument"
-                                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                                        record-id={recordId}
-                                                        onuploadfinished={handleLicenseUploadFinished}
-                                                        multiple="true"
-                                                    >
-                                                    </lightning-file-upload>
-                                                </template>
-                                                
-                                                <template if:false={recordId}>
-                                                    <!-- Message for new records - Save first -->
-                                                    <div class="upload-placeholder">
-                                                        <lightning-icon icon-name="utility:upload" size="small" class="slds-m-bottom_x-small"></lightning-icon>
-                                                        <p class="slds-text-body_small">Save the license first to enable document upload</p>
-                                                    </div>
-                                                </template>
-                                                
-                                                <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
-                                                    Accepted: PDF, JPG, PNG, DOC, DOCX
-                                                </p>
-                                            </div>
+
+                                            <template if:false={recordId}>
+                                                <div class="upload-placeholder">
+                                                    <lightning-icon icon-name="utility:upload" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                                                    <p class="slds-text-body_small">Save the license first to enable document upload</p>
+                                                </div>
+                                            </template>
+
+                                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                                                Accepted: PDF, JPG, PNG, DOC, DOCX
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
                             </template>
-                            <!-- Clinical Skill Fields -->
+
+                            <!-- ══════════════════════════════════════════════
+                                 CLINICAL SKILL
+                            ══════════════════════════════════════════════ -->
                             <template if:true={isClinicalSkill}>
                                 <div class="slds-grid slds-wrap slds-gutters">
                                     <div class="slds-col slds-size_1-of-1">
@@ -228,11 +353,17 @@
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Description__c"></lightning-input-field>
                                     </div>
-                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                    <lightning-input-field
+                                        field-name="Candidate__c"
+                                        value={candidateId}
+                                        class="slds-hide">
+                                    </lightning-input-field>
                                 </div>
                             </template>
 
-                            <!-- Technical Skill Fields -->
+                            <!-- ══════════════════════════════════════════════
+                                 TECHNICAL SKILL
+                            ══════════════════════════════════════════════ -->
                             <template if:true={isTechnicalSkill}>
                                 <div class="slds-grid slds-wrap slds-gutters">
                                     <div class="slds-col slds-size_1-of-1">
@@ -244,11 +375,17 @@
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Description__c"></lightning-input-field>
                                     </div>
-                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                    <lightning-input-field
+                                        field-name="Candidate__c"
+                                        value={candidateId}
+                                        class="slds-hide">
+                                    </lightning-input-field>
                                 </div>
                             </template>
 
-                            <!-- Procedure Fields -->
+                            <!-- ══════════════════════════════════════════════
+                                 PROCEDURE
+                            ══════════════════════════════════════════════ -->
                             <template if:true={isProcedure}>
                                 <div class="slds-grid slds-wrap slds-gutters">
                                     <div class="slds-col slds-size_1-of-1">
@@ -260,11 +397,17 @@
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Notes__c"></lightning-input-field>
                                     </div>
-                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                    <lightning-input-field
+                                        field-name="Candidate__c"
+                                        value={candidateId}
+                                        class="slds-hide">
+                                    </lightning-input-field>
                                 </div>
                             </template>
 
-                            <!-- Internship Fields -->
+                            <!-- ══════════════════════════════════════════════
+                                 INTERNSHIP
+                            ══════════════════════════════════════════════ -->
                             <template if:true={isInternship}>
                                 <div class="slds-grid slds-wrap slds-gutters">
                                     <div class="slds-col slds-size_1-of-1">
@@ -276,11 +419,24 @@
                                     <div class="slds-col slds-size_1-of-2">
                                         <lightning-input-field field-name="End_Date__c"></lightning-input-field>
                                     </div>
-                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                    <!-- Date validation hint for internship -->
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <p class="date-validation-hint">
+                                            <lightning-icon icon-name="utility:info" size="xx-small" class="hint-icon-inline"></lightning-icon>
+                                            End Date must be on or after Start Date.
+                                        </p>
+                                    </div>
+                                    <lightning-input-field
+                                        field-name="Candidate__c"
+                                        value={candidateId}
+                                        class="slds-hide">
+                                    </lightning-input-field>
                                 </div>
                             </template>
 
-                            <!-- Research Fields -->
+                            <!-- ══════════════════════════════════════════════
+                                 RESEARCH / PUBLICATION
+                            ══════════════════════════════════════════════ -->
                             <template if:true={isResearch}>
                                 <div class="slds-grid slds-wrap slds-gutters">
                                     <div class="slds-col slds-size_1-of-1">
@@ -295,11 +451,17 @@
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Description__c"></lightning-input-field>
                                     </div>
-                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                    <lightning-input-field
+                                        field-name="Candidate__c"
+                                        value={candidateId}
+                                        class="slds-hide">
+                                    </lightning-input-field>
                                 </div>
                             </template>
 
-                            <!-- Membership Fields -->
+                            <!-- ══════════════════════════════════════════════
+                                 PROFESSIONAL MEMBERSHIP
+                            ══════════════════════════════════════════════ -->
                             <template if:true={isMembership}>
                                 <div class="slds-grid slds-wrap slds-gutters">
                                     <div class="slds-col slds-size_1-of-1">
@@ -314,27 +476,34 @@
                                     <div class="slds-col slds-size_1-of-1">
                                         <lightning-input-field field-name="Member_Since__c"></lightning-input-field>
                                     </div>
-                                    <lightning-input-field field-name="Candidate__c" value={candidateId} class="slds-hide"></lightning-input-field>
+                                    <lightning-input-field
+                                        field-name="Candidate__c"
+                                        value={candidateId}
+                                        class="slds-hide">
+                                    </lightning-input-field>
                                 </div>
                             </template>
 
-                            <div class="slds-m-top_medium">
-                                <lightning-button 
-                                    variant="neutral" 
-                                    label="Cancel" 
+                            <!-- Footer buttons -->
+                            <div class="slds-m-top_medium slds-grid slds-grid_align-end">
+                                <lightning-button
+                                    variant="neutral"
+                                    label="Cancel"
                                     onclick={handleClose}
+                                    disabled={isSaveDisabled}
                                     class="slds-m-right_small">
                                 </lightning-button>
-                                <lightning-button 
-                                    variant="brand" 
-                                    type="submit" 
-                                    label="Save">
+                                <lightning-button
+                                    variant="brand"
+                                    label={saveButtonLabel}
+                                    type="submit"
+                                    disabled={isSaveDisabled}>
                                 </lightning-button>
                             </div>
                         </lightning-record-edit-form>
                     </template>
-                </div>
-            </div>
+                </div><!-- /slds-modal__content -->
+            </div><!-- /slds-modal__container -->
         </section>
     </template>
 </template>

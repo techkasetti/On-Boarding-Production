@@ -42,7 +42,8 @@ export default class JobPostingAdmin extends NavigationMixin(LightningElement) {
     isLoading = false;
     jobToDelete = null;
     activeTab = 'basic';
-
+    currentPage = 1;
+    pageSize = 10;
     // Counter for generating unique keys
     keyCounter = 0;
 
@@ -53,7 +54,47 @@ export default class JobPostingAdmin extends NavigationMixin(LightningElement) {
     get hasJobs() {
         return this.filteredJobPostings.length > 0;
     }
+    get paginatedJobs() {
+    const start = (this.currentPage - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return this.filteredJobPostings.slice(start, end);
+}
 
+get totalPages() {
+    return Math.ceil(this.filteredJobPostings.length / this.pageSize);
+}
+
+get startRecord() {
+    return this.filteredJobPostings.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+}
+
+get endRecord() {
+    const end = this.currentPage * this.pageSize;
+    return end > this.filteredJobPostings.length ? this.filteredJobPostings.length : end;
+}
+
+get isFirstPage() {
+    return this.currentPage === 1;
+}
+
+get isLastPage() {
+    return this.currentPage === this.totalPages || this.totalPages === 0;
+}
+
+get pageInfo() {
+    return `Page ${this.currentPage} of ${this.totalPages}`;
+}
+handlePrevious() {
+    if (this.currentPage > 1) {
+        this.currentPage -= 1;
+    }
+}
+
+handleNext() {
+    if (this.currentPage < this.totalPages) {
+        this.currentPage += 1;
+    }
+}
     connectedCallback() {
         this.loadData();
         this.initializeSkillLevelOptions();
@@ -191,11 +232,15 @@ export default class JobPostingAdmin extends NavigationMixin(LightningElement) {
         return statusMap[status] || 'status-draft';
     }
 
-    handleSearch(event) {
-        this.searchKey = event.target.value.toLowerCase();
-        this.applySearchFilter();
-    }
-
+    // handleSearch(event) {
+    //     this.searchKey = event.target.value.toLowerCase();
+    //     this.applySearchFilter();
+    // }
+handleSearch(event) {
+    this.searchKey = event.target.value.toLowerCase();
+    this.currentPage = 1; // reset to first page
+    this.applySearchFilter();
+}
     applySearchFilter() {
         if (!this.searchKey) {
             this.filteredJobPostings = [...this.jobPostings];
@@ -250,7 +295,13 @@ export default class JobPostingAdmin extends NavigationMixin(LightningElement) {
         }
     }
 
-    getChildRecords(childArray) {
+//Organization
+handleAccountChange(event) {
+    this.currentJob.Account__c = event.detail.recordId;
+    this.currentJob = { ...this.currentJob };
+}
+
+getChildRecords(childArray) {
         if (!childArray || !Array.isArray(childArray)) {
             return [];
         }

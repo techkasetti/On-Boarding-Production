@@ -1026,64 +1026,6 @@
 }*/
 /* candidateScreenStatus.css - WITH MANUAL OVERRIDE STYLES */
 
-/* ===== Candidate Info Header ===== */
-.candidate-header {
-    padding: 1.5rem;
-    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-}
-
-.info-card {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    height: 100%;
-}
-
-.info-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.info-icon {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f3f4f6;
-    border-radius: 8px;
-}
-
-.info-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.info-label {
-    font-size: 0.75rem;
-    color: #706e6b;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.25rem;
-    font-weight: 600;
-}
-
-.info-value {
-    font-size: 1rem;
-    color: #080707;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
 
 /* ===== 🔥 NEW: Manual Override Styles ===== */
 
@@ -2349,3 +2291,79 @@
         display: none; /* Hide label for action on mobile */
     }
 }
+
+
+.job-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    margin-bottom: 1rem;
+}
+
+.job-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.card-pass    { border-left: 4px solid #2e844a; }
+.card-fail    { border-left: 4px solid #c23934; }
+.card-pending { border-left: 4px solid #f59e0b; }
+
+.job-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.job-title-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.job-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #080707;
+    margin: 0;
+}
+
+.job-app-name {
+    font-size: 0.75rem;
+    color: #706e6b;
+    margin: 0;
+}
+
+.job-card-body {
+    padding: 1rem 1.25rem;
+}
+
+.job-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.813rem;
+    color: #706e6b;
+}
+
+.job-summary {
+    font-size: 0.813rem;
+    color: #3e3e3c;
+    margin-top: 0.5rem;
+    line-height: 1.5;
+}
+
+.job-card-footer {
+    padding: 0.75rem 1.25rem;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+}
+
+.badge-success { background: #d1f4e0 !important; color: #0f5132 !important; }
+.badge-error   { background: #f8d7da !important; color: #842029 !important; }
+.badge-warning { background: #fff3cd !important; color: #856404 !important; }

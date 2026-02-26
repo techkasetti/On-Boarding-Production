@@ -186,9 +186,9 @@
 }
 
 .primary-button {
-    background: linear-gradient(135deg, #0ea5a5 0%, #068787 100%);
+    background: linear-gradient(135deg, #f1f7f7 0%, #f9fafa 100%);
     border: none;
-    box-shadow: 0 4px 12px rgba(14, 165, 165, 0.3);
+    box-shadow: 0 4px 12px rgba(243, 249, 249, 0.989);
     font-weight: 600;
 }
 
@@ -612,7 +612,7 @@
 }
 
 .back-button {
-    background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+    background: linear-gradient(135deg, #eff1f5 0%, #eaecf0 100%);
     color: white;
     border: none;
     box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
