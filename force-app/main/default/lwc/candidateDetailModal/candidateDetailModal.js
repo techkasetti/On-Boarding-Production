@@ -9,6 +9,9 @@ import getInterviewDetails from '@salesforce/apex/MedicalRecruitmentController.g
 import updateInterviewDetail from '@salesforce/apex/MedicalRecruitmentController.updateInterviewDetail';
 import createInterviewDetail from '@salesforce/apex/MedicalRecruitmentController.createInterviewDetail';
 import getActiveUsers from '@salesforce/apex/MedicalRecruitmentController.getActiveUsers';
+import getContacts from '@salesforce/apex/MedicalRecruitmentController.getContacts';
+import sendInterviewEmails from '@salesforce/apex/MedicalRecruitmentController.sendInterviewEmails';
+// import createZoomMeeting from '@salesforce/apex/ZoomMeetingService.createZoomMeeting';
 
 export default class CandidateDetailModal extends LightningElement {
     @api applicationId;
@@ -38,116 +41,152 @@ export default class CandidateDetailModal extends LightningElement {
     // Active users for lookup
     @track activeUsers = [];
     
+    // Contacts for Provider lookup
+    @track contactOptions = [];
+    
+    // Zoom generation state
+    isGeneratingZoom = false;
+    
+    // Docflow modal state
+    isDocflowOpen = false;
+    
     stageFieldValues = {};
-    ONBOARDING_STAGES = [
+
+    // ─── GROUPED PROCESS STAGES ───────────────────────────────────────────────
+    // Each group has a label, category key, ordered sub-statuses, and pill variants.
+    PROCESS_GROUPS = [
         {
-            value: 'Application Received',
-            label: 'Application Received',
-            description: 'Initial application submitted and recorded',
-            category: 'application'
+            id: 'application',
+            label: 'Application',
+            icon: 'utility:record_create',
+            description: 'Initial application submission',
+            statuses: [
+                { value: 'Application Received', label: 'Received', pillVariant: 'info' }
+            ]
         },
         {
-            value: 'Eligibility Check In Progress',
-            label: 'Eligibility Verification',
-            description: 'Reviewing qualifications and requirements',
-            category: 'eligibility'
+            id: 'eligibility',
+            label: 'Eligibility Check',
+            icon: 'utility:verified',
+            description: 'Reviewing qualifications and eligibility requirements',
+            statuses: [
+                { value: 'Eligibility Check In Progress', label: 'In Progress', pillVariant: 'warning' },
+                { value: 'Eligibility Passed', label: 'Passed', pillVariant: 'success' },
+                { value: 'Eligibility Failed', label: 'Failed', pillVariant: 'error' }
+            ]
         },
         {
-            value: 'Eligibility Passed',
-            label: 'Eligibility Cleared',
-            description: 'Candidate meets all basic requirements',
-            category: 'eligibility'
-        },
-        {
-            value: 'License Verification Pending',
+            id: 'license',
             label: 'License Verification',
+            icon: 'utility:shield',
             description: 'Validating medical licenses and certifications',
-            category: 'license'
+            statuses: [
+                { value: 'License Verification Pending', label: 'Pending', pillVariant: 'warning' },
+                { value: 'License Verified', label: 'Verified', pillVariant: 'success' },
+                { value: 'License Issue / Expired', label: 'Issue / Expired', pillVariant: 'error' }
+            ]
         },
         {
-            value: 'License Verified',
-            label: 'License Confirmed',
-            description: 'All licenses verified and valid',
-            category: 'license'
-        },
-        {
-            value: 'Clinical Assessment Scheduled',
+            id: 'clinical',
             label: 'Clinical Assessment',
+            icon: 'utility:activity',
             description: 'Evaluating clinical skills and competencies',
-            category: 'clinical'
+            statuses: [
+                { value: 'Clinical Assessment Scheduled', label: 'Scheduled', pillVariant: 'warning' },
+                { value: 'Clinical Assessment Passed', label: 'Passed', pillVariant: 'success' },
+                { value: 'Clinical Assessment Failed', label: 'Failed', pillVariant: 'error' }
+            ]
         },
         {
-            value: 'Clinical Assessment Passed',
-            label: 'Clinical Skills Verified',
-            description: 'Clinical assessment successfully completed',
-            category: 'clinical'
-        },
-        {
-            value: 'Interview Scheduled',
-            label: 'Interview Process',
+            id: 'interview',
+            label: 'Interview',
+            icon: 'utility:chat',
             description: 'Conducting interviews with hiring team',
-            category: 'interview'
+            statuses: [
+                { value: 'Interview Scheduled', label: 'Scheduled', pillVariant: 'warning' },
+                { value: 'Interview Cleared', label: 'Cleared', pillVariant: 'success' },
+                { value: 'Interview Rejected', label: 'Rejected', pillVariant: 'error' }
+            ]
         },
         {
-            value: 'Interview Cleared',
-            label: 'Interview Completed',
-            description: 'Interview process successfully completed',
-            category: 'interview'
-        },
-        {
-            value: 'Background Check In Progress',
-            label: 'Background Verification',
+            id: 'background',
+            label: 'Background Check',
+            icon: 'utility:search',
             description: 'Conducting background and reference checks',
-            category: 'background'
+            statuses: [
+                { value: 'Background Check In Progress', label: 'In Progress', pillVariant: 'warning' },
+                { value: 'Background Check Cleared', label: 'Cleared', pillVariant: 'success' },
+                { value: 'Background Check Failed', label: 'Failed', pillVariant: 'error' }
+            ]
         },
         {
-            value: 'Background Check Cleared',
-            label: 'Background Cleared',
-            description: 'Background check successfully completed',
-            category: 'background'
+            id: 'offer',
+            label: 'Offer',
+            icon: 'utility:contract',
+            description: 'Employment offer extended and response tracking',
+            statuses: [
+                { value: 'Offer Released', label: 'Released', pillVariant: 'warning' },
+                { value: 'Offer Accepted', label: 'Accepted', pillVariant: 'success' },
+                { value: 'Offer Declined', label: 'Declined', pillVariant: 'error' }
+            ]
         },
         {
-            value: 'Offer Released',
-            label: 'Offer Extended',
-            description: 'Employment offer sent to candidate',
-            category: 'offer'
-        },
-        {
-            value: 'Offer Accepted',
-            label: 'Offer Accepted',
-            description: 'Candidate accepted the offer',
-            category: 'offer'
-        },
-        {
-            value: 'Credentialing In Progress',
+            id: 'credentialing',
             label: 'Credentialing',
-            description: 'Processing credentials and privileges',
-            category: 'credentialing'
+            icon: 'utility:badge',
+            description: 'Processing credentials and clinical privileges',
+            statuses: [
+                { value: 'Credentialing In Progress', label: 'In Progress', pillVariant: 'warning' },
+                { value: 'Privileges Approved', label: 'Approved', pillVariant: 'success' }
+            ]
         },
         {
-            value: 'Privileges Approved',
-            label: 'Privileges Granted',
-            description: 'Clinical privileges approved',
-            category: 'credentialing'
-        },
-        {
-            value: 'Medical Onboarding In Progress',
+            id: 'onboarding',
             label: 'Onboarding',
+            icon: 'utility:people',
             description: 'Completing onboarding procedures',
-            category: 'onboarding'
+            statuses: [
+                { value: 'Medical Onboarding In Progress', label: 'In Progress', pillVariant: 'warning' },
+                { value: 'Onboarding Completed', label: 'Completed', pillVariant: 'success' }
+            ]
         },
         {
-            value: 'Onboarding Completed',
-            label: 'Onboarding Complete',
-            description: 'All onboarding steps finalized',
-            category: 'onboarding'
-        },
-        {
-            value: 'Active – Allowed to Practice',
-            label: 'Active',
+            id: 'active',
+            label: 'Active Practice',
+            icon: 'utility:check',
             description: 'Fully credentialed and ready to practice',
-            category: 'active'
+            statuses: [
+                { value: 'Active – Allowed to Practice', label: 'Active', pillVariant: 'success' }
+            ]
         }
+    ];
+
+    // Flat list of all status values in order (used for progress tracking)
+    ALL_STATUS_VALUES = [
+        'Application Received',
+        'Eligibility Check In Progress',
+        'Eligibility Passed',
+        'Eligibility Failed',
+        'License Verification Pending',
+        'License Verified',
+        'License Issue / Expired',
+        'Clinical Assessment Scheduled',
+        'Clinical Assessment Passed',
+        'Clinical Assessment Failed',
+        'Interview Scheduled',
+        'Interview Cleared',
+        'Interview Rejected',
+        'Background Check In Progress',
+        'Background Check Cleared',
+        'Background Check Failed',
+        'Offer Released',
+        'Offer Accepted',
+        'Offer Declined',
+        'Credentialing In Progress',
+        'Privileges Approved',
+        'Medical Onboarding In Progress',
+        'Onboarding Completed',
+        'Active – Allowed to Practice'
     ];
 
     FAILED_STATUSES = [
@@ -159,7 +198,7 @@ export default class CandidateDetailModal extends LightningElement {
         'Offer Declined'
     ];
 
-    // Stage-specific fields mapping
+    // Stage-specific fields mapping (unchanged)
     STAGE_FIELDS_MAP = {
         'License Verification Pending': {
             objectName: 'LicenseVerification__c',
@@ -167,7 +206,7 @@ export default class CandidateDetailModal extends LightningElement {
                 { label: 'License Number', apiName: 'LicenseNumber__c', type: 'text', required: true },
                 { label: 'Issuing Authority', apiName: 'IssuingAuthority__c', type: 'text', required: true },
                 { label: 'Expiration Date', apiName: 'ExpirationDate__c', type: 'date', required: true },
-                { label: 'Provider', apiName: 'Provider__c', type: 'lookup', required: false },
+                { label: 'Provider', apiName: 'Provider__c', type: 'contactLookup', required: false },
                 { label: 'Status', apiName: 'Status__c', type: 'picklist', required: true },
                 { label: 'Name Match AI Decision', apiName: 'Name_Match_AI_Decision__c', type: 'picklist', required: false },
                 { label: 'Name Match AI Score', apiName: 'Name_Match_AI_Score__c', type: 'number', required: false },
@@ -180,7 +219,7 @@ export default class CandidateDetailModal extends LightningElement {
                 { label: 'License Number', apiName: 'LicenseNumber__c', type: 'text', required: true },
                 { label: 'Issuing Authority', apiName: 'IssuingAuthority__c', type: 'text', required: true },
                 { label: 'Expiration Date', apiName: 'ExpirationDate__c', type: 'date', required: true },
-                { label: 'Provider', apiName: 'Provider__c', type: 'lookup', required: false },
+                { label: 'Provider', apiName: 'Provider__c', type: 'contactLookup', required: false },
                 { label: 'Status', apiName: 'Status__c', type: 'picklist', required: true },
                 { label: 'Verification ID', apiName: 'Name', type: 'text', required: false, readonly: true },
                 { label: 'Name Match AI Decision', apiName: 'Name_Match_AI_Decision__c', type: 'picklist', required: false },
@@ -206,33 +245,49 @@ export default class CandidateDetailModal extends LightningElement {
                 { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false, order: 3, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
                 { label: 'External Interviewer Email', apiName: 'External_Interviewer_Email__c', type: 'email', required: false, order: 4, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
                 { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true, order: 5 },
-                // { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: false, order: 6 }
+                { label: 'Interview Date', apiName: 'Interview_Date__c', type: 'date', required: false, order: 6, showWhen: { field: 'Meeting_Type__c', value: 'Virtual' } },
+                { label: 'Interview Time', apiName: 'Interview_Time__c', type: 'time', required: false, order: 7, showWhen: { field: 'Meeting_Type__c', value: 'Virtual' } },
+                { label: 'Meeting Link (Zoom/Teams)', apiName: 'Meeting_Link__c', type: 'url', required: false, order: 8, showWhen: { field: 'Meeting_Type__c', value: 'Virtual' }, showGenerateButton: true },
+                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: false, order: 9 }
             ],
-            buttonLabel: 'Schedule Interview'
+            buttonLabel: 'Schedule Interview',
+            allowEdit: true
         },
         'Interview Cleared': {
             objectName: 'Interview_Detail__c',
             fields: [
                 { label: 'Interview Detail Name', apiName: 'Name', type: 'text', required: false, readonly: true, order: 1 },
-                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true, order: 2 },
-                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'userLookup', required: false, order: 3, showWhen: { field: 'Interviewer_Type__c', value: 'User' } },
-                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false, order: 4, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
-                { label: 'External Interviewer Email', apiName: 'External_Interviewer_Email__c', type: 'email', required: false, order: 5, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
-                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true, order: 6 },
-                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: true, order: 7 }
+                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true, order: 2, disabled: true },
+                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'userLookup', required: false, order: 3, disabled: true, showWhen: { field: 'Interviewer_Type__c', value: 'User' } },
+                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false, order: 4, disabled: true, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
+                { label: 'External Interviewer Email', apiName: 'External_Interviewer_Email__c', type: 'email', required: false, order: 5, disabled: true, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
+                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true, order: 6, disabled: true },
+                { label: 'Interview Date', apiName: 'Interview_Date__c', type: 'date', required: false, order: 7, disabled: true, showWhen: { field: 'Meeting_Type__c', value: 'Virtual' } },
+                { label: 'Interview Time', apiName: 'Interview_Time__c', type: 'time', required: false, order: 8, disabled: true, showWhen: { field: 'Meeting_Type__c', value: 'Virtual' } },
+                { label: 'Meeting Link (Zoom/Teams)', apiName: 'Meeting_Link__c', type: 'url', required: false, order: 9, disabled: true, showWhen: { field: 'Meeting_Type__c', value: 'Virtual' } },
+                { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: true, order: 10 }
             ],
-            buttonLabel: 'Save Changes'
+            buttonLabel: 'Save Changes',
+            allowEdit: false
         },
         'Interview Rejected': {
             objectName: 'Interview_Detail__c',
             fields: [
-                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true, order: 1 },
-                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'userLookup', required: false, order: 2, showWhen: { field: 'Interviewer_Type__c', value: 'User' } },
-                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false, order: 3, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
-                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true, order: 4 },
+                { label: 'Interviewer Type', apiName: 'Interviewer_Type__c', type: 'picklist', required: true, order: 1, disabled: true },
+                { label: 'Interviewer (User)', apiName: 'Interviewer_User__c', type: 'userLookup', required: false, order: 2, disabled: true, showWhen: { field: 'Interviewer_Type__c', value: 'User' } },
+                { label: 'External Interviewer Name', apiName: 'External_Interviewer_Name__c', type: 'text', required: false, order: 3, disabled: true, showWhen: { field: 'Interviewer_Type__c', value: 'External' } },
+                { label: 'Meeting Type', apiName: 'Meeting_Type__c', type: 'picklist', required: true, order: 4, disabled: true },
                 { label: 'Interview Feedback', apiName: 'Feedback__c', type: 'textarea', required: true, order: 5 }
             ],
-            buttonLabel: 'Save Changes'
+            buttonLabel: 'Save Changes',
+            allowEdit: false
+        },
+        'Background Check Cleared': {
+            objectName: null,
+            fields: [],
+            buttonLabel: 'Open Document Flow',
+            showDocflowButton: true,
+            allowEdit: false
         }
     };
 
@@ -263,14 +318,14 @@ export default class CandidateDetailModal extends LightningElement {
         { label: 'Active – Allowed to Practice', value: 'Active – Allowed to Practice' }
     ];
 
-    // Picklist options for stage-specific fields
     picklistOptions = {
         'Status__c': [
-            { label: 'Active', value: 'Active' },
-            { label: 'Pending', value: 'Pending' },
+            { label: 'Pending Verification', value: 'Pending Verification' },
+            { label: 'Valid', value: 'Valid' },
             { label: 'Expired', value: 'Expired' },
-            { label: 'Verified', value: 'Verified' },
-            { label: 'Failed', value: 'Failed' }
+            { label: 'Suspended', value: 'Suspended' },
+            { label: 'Not Found', value: 'Not Found' },
+            { label: 'Requires Manual Review', value: 'Requires Manual Review' }
         ],
         'Name_Match_AI_Decision__c': [
             { label: 'Match', value: 'Match' },
@@ -279,17 +334,18 @@ export default class CandidateDetailModal extends LightningElement {
             { label: 'Needs Review', value: 'Needs Review' }
         ],
         'Interviewer_Type__c': [
-            { label: 'Internal', value: 'User' },
-            { label: 'External', value: 'External' },
-            // { label: 'Panel', value: 'Panel' }
+            { label: 'User', value: 'User' },
+            { label: 'External', value: 'External' }
         ],
         'Meeting_Type__c': [
-            { label: 'In-Person', value: 'In Person' },
-            { label: 'Zoom', value: 'Zoom' },
-            { label: 'Telephonic', value: 'Phone' },
-            { label: 'Others', value: 'Others' }
+            { label: 'In-Person', value: 'In-Person' },
+            { label: 'Virtual', value: 'Virtual' },
+            { label: 'Phone', value: 'Phone' },
+            { label: 'Hybrid', value: 'Hybrid' }
         ]
     };
+
+    // ─── GETTERS ─────────────────────────────────────────────────────────────
 
     get educationCount() {
         return this.candidateDetail?.educations?.length || 0;
@@ -333,114 +389,88 @@ export default class CandidateDetailModal extends LightningElement {
     }
 
     get completedStepsText() {
-        const completed = this.timelineSteps.filter(s => s.isCompleted).length;
+        const completed = this.timelineSteps.filter(s => s.isCompleted || s.isCurrent).length;
         const total = this.timelineSteps.length;
         return `${completed} of ${total} completed`;
     }
 
     get saveButtonLabel() {
         if (this.isSavingStep) return 'Saving...';
-        
-        // Check if stage has custom button label
         if (this.hasStageFields) {
             const stageConfig = this.STAGE_FIELDS_MAP[this.expandedStepValue];
-            if (stageConfig.buttonLabel) {
+            if (stageConfig && stageConfig.buttonLabel) {
                 return stageConfig.buttonLabel;
             }
         }
-        
         return 'Save Changes';
+    }
+
+    get showDocflowButton() {
+        return this.selectedStatus === 'Background Check Cleared';
     }
 
     get hasStageFields() {
         return this.expandedStepValue && this.STAGE_FIELDS_MAP[this.expandedStepValue];
     }
 
+    get hasStageFieldsList() {
+        if (!this.hasStageFields) return false;
+        const stageConfig = this.STAGE_FIELDS_MAP[this.expandedStepValue];
+        return stageConfig.fields && stageConfig.fields.length > 0;
+    }
+
     get stageFieldsTitle() {
         if (!this.hasStageFields) return 'Stage Details';
         const objectName = this.STAGE_FIELDS_MAP[this.expandedStepValue].objectName;
-        
-        if (objectName === 'LicenseVerification__c') {
-            return 'License Verification Details';
-        } else if (objectName === 'Interview_Detail__c') {
-            return 'Interview Details';
-        }
+        if (objectName === 'LicenseVerification__c') return 'License Verification Details';
+        if (objectName === 'Interview_Detail__c') return 'Interview Details';
         return 'Stage Details';
     }
 
     get currentStageFields() {
-        if (!this.hasStageFields) {
-            console.log('No stage fields configured for:', this.expandedStepValue);
-            return [];
-        }
+        if (!this.hasStageFields) return [];
         
         const stageConfig = this.STAGE_FIELDS_MAP[this.expandedStepValue];
         const fields = stageConfig.fields;
         const objectName = stageConfig.objectName;
         
-        console.log('Fields config:', fields);
-        console.log('Object name:', objectName);
-        
-        // Get data based on object type
         let stageData = null;
         if (objectName === 'LicenseVerification__c') {
             stageData = this.licenseVerifications && this.licenseVerifications.length > 0 
-                ? this.licenseVerifications[0] 
-                : null;
-            console.log('Using License data:', stageData);
+                ? this.licenseVerifications[0] : null;
         } else if (objectName === 'Interview_Detail__c') {
             stageData = this.interviewDetails && this.interviewDetails.length > 0 
-                ? this.interviewDetails[0] 
-                : null;
-            console.log('Using Interview data:', stageData);
+                ? this.interviewDetails[0] : null;
         }
         
-        console.log('Stage data for fields:', stageData);
-        
-        // Sort fields by order if specified
         const sortedFields = [...fields].sort((a, b) => (a.order || 999) - (b.order || 999));
         
-        // Add type detection flags and values for template conditionals
-        const mappedFields = sortedFields.map(field => {
+        return sortedFields.map(field => {
             let fieldValue = '';
             
-            // Get value from stage data or from edited values
             if (this.stageFieldValues[field.apiName] !== undefined) {
                 fieldValue = this.stageFieldValues[field.apiName];
-                console.log(`Field ${field.apiName} from stageFieldValues:`, fieldValue);
             } else if (stageData && stageData[field.apiName] !== undefined) {
                 fieldValue = stageData[field.apiName];
-                console.log(`Field ${field.apiName} from stageData:`, fieldValue);
-                
-                // Handle lookup fields (get name from relationship)
-                if (field.type === 'lookup' || field.type === 'userLookup') {
-                    if (field.apiName === 'Provider__c' && stageData.Provider__r) {
-                        fieldValue = stageData.Provider__r.Name;
-                    } else if (field.apiName === 'Interviewer_User__c' && stageData.Interviewer_User__r) {
-                        fieldValue = stageData.Interviewer_User__r.Name;
-                    }
-                    console.log(`Lookup field resolved to:`, fieldValue);
+                if (field.type === 'contactLookup' && field.apiName === 'Provider__c') {
+                    // Keep the ID as value so combobox can match it; label comes from contactOptions
+                    fieldValue = stageData.Provider__c || '';
+                } else if (field.type === 'userLookup' && field.apiName === 'Interviewer_User__c' && stageData.Interviewer_User__c) {
+                    fieldValue = stageData.Interviewer_User__c;
                 }
-            } else {
-                console.log(`Field ${field.apiName} has no value`);
             }
             
-            // Determine if field should be shown based on conditional logic
             let shouldShow = true;
             if (field.showWhen) {
                 const dependentFieldValue = this.stageFieldValues[field.showWhen.field] || 
                     (stageData ? stageData[field.showWhen.field] : null);
                 shouldShow = dependentFieldValue === field.showWhen.value;
-                console.log(`Field ${field.apiName} showWhen check:`, shouldShow, 'dependent value:', dependentFieldValue);
             }
             
-            // Get options for picklists and user lookups
             let fieldOptions;
-            if (field.type === 'picklist') {
-                fieldOptions = this.picklistOptions[field.apiName];
-            } else if (field.type === 'userLookup') {
-                fieldOptions = this.activeUsers;
-            }
+            if (field.type === 'picklist') fieldOptions = this.picklistOptions[field.apiName];
+            else if (field.type === 'userLookup') fieldOptions = this.activeUsers;
+            else if (field.type === 'contactLookup') fieldOptions = this.contactOptions;
             
             return {
                 ...field,
@@ -449,26 +479,35 @@ export default class CandidateDetailModal extends LightningElement {
                 shouldShow: shouldShow,
                 isText: field.type === 'text',
                 isDate: field.type === 'date',
+                isTime: field.type === 'time',
                 isEmail: field.type === 'email',
+                isUrl: field.type === 'url',
                 isNumber: field.type === 'number',
                 isCheckbox: field.type === 'checkbox',
                 isPicklist: field.type === 'picklist',
                 isTextarea: field.type === 'textarea',
-                isUserLookup: field.type === 'userLookup'
+                isUserLookup: field.type === 'userLookup',
+                isContactLookup: field.type === 'contactLookup'
             };
         });
-        
-        console.log('Mapped fields with values:', mappedFields);
-        return mappedFields;
     }
 
     @wire(getActiveUsers)
     wiredUsers({ data, error }) {
         if (data) {
             this.activeUsers = data;
-            console.log('Active users loaded:', this.activeUsers.length);
         } else if (error) {
             console.error('Error loading users:', error);
+        }
+    }
+
+    @wire(getContacts)
+    wiredContacts({ data, error }) {
+        if (data) {
+            this.contactOptions = data;
+            console.log('Contacts loaded:', this.contactOptions.length);
+        } else if (error) {
+            console.error('Error loading contacts:', error);
         }
     }
 
@@ -485,42 +524,22 @@ export default class CandidateDetailModal extends LightningElement {
                 this.selectedStatus = result.application.Status__c;
                 this.originalStatus = result.application.Status__c;
                 
-                // Fetch both license and interview data for the candidate
                 const candidateId = result.application.Candidate__c;
-                console.log('Loading data for candidate:', candidateId);
                 
-                // Fetch license and interview data in parallel
                 return Promise.all([
-                    getLicenseVerifications({ candidateId: candidateId })
-                        .catch(err => {
-                            console.error('Error loading licenses:', err);
-                            return [];
-                        }),
-                    getInterviewDetails({ candidateId: candidateId })
-                        .catch(err => {
-                            console.error('Error loading interviews:', err);
-                            return [];
-                        })
+                    getLicenseVerifications({ candidateId: candidateId }).catch(() => []),
+                    getInterviewDetails({ candidateId: candidateId }).catch(() => [])
                 ]);
             })
             .then(([licenses, interviews]) => {
-                console.log('License data loaded:', licenses);
-                console.log('Interview data loaded:', interviews);
-                
                 this.licenseVerifications = licenses || [];
                 this.currentLicenseId = licenses && licenses.length > 0 ? licenses[0].Id : null;
-                
                 this.interviewDetails = interviews || [];
                 this.currentInterviewId = interviews && interviews.length > 0 ? interviews[0].Id : null;
                 
-                console.log('Current license ID:', this.currentLicenseId);
-                console.log('Current interview ID:', this.currentInterviewId);
-                
-                // Build timeline after data is loaded
                 this.buildTimeline(this.selectedStatus, true);
                 this.isLoading = false;
                 
-                // Auto-scroll to current step after render
                 setTimeout(() => {
                     this.scrollToCurrentStep();
                 }, 400);
@@ -532,26 +551,36 @@ export default class CandidateDetailModal extends LightningElement {
             });
     }
 
+    // ─── GROUPED TIMELINE BUILDER ─────────────────────────────────────────────
     buildTimeline(currentStatus, autoExpandCurrent = false) {
-        const currentIndex = this.ONBOARDING_STAGES.findIndex(stage => stage.value === currentStatus);
-        const isFailedStatus = this.FAILED_STATUSES.includes(currentStatus);
+        const currentGroupId = this._getGroupForStatus(currentStatus);
+        const currentGroupIndex = this.PROCESS_GROUPS.findIndex(g => g.id === currentGroupId);
         
-        this.timelineSteps = this.ONBOARDING_STAGES.map((stage, index) => {
-            const isCompleted = index < currentIndex;
-            const isCurrent = stage.value === currentStatus;
-            const isPending = index > currentIndex;
-            const isFailed = stage.value === currentStatus && isFailedStatus;
-            const isLast = index === this.ONBOARDING_STAGES.length - 1;
-            
-            // Determine if this step should be expanded
-            const shouldExpand = autoExpandCurrent && isCurrent;
-            const isExpanded = this.expandedStepValue === stage.value || shouldExpand;
-            
+        this.timelineSteps = this.PROCESS_GROUPS.map((group, index) => {
+            // Find which status within this group is active (if any)
+            const activeStatus = group.statuses.find(s => s.value === currentStatus);
+            const isCurrentGroup = group.id === currentGroupId;
+            const isCompleted = index < currentGroupIndex;
+            const isPending = index > currentGroupIndex;
+            const isFailed = isCurrentGroup && this.FAILED_STATUSES.includes(currentStatus);
+            const isLast = index === this.PROCESS_GROUPS.length - 1;
+
+            // Status pill shown when this group is active
+            const activePill = activeStatus || null;
+
+            // Whether the edit panel is expanded for this group's current status
+            const isExpanded = this.expandedStepValue !== null && 
+                               group.statuses.some(s => s.value === this.expandedStepValue) &&
+                               isCurrentGroup;
+
+            // Auto-expand the current group on first load
+            const shouldExpand = autoExpandCurrent && isCurrentGroup;
+
             let nodeClass = 'timeline-node';
             let connectorClass = 'timeline-connector';
             let containerClass = 'timeline-step';
-            let icon = 'utility:record';
-            
+            let icon = group.icon || 'utility:record';
+
             if (isFailed) {
                 nodeClass += ' node-failed';
                 connectorClass += ' connector-failed';
@@ -562,64 +591,92 @@ export default class CandidateDetailModal extends LightningElement {
                 connectorClass += ' connector-completed';
                 containerClass += ' step-completed';
                 icon = 'utility:check';
-            } else if (isCurrent) {
+            } else if (isCurrentGroup) {
                 nodeClass += ' node-current';
                 connectorClass += ' connector-current';
                 containerClass += ' step-current';
-                icon = 'utility:steps';
             } else {
                 nodeClass += ' node-pending';
                 connectorClass += ' connector-pending';
                 containerClass += ' step-pending';
-                icon = 'utility:record';
             }
 
-            if (isExpanded) {
+            if (isExpanded || shouldExpand) {
                 containerClass += ' step-expanded';
             }
-            
+
+            // Build pill data based on step state:
+            // - Completed groups: single green "Completed" pill
+            // - Current group: all sub-status pills, active one highlighted
+            // - Failed group: all sub-status pills, failed one highlighted
+            // - Pending groups: all sub-status pills, all faded
+            let statusPills;
+            if (isCompleted) {
+                statusPills = [{
+                    value: 'completed',
+                    label: 'Completed',
+                    pillClass: 'group-status-pill pill-success pill-active',
+                    isActive: true
+                }];
+            } else {
+                statusPills = group.statuses.map(s => ({
+                    value: s.value,
+                    label: s.label,
+                    pillClass: `group-status-pill pill-${s.pillVariant}${(s.value === currentStatus && isCurrentGroup) ? ' pill-active' : ''}`,
+                    isActive: s.value === currentStatus && isCurrentGroup
+                }));
+            }
+
             return {
-                id: `step-${index}`,
-                ...stage,
+                id: `step-${group.id}`,
+                value: currentStatus, // the value used for edit panel lookup
+                groupId: group.id,
+                label: group.label,
+                description: group.description,
                 nodeClass,
                 connectorClass,
                 containerClass,
                 icon,
                 isCompleted,
-                isCurrent,
+                isCurrent: isCurrentGroup,
                 isPending,
                 isFailed,
                 isLast,
-                isExpanded,
-                timestamp: isCurrent || isCompleted ? this.getRelativeTime() : null
+                isExpanded: isExpanded || shouldExpand,
+                statusPills,
+                activePill,
+                timestamp: (isCurrentGroup || isCompleted) ? this.getRelativeTime() : null
             };
         });
 
-        if (shouldExpand) {
+        if (autoExpandCurrent) {
             this.expandedStepValue = currentStatus;
             this.editingStatus = currentStatus;
         }
     }
 
+    _getGroupForStatus(status) {
+        for (const group of this.PROCESS_GROUPS) {
+            if (group.statuses.some(s => s.value === status)) {
+                return group.id;
+            }
+        }
+        return null;
+    }
+
     scrollToCurrentStep() {
         const currentStep = this.template.querySelector('.step-current');
         if (currentStep) {
-            currentStep.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center',
-                inline: 'nearest'
-            });
+            currentStep.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         }
     }
 
     getRelativeTime() {
-        // Placeholder - in production, use actual timestamp from application
         return 'Recently updated';
     }
 
     handleStatusChange(event) {
         this.selectedStatus = event.detail.value;
-        // Rebuild timeline with new status
         this.buildTimeline(this.selectedStatus);
     }
 
@@ -628,30 +685,17 @@ export default class CandidateDetailModal extends LightningElement {
             this.showToast('Warning', 'Please select a status', 'warning');
             return;
         }
-
         if (this.selectedStatus === this.originalStatus) {
             this.showToast('Info', 'No changes detected', 'info');
             return;
         }
-
         this.isSaving = true;
-
-        updateApplicationStatus({
-            applicationId: this.applicationId,
-            newStatus: this.selectedStatus,
-            comments: ''
-        })
+        updateApplicationStatus({ applicationId: this.applicationId, newStatus: this.selectedStatus, comments: '' })
             .then(() => {
                 this.isSaving = false;
                 this.showToast('Success', 'Application status updated successfully', 'success');
-                
-                // Fire event to parent to refresh applications list
                 this.dispatchEvent(new CustomEvent('statusupdate'));
-                
-                // Close modal after short delay
-                setTimeout(() => {
-                    this.handleClose();
-                }, 1000);
+                setTimeout(() => { this.handleClose(); }, 1000);
             })
             .catch(error => {
                 this.isSaving = false;
@@ -660,45 +704,46 @@ export default class CandidateDetailModal extends LightningElement {
             });
     }
 
-    // Interactive Timeline Handlers
     handleStepClick(event) {
         event.stopPropagation();
-        const stepValue = event.currentTarget.dataset.stepValue;
+        const groupId = event.currentTarget.dataset.groupId;
+        const clickedStep = this.timelineSteps.find(s => s.groupId === groupId);
         
-        // Find the clicked step
-        const clickedStep = this.timelineSteps.find(s => s.value === stepValue);
-        
-        // Prevent editing future/pending steps
         if (clickedStep && clickedStep.isPending) {
             this.showToast('Info', 'Cannot edit future steps. Please update current step first.', 'info');
             return;
         }
-        
-        // Toggle expansion
-        if (this.expandedStepValue === stepValue) {
-            // Collapse if clicking same step
-            this.expandedStepValue = null;
-            this.editingStatus = '';
-            this.editingNotes = '';
-        } else {
-            // Expand clicked step
-            this.expandedStepValue = stepValue;
-            this.editingStatus = stepValue;
-            this.editingNotes = '';
-            
-            // Scroll to expanded step
-            setTimeout(() => {
-                const expandedStep = this.template.querySelector(`[data-step-value="${stepValue}"]`);
-                if (expandedStep) {
-                    expandedStep.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'nearest'
-                    });
-                }
-            }, 100);
+
+        // The expandedStepValue should be the current actual status (for STAGE_FIELDS_MAP lookup)
+        if (clickedStep && clickedStep.isCurrent) {
+            if (this.expandedStepValue === this.selectedStatus) {
+                this.expandedStepValue = null;
+                this.editingStatus = '';
+                this.editingNotes = '';
+            } else {
+                this.expandedStepValue = this.selectedStatus;
+                this.editingStatus = this.selectedStatus;
+                this.editingNotes = '';
+                setTimeout(() => {
+                    const expandedStep = this.template.querySelector(`[data-group-id="${groupId}"]`);
+                    if (expandedStep) {
+                        expandedStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 100);
+            }
+        } else if (clickedStep && clickedStep.isCompleted) {
+            // For completed steps, allow viewing but use the group's "best" status for display
+            const completedStatus = clickedStep.statusPills.find(p => p.isActive)?.value || 
+                                    clickedStep.statusPills[clickedStep.statusPills.length - 1]?.value;
+            if (this.expandedStepValue === completedStatus) {
+                this.expandedStepValue = null;
+                this.editingStatus = '';
+            } else {
+                this.expandedStepValue = completedStatus;
+                this.editingStatus = completedStatus;
+            }
         }
-        
-        // Rebuild timeline to update expansion state
+
         this.buildTimeline(this.selectedStatus, false);
     }
 
@@ -713,26 +758,51 @@ export default class CandidateDetailModal extends LightningElement {
     handleFieldChange(event) {
         const fieldName = event.target.name;
         const fieldValue = event.target.type === 'checkbox' ? event.target.checked : event.detail.value;
-        
-        // Store field changes
         this.stageFieldValues[fieldName] = fieldValue;
-        
-        // If this is the Interviewer_Type__c field, trigger re-render to show/hide dependent fields
-        if (fieldName === 'Interviewer_Type__c') {
-            console.log('Interviewer Type changed to:', fieldValue);
-            // Force re-render by updating a tracked property
+        if (fieldName === 'Interviewer_Type__c' || fieldName === 'Meeting_Type__c') {
             this.stageFieldValues = { ...this.stageFieldValues };
         }
     }
 
     handlePanelClick(event) {
-        // Stop click events inside the panel from bubbling up
         event.stopPropagation();
+    }
+
+    handleGenerateZoomLink() {
+        this.isGeneratingZoom = true;
+        const candidateName = this.candidateDetail?.application?.Candidate__r?.Full_Name__c || 'Candidate';
+        const jobTitle = this.candidateDetail?.application?.Job_Posting__r?.Job_Title__c || 'Position';
+        const interviewDate = this.stageFieldValues['Interview_Date__c'] || null;
+        const interviewTime = this.stageFieldValues['Interview_Time__c'] || null;
+        if (!interviewDate || !interviewTime) {
+            this.showToast('Warning', 'Please select Interview Date and Time first', 'warning');
+            this.isGeneratingZoom = false;
+            return;
+        }
+        const dateTimeStr = `${interviewDate}T${interviewTime}:00`;
+        createZoomMeeting({
+            topic: `Interview: ${candidateName} - ${jobTitle}`,
+            agenda: `Interview for ${jobTitle} position`,
+            startDateTime: dateTimeStr,
+            duration: 60,
+            timezone: 'Asia/Kolkata'
+        })
+            .then(result => {
+                this.stageFieldValues['Meeting_Link__c'] = result.join_url;
+                this.stageFieldValues['Zoom_Start_URL__c'] = result.start_url;
+                this.stageFieldValues['Zoom_Meeting_ID__c'] = result.id;
+                this.stageFieldValues = { ...this.stageFieldValues };
+                this.isGeneratingZoom = false;
+                this.showToast('Success', 'Zoom meeting created successfully!', 'success');
+            })
+            .catch(error => {
+                this.isGeneratingZoom = false;
+                this.showToast('Error', 'Failed to create Zoom meeting: ' + (error.body?.message || error.message), 'error');
+            });
     }
 
     handleQuickStatusChange(event) {
         this.selectedStatus = event.detail.value;
-        // Rebuild timeline with new status
         this.buildTimeline(this.selectedStatus, false);
     }
 
@@ -740,74 +810,75 @@ export default class CandidateDetailModal extends LightningElement {
         this.expandedStepValue = null;
         this.editingStatus = '';
         this.editingNotes = '';
-        this.stageFieldValues = {}; // Clear field changes
+        this.stageFieldValues = {};
         this.buildTimeline(this.selectedStatus, false);
     }
 
     handleSaveStepEdit() {
+        if (this.expandedStepValue === 'Background Check Cleared') {
+            this.handleOpenDocflow();
+            return;
+        }
         if (!this.editingStatus) {
             this.showToast('Warning', 'Please select a status', 'warning');
             return;
         }
-
         if (this.editingStatus === this.selectedStatus && !this.editingNotes && Object.keys(this.stageFieldValues).length === 0) {
             this.showToast('Info', 'No changes detected', 'info');
             return;
         }
-
         this.isSavingStep = true;
-
-        // Determine which object to update based on expanded step
         const stageConfig = this.hasStageFields ? this.STAGE_FIELDS_MAP[this.expandedStepValue] : null;
         const objectName = stageConfig ? stageConfig.objectName : null;
-        
-        console.log('Saving to object:', objectName);
-        console.log('Field values:', this.stageFieldValues);
 
-        // Update application status first
-        updateApplicationStatus({
-            applicationId: this.applicationId,
-            newStatus: this.editingStatus,
-            comments: this.editingNotes || ''
-        })
+        updateApplicationStatus({ applicationId: this.applicationId, newStatus: this.editingStatus, comments: this.editingNotes || '' })
             .then(() => {
-                // Save stage-specific fields if any changes exist
                 if (Object.keys(this.stageFieldValues).length > 0 && objectName) {
                     const candidateId = this.candidateDetail.application.Candidate__c;
+                    const fieldValuesToSave = { ...this.stageFieldValues };
                     
-                    // Route to correct object based on stage
+                    // Sanitize date fields — ensure they are plain 'YYYY-MM-DD' strings
+                    // (lightning-input type="date" can sometimes include time component on some browsers)
+                    const DATE_FIELDS = ['ExpirationDate__c', 'Interview_Date__c'];
+                    DATE_FIELDS.forEach(f => {
+                        if (fieldValuesToSave[f] && typeof fieldValuesToSave[f] === 'string') {
+                            // Take only the date portion in case there's a T or time appended
+                            fieldValuesToSave[f] = fieldValuesToSave[f].split('T')[0];
+                        }
+                    });
+                    
                     if (objectName === 'LicenseVerification__c') {
-                        console.log('Updating/Creating License record');
                         if (this.currentLicenseId) {
-                            return updateLicenseVerification({
-                                licenseId: this.currentLicenseId,
-                                fieldValues: this.stageFieldValues
-                            });
+                            return updateLicenseVerification({ licenseId: this.currentLicenseId, fieldValues: fieldValuesToSave });
                         } else {
-                            return createLicenseVerification({
-                                candidateId: candidateId,
-                                fieldValues: this.stageFieldValues
-                            }).then(newLicenseId => {
-                                this.currentLicenseId = newLicenseId;
-                            });
+                            return createLicenseVerification({ candidateId: candidateId, fieldValues: fieldValuesToSave })
+                                .then(newId => { this.currentLicenseId = newId; });
                         }
                     } else if (objectName === 'Interview_Detail__c') {
-                        console.log('Updating/Creating Interview record');
                         if (this.currentInterviewId) {
-                            return updateInterviewDetail({
-                                interviewId: this.currentInterviewId,
-                                fieldValues: this.stageFieldValues
-                            });
+                            return updateInterviewDetail({ interviewId: this.currentInterviewId, fieldValues: fieldValuesToSave });
                         } else {
-                            return createInterviewDetail({
-                                candidateId: candidateId,
-                                applicationId: this.applicationId,
-                                fieldValues: this.stageFieldValues
-                            }).then(newInterviewId => {
-                                this.currentInterviewId = newInterviewId;
-                            });
+                            return createInterviewDetail({ candidateId: candidateId, applicationId: this.applicationId, fieldValues: fieldValuesToSave })
+                                .then(newId => { this.currentInterviewId = newId; });
                         }
                     }
+                }
+                return Promise.resolve();
+            })
+            .then(() => {
+                if (this.expandedStepValue === 'Interview Scheduled' && Object.keys(this.stageFieldValues).length > 0) {
+                    return sendInterviewEmails({
+                        applicationId: this.applicationId,
+                        interviewerType: this.stageFieldValues['Interviewer_Type__c'] || '',
+                        interviewerUserId: this.stageFieldValues['Interviewer_User__c'] || null,
+                        externalInterviewerEmail: this.stageFieldValues['External_Interviewer_Email__c'] || '',
+                        meetingType: this.stageFieldValues['Meeting_Type__c'] || '',
+                        meetingLink: this.stageFieldValues['Meeting_Link__c'] || '',
+                        zoomStartUrl: this.stageFieldValues['Zoom_Start_URL__c'] || ''
+                    }).catch(emailError => {
+                        console.error('Email sending failed:', emailError);
+                        this.showToast('Warning', 'Interview saved but email notification failed', 'warning');
+                    });
                 }
                 return Promise.resolve();
             })
@@ -815,45 +886,27 @@ export default class CandidateDetailModal extends LightningElement {
                 this.isSavingStep = false;
                 this.selectedStatus = this.editingStatus;
                 this.originalStatus = this.editingStatus;
-                
-                // Success message
-                this.showToast('Success', 
-                    `Status updated to "${this.editingStatus}"`, 
-                    'success');
-                
-                // Clear field values
+                const successMessage = this.expandedStepValue === 'Interview Scheduled'
+                    ? 'Interview scheduled! Emails sent to candidate and interviewer.'
+                    : `Status updated to "${this.editingStatus}"`;
+                this.showToast('Success', successMessage, 'success');
                 this.stageFieldValues = {};
-                
-                // Collapse panel
                 this.expandedStepValue = null;
                 this.editingNotes = '';
-                
-                // Rebuild timeline
                 this.buildTimeline(this.editingStatus, false);
-                
-                // Reload data from both objects
                 const candidateId = this.candidateDetail.application.Candidate__c;
                 return Promise.all([
-                    getLicenseVerifications({ candidateId: candidateId })
-                        .catch(() => []),
-                    getInterviewDetails({ candidateId: candidateId })
-                        .catch(() => [])
+                    getLicenseVerifications({ candidateId: candidateId }).catch(() => []),
+                    getInterviewDetails({ candidateId: candidateId }).catch(() => [])
                 ]);
             })
             .then(([licenses, interviews]) => {
                 this.licenseVerifications = licenses || [];
                 this.currentLicenseId = licenses && licenses.length > 0 ? licenses[0].Id : null;
-                
                 this.interviewDetails = interviews || [];
                 this.currentInterviewId = interviews && interviews.length > 0 ? interviews[0].Id : null;
-                
-                // Fire event to parent
                 this.dispatchEvent(new CustomEvent('statusupdate'));
-                
-                // Scroll to new current step
-                setTimeout(() => {
-                    this.scrollToCurrentStep();
-                }, 300);
+                setTimeout(() => { this.scrollToCurrentStep(); }, 300);
             })
             .catch(error => {
                 this.isSavingStep = false;
@@ -863,8 +916,15 @@ export default class CandidateDetailModal extends LightningElement {
     }
 
     handleClose() {
-        // Fire event to parent to close modal
         this.dispatchEvent(new CustomEvent('closemodal'));
+    }
+
+    handleOpenDocflow() {
+        this.dispatchEvent(new CustomEvent('opendocflow', { detail: { applicationId: this.applicationId } }));
+    }
+
+    handleCloseDocflow() {
+        this.isDocflowOpen = false;
     }
 
     handleBackdropClick(event) {
@@ -879,19 +939,12 @@ export default class CandidateDetailModal extends LightningElement {
 
     getStatusPillClass(status) {
         const s = status?.toLowerCase() || '';
-        
         if (s.includes('passed') || s.includes('cleared') || s.includes('verified') || 
-            s.includes('approved') || s.includes('active') || s.includes('accepted')) {
-            return 'status-pill-large success';
-        } else if (s.includes('failed') || s.includes('rejected') || s.includes('expired') || 
-                   s.includes('suspended') || s.includes('declined')) {
-            return 'status-pill-large error';
-        } else if (s.includes('pending') || s.includes('progress') || s.includes('scheduled')) {
-            return 'status-pill-large warning';
-        } else if (s.includes('received') || s.includes('new')) {
-            return 'status-pill-large info';
-        }
-        
+            s.includes('approved') || s.includes('active') || s.includes('accepted')) return 'status-pill-large success';
+        if (s.includes('failed') || s.includes('rejected') || s.includes('expired') || 
+            s.includes('suspended') || s.includes('declined')) return 'status-pill-large error';
+        if (s.includes('pending') || s.includes('progress') || s.includes('scheduled')) return 'status-pill-large warning';
+        if (s.includes('received') || s.includes('new')) return 'status-pill-large info';
         return 'status-pill-large default';
     }
 

@@ -9,7 +9,7 @@
         <members>LicenseStatusViewerController</members>
         <members>LicenseVerificationApi</members>
         <members>LicenseVerificationInvoker</members>
-\        <members>LicenseVerificationQueueable</members>
+        <members>LicenseVerificationQueueable</members>
         <members>MalpracticeCoverageCallback</members>
         <members>MedicalLicenseVerificationService</members>
         <members>MedicalRecruitmentController</members>
