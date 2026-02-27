@@ -133,7 +133,16 @@
         <c-candidate-detail-modal
             application-id={selectedApplicationId}
             onclosemodal={handleCloseModal}
+            onopendocflow={handleOpenDocflow}
             onstatusupdate={handleStatusUpdate}>
         </c-candidate-detail-modal>
     </template>
+
+   <template if:true={showDocflowApp}>
+    <c-docflow-app
+        application-id={docflowApplicationId}
+        onclose={handleCloseDocflow}>
+    </c-docflow-app>
+</template>
+
 </template>
