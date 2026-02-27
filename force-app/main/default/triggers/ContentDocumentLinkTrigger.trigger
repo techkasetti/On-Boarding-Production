@@ -1,4 +1,3 @@
-
 /* trigger ContentDocumentLinkTrigger on ContentDocumentLink (after insert) {
     Set<Id> candidateIdsToUpdate = new Set<Id>();
 

@@ -3,7 +3,6 @@
     <fullName>ExpirationDate__c</fullName>
     <description>The date on which the medical license expires.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Expiration Date</label>
     <required>true</required>
     <trackHistory>true</trackHistory>

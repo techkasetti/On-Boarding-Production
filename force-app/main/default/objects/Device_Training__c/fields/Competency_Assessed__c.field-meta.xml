@@ -3,7 +3,6 @@
     <fullName>Competency_Assessed__c</fullName>
     <defaultValue>false</defaultValue>
     <description>Indicates if a formal competency assessment was completed as part of the training.</description>
-    <externalId>false</externalId>
     <label>Competency Assessed</label>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>

@@ -3,7 +3,6 @@
     <fullName>Required_Training_Modules__c</fullName>
     <description>A list or description of the specific modules, courses, or competencies required for this device training.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Required Training Modules</label>
     <length>32768</length>
     <trackHistory>false</trackHistory>

@@ -3,7 +3,6 @@
     <fullName>Candidate__c</fullName>
     <deleteConstraint>Restrict</deleteConstraint>
     <description>The candidate for whom this compliance record is being tracked.</description>
-    <externalId>false</externalId>
     <label>Candidate</label>
     <referenceTo>Candidate__c</referenceTo>
     <relationshipLabel>HIPAA Compliance</relationshipLabel>

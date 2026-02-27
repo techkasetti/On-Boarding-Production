@@ -87,11 +87,7 @@ public with sharing class CandidateReferralController {
       candidate.Referral_Code__c = buildReferralCode(candidate.Id);
     }
 
-    String baseUrl = URL.getOrgDomainUrl().toExternalForm();
-    candidate.Referral_Link__c =
-      baseUrl +
-      '/s/register?ref=' +
-      EncodingUtil.urlEncode(candidate.Referral_Code__c, 'UTF-8');
+    candidate.Referral_Link__c = buildReferralLink(candidate.Referral_Code__c);
     candidate.Last_Referral_Activity__c = System.now();
     update candidate;
 
@@ -123,7 +119,6 @@ public with sharing class CandidateReferralController {
     update candidate;
 
     insert new Referral_Conversion__c(
-      Name = 'Share - ' + (String.isBlank(channel) ? 'Direct' : channel),
       Referrer__c = candidateId,
       Channel__c = String.isBlank(channel) ? 'Direct' : channel,
       Conversion_Status__c = 'Shared'
@@ -165,7 +160,6 @@ public with sharing class CandidateReferralController {
     update referrer;
 
     insert new Referral_Conversion__c(
-      Name = 'Conversion - ' + (String.isBlank(status) ? 'Applied' : status),
       Referrer__c = referrer.Id,
       Referred_Candidate__c = referredCandidateId,
       Channel__c = String.isBlank(channel) ? 'Direct' : channel,
@@ -173,6 +167,34 @@ public with sharing class CandidateReferralController {
       Reward_Points__c = incrementalReward,
       Conversion_Date__c = Date.today()
     );
+  }
+
+  @TestVisible
+  private static String buildReferralLink(String referralCode) {
+    String encodedCode = EncodingUtil.urlEncode(referralCode, 'UTF-8');
+
+    String configuredBaseUrl = String.isBlank(System.Label.Referral_Base_Url)
+      ? URL.getOrgDomainUrl().toExternalForm()
+      : System.Label.Referral_Base_Url.trim();
+
+    String configuredPath = String.isBlank(System.Label.Referral_Landing_Path)
+      ? '/'
+      : System.Label.Referral_Landing_Path.trim();
+
+    if (!configuredPath.startsWith('/')) {
+      configuredPath = '/' + configuredPath;
+    }
+
+    if (configuredPath.contains('{ref}')) {
+      return configuredBaseUrl + configuredPath.replace('{ref}', encodedCode);
+    }
+
+    String separator = configuredPath.contains('?') ? '&' : '?';
+    return configuredBaseUrl +
+      configuredPath +
+      separator +
+      'ref=' +
+      encodedCode;
   }
 
   private static String buildReferralCode(Id candidateId) {

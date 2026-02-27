@@ -155,6 +155,7 @@
     <externalSharingModel>Private</externalSharingModel>
     <label>Candidate Document</label>
     <nameField>
+        <encryptionScheme>None</encryptionScheme>
         <label>Candidate Document Name</label>
         <type>Text</type>
     </nameField>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Assessment_Type__c</fullName>
+    <label>Assessment Type</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Clinical</fullName>
+                <default>false</default>
+                <label>Clinical</label>
+            </value>
+            <value>
+                <fullName>Technical</fullName>
+                <default>false</default>
+                <label>Technical</label>
+            </value>
+            <value>
+                <fullName>Behavioral</fullName>
+                <default>false</default>
+                <label>Behavioral</label>
+            </value>
+            <value>
+                <fullName>Emergency Drill</fullName>
+                <default>false</default>
+                <label>Emergency Drill</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

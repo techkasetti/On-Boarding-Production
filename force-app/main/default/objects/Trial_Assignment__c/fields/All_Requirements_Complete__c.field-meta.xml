@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>All_Requirements_Complete__c</fullName>
-    <externalId>false</externalId>
     <formula>AND( Total_Requirements__c &gt; 0 , Open_Requirements__c = 0 )</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <label>All Requirements Complete</label>

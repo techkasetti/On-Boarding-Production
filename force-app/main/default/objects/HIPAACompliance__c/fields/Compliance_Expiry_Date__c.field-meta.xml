@@ -3,7 +3,6 @@
     <fullName>Compliance_Expiry_Date__c</fullName>
     <description>The date this compliance certification expires and requires renewal.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Compliance Expiry Date</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

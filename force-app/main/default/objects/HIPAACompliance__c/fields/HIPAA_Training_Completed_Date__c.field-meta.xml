@@ -3,7 +3,6 @@
     <fullName>HIPAA_Training_Completed_Date__c</fullName>
     <description>The date the contact completed their required HIPAA training.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>HIPAA Training Completed Date</label>
     <required>false</required>
     <trackHistory>false</trackHistory>

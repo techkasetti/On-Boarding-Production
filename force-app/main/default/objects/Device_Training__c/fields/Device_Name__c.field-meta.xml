@@ -2,7 +2,6 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Device_Name__c</fullName>
     <description>The specific medical device or equipment type (e.g., &apos;Siemens MRI Model X&apos;).</description>
-    <externalId>false</externalId>
     <label>Device Name</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

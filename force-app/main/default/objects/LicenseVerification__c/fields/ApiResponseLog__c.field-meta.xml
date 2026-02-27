@@ -3,7 +3,6 @@
     <fullName>ApiResponseLog__c</fullName>
     <description>Stores the raw API response received from the external verification service for audit purposes.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>API Response Log</label>
     <length>131072</length>
     <trackHistory>false</trackHistory>

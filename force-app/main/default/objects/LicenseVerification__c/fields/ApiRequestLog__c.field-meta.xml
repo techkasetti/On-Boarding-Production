@@ -3,7 +3,6 @@
     <fullName>ApiRequestLog__c</fullName>
     <description>Stores the raw API request sent to the external verification service for audit purposes.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>API Request Log</label>
     <length>131072</length>
     <trackHistory>false</trackHistory>

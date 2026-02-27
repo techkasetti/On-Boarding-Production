@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Status__c</fullName>
+    <label>Status</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Application Received</fullName>
+                <default>false</default>
+                <label>Application Received</label>
+            </value>
+            <value>
+                <fullName>Eligibility Check In Progress</fullName>
+                <default>false</default>
+                <label>Eligibility Check In Progress</label>
+            </value>
+            <value>
+                <fullName>Eligibility Failed</fullName>
+                <default>false</default>
+                <label>Eligibility Failed</label>
+            </value>
+            <value>
+                <fullName>Eligibility Passed</fullName>
+                <default>false</default>
+                <label>Eligibility Passed</label>
+            </value>
+            <value>
+                <fullName>License Verification Pending</fullName>
+                <default>false</default>
+                <label>License Verification Pending</label>
+            </value>
+            <value>
+                <fullName>License Verified</fullName>
+                <default>false</default>
+                <label>License Verified</label>
+            </value>
+            <value>
+                <fullName>License Issue / Expired</fullName>
+                <default>false</default>
+                <label>License Issue / Expired</label>
+            </value>
+            <value>
+                <fullName>Clinical Assessment Scheduled</fullName>
+                <default>false</default>
+                <label>Clinical Assessment Scheduled</label>
+            </value>
+            <value>
+                <fullName>Clinical Assessment Failed</fullName>
+                <default>false</default>
+                <label>Clinical Assessment Failed</label>
+            </value>
+            <value>
+                <fullName>Clinical Assessment Passed</fullName>
+                <default>false</default>
+                <label>Clinical Assessment Passed</label>
+            </value>
+            <value>
+                <fullName>Interview Scheduled</fullName>
+                <default>false</default>
+                <label>Interview Scheduled</label>
+            </value>
+            <value>
+                <fullName>Interview Rejected</fullName>
+                <default>false</default>
+                <label>Interview Rejected</label>
+            </value>
+            <value>
+                <fullName>Interview Cleared</fullName>
+                <default>false</default>
+                <label>Interview Cleared</label>
+            </value>
+            <value>
+                <fullName>Background Check In Progress</fullName>
+                <default>false</default>
+                <label>Background Check In Progress</label>
+            </value>
+            <value>
+                <fullName>Background Check Failed</fullName>
+                <default>false</default>
+                <label>Background Check Failed</label>
+            </value>
+            <value>
+                <fullName>Background Check Cleared</fullName>
+                <default>false</default>
+                <label>Background Check Cleared</label>
+            </value>
+            <value>
+                <fullName>Drug Screening Pending (if applicable)</fullName>
+                <default>false</default>
+                <label>Drug Screening Pending (if applicable)</label>
+            </value>
+            <value>
+                <fullName>Offer Released</fullName>
+                <default>false</default>
+                <label>Offer Released</label>
+            </value>
+            <value>
+                <fullName>Offer Accepted</fullName>
+                <default>false</default>
+                <label>Offer Accepted</label>
+            </value>
+            <value>
+                <fullName>Offer Declined</fullName>
+                <default>false</default>
+                <label>Offer Declined</label>
+            </value>
+            <value>
+                <fullName>Credentialing In Progress</fullName>
+                <default>false</default>
+                <label>Credentialing In Progress</label>
+            </value>
+            <value>
+                <fullName>Privileges Approved</fullName>
+                <default>false</default>
+                <label>Privileges Approved</label>
+            </value>
+            <value>
+                <fullName>Privileges Limited</fullName>
+                <default>false</default>
+                <label>Privileges Limited</label>
+            </value>
+            <value>
+                <fullName>Medical Onboarding In Progress</fullName>
+                <default>false</default>
+                <label>Medical Onboarding In Progress</label>
+            </value>
+            <value>
+                <fullName>Mandatory Training Pending</fullName>
+                <default>false</default>
+                <label>Mandatory Training Pending</label>
+            </value>
+            <value>
+                <fullName>Onboarding Completed</fullName>
+                <default>false</default>
+                <label>Onboarding Completed</label>
+            </value>
+            <value>
+                <fullName>Active – Allowed to Practice</fullName>
+                <default>false</default>
+                <label>Active – Allowed to Practice</label>
+            </value>
+            <value>
+                <fullName>Active – Restricted Scope</fullName>
+                <default>false</default>
+                <label>Active – Restricted Scope</label>
+            </value>
+            <value>
+                <fullName>On Hold (Compliance Issue)</fullName>
+                <default>false</default>
+                <label>On Hold (Compliance Issue)</label>
+            </value>
+            <value>
+                <fullName>Suspended</fullName>
+                <default>false</default>
+                <label>Suspended</label>
+            </value>
+            <value>
+                <fullName>License Expired – Auto Blocked</fullName>
+                <default>false</default>
+                <label>License Expired – Auto Blocked</label>
+            </value>
+            <value>
+                <fullName>Terminated / Offboarded</fullName>
+                <default>false</default>
+                <label>Terminated / Offboarded</label>
+            </value>
+            <value>
+                <fullName>HIPAA Compliance Failed</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>HIPAA Compliance Failed</label>
+            </value>
+            <value>
+                <fullName>HIPAA Compliance Passed</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>HIPAA Compliance Passed</label>
+            </value>
+            <value>
+                <fullName>HIPAA Compliance Pending</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>HIPAA Compliance Pending</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

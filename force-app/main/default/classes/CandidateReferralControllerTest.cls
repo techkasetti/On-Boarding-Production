@@ -2,7 +2,6 @@
 private class CandidateReferralControllerTest {
   private static Candidate__c createCandidate(String emailPrefix) {
     Candidate__c candidate = new Candidate__c(
-      Name = emailPrefix,
       Full_Name__c = emailPrefix + ' Test',
       Email__c = emailPrefix + '@example.com'
     );

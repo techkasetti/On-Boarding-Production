@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All</fullName>
+    <columns>NAME</columns>
+    <columns>SF_Object1_Field_Name__c</columns>
+    <columns>Service_Type__c</columns>
+    <columns>RecordType__c</columns>
+    <columns>ChildObjectName1__c</columns>
+    <columns>ObjectNames1__c</columns>
+    <columns>SF_Object2_Field_Name__c</columns>
+    <columns>ChildObjectName2__c</columns>
+    <columns>Output_JSON_Field__c</columns>
+    <columns>ObjectNames2__c</columns>
+    <columns>OBJECT_ID</columns>
+    <filterScope>Everything</filterScope>
+    <label>All</label>
+</ListView>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>RecordType__c</fullName>
+    <label>RecordType</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Input JSON</fullName>
+                <default>false</default>
+                <label>Input JSON</label>
+            </value>
+            <value>
+                <fullName>Output JSON</fullName>
+                <default>false</default>
+                <label>Output JSON</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

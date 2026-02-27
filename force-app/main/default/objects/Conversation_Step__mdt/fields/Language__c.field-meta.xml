@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Language__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Language</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>en_US</fullName>
+                <default>true</default>
+                <label>en_US</label>
+            </value>
+            <value>
+                <fullName>es_MX</fullName>
+                <default>false</default>
+                <label>es_MX</label>
+            </value>
+            <value>
+                <fullName>fr_FR</fullName>
+                <default>false</default>
+                <label>fr_FR</label>
+            </value>
+            <value>
+                <fullName>de_DE</fullName>
+                <default>false</default>
+                <label>de_DE</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

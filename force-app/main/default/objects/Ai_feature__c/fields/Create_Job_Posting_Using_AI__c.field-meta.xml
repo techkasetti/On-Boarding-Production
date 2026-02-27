@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Create_Job_Posting_Using_AI__c</fullName>
+    <defaultValue>false</defaultValue>
+    <label>Create Job Posting Using AI</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
