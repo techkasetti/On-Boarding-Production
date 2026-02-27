@@ -1,0 +1,37 @@
+<template>
+    <lightning-card title="Matched Candidates">
+        <div class="slds-grid slds-gutters" style="min-height:500px">
+
+            <!-- LEFT PANEL -->
+            <div class="slds-col slds-size_1-of-3 slds-border_right">
+                <template if:true={candidates}>
+                    <template for:each={candidates} for:item="c">
+                        <div key={c.Id}
+                             class="slds-p-around_small candidate-row"
+                             data-id={c.Id}
+                             onclick={handleSelect}>
+                            <strong>{c.Name}</strong><br/>
+                            <span class="slds-text-color_weak">{c.Email__c}</span>
+                        </div>
+                    </template>
+                </template>
+            </div>
+
+            <!-- RIGHT PANEL -->
+            <div class="slds-col slds-size_2-of-3 slds-p-around_medium">
+                <template if:true={selectedCandidateId}>
+                    <c-candidate-profile-hub
+                        candidate-id={selectedCandidateId}>
+                    </c-candidate-profile-hub>
+                </template>
+
+                <template if:false={selectedCandidateId}>
+                    <div class="slds-align_absolute-center slds-text-color_weak">
+                        Select a candidate to view details
+                    </div>
+                </template>
+            </div>
+
+        </div>
+    </lightning-card>
+</template>

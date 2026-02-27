@@ -1,0 +1,64 @@
+<!-- <template>
+<div key={item.ObjectNames1__c} class="slds-grid slds-p-top_low">
+  <div class="slds-size_2-of-8 slds-p-left_xx-small slds-p-horizontal_x-large">
+      <lightning-input disabled="true" value={item.Name} type="text" max-length="10" placeholder="Enter Json Fields"></lightning-input>
+  </div>
+  <div id={item} class="slds-size_2-of-8 slds-p-left_xx-large slds-p-horizontal_x-large">
+    <lightning-combobox
+        name="getAllObject"
+        value={selectedObject}
+        options={objectOptions}
+        onchange={handleChange}>
+    </lightning-combobox>
+  </div>
+  <div id={item} class="slds-size_2-of-8 slds-p-left_xx-large slds-p-horizontal_x-large">
+    <lightning-combobox
+    name="childObjectOptions"
+    value={selectedChildObject}
+    options={childObjectOptions}
+    onchange={handleChildObjectChange}> 
+    </lightning-combobox>                                                
+  </div>
+  <div id={item} class="slds-size_2-of-8 slds-p-left_xx-large slds-p-horizontal_x-large" >
+    <lightning-combobox
+    name="fieldsForRequiredObject"
+    value={selectedFieldForRequiredObject}
+    options={fieldsForRequiredObject}
+    onchange={handleFieldChange}>
+    </lightning-combobox>
+  </div>
+</div>
+</template> -->
+<template>
+  <div key={item.Id} class="slds-grid slds-p-top_low">
+    <div class="slds-size_2-of-8 slds-p-left_xx-small slds-p-horizontal_x-large">
+        <lightning-input disabled="true" value={item.Name} type="text" max-length="10" placeholder="Enter Json Fields"></lightning-input>
+    </div>
+    <div id={item} class="slds-size_2-of-8 slds-p-left_xx-large slds-p-horizontal_x-large">
+        <select  name="getAllObject" value={item.ObjectNames1__c} onchange={handleChange} data-id={row}>
+            <option value="">choose one...</option>
+            <template for:each={getAllObject} for:item="object">
+                <option key={object.key} value={object.key}  selected={object.selected}>{object.key}</option>
+            </template>
+        </select>
+    </div>
+    <div id={item} class="slds-size_2-of-8 slds-p-left_xx-large slds-p-horizontal_x-large">
+        <select name="relatedChildObjects" value={item.ChildObjectName1__c} onchange={handleChildObjName} data-id={row}>
+            <option value="">choose one...</option>
+            <option value={item.ObjectNames1__c}>Parent Fields</option>
+          <template for:each={relatedChildObjects} for:item="childObject">
+                    <option key={childObject.key} value={childObject.key} selected={childObject.key.selected}>{childObject.key}</option>
+          </template>
+        </select>                                                  
+    </div>
+    <div id={item} class="slds-size_2-of-8 slds-p-left_xx-large slds-p-horizontal_x-large" >
+        <select name="fieldsForRequiredObject" value={item.SF_Object1_Field_Name__c} onchange={handleChildField} data-id={row}>
+            <option value="">Choose one...</option>
+            <template for:each={fieldsForRequiredObject} for:item="opt">
+                <option key={opt} value={opt} selected={opt.selected}>{opt}</option>
+                </template>
+        </select>
+    </div>
+  
+  </div>
+  </template>

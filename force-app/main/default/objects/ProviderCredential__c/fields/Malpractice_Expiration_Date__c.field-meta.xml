@@ -2,7 +2,6 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Malpractice_Expiration_Date__c</fullName>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Malpractice Expiration Date</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

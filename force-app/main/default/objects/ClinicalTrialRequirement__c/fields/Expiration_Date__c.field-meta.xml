@@ -3,7 +3,6 @@
     <fullName>Expiration_Date__c</fullName>
     <description>Expiration date of the GCP certificate or trial-specific training requirement.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Expiration Date</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

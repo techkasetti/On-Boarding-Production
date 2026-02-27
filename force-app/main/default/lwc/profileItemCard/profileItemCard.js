@@ -1,4 +1,3 @@
-
 // profileItemCard.js - UPDATED WITH DELETE EVENT
 import { LightningElement, api } from 'lwc';
 

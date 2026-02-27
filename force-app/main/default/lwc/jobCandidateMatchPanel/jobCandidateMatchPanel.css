@@ -1,0 +1,47 @@
+.container {
+    display: flex;
+    height: 420px;
+}
+
+.left {
+    width: 30%;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+}
+
+.right {
+    width: 70%;
+    padding: 16px;
+}
+
+.row {
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.row:hover {
+    background: #f3f3f3;
+}
+
+.row.selected {
+    background: #e6f2ff;
+}
+
+.meta {
+    font-size: 12px;
+    color: #777;
+}
+
+.pill {
+    display: inline-block;
+    background: #eef;
+    padding: 4px 8px;
+    margin: 4px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.actions {
+    margin-top: 16px;
+}

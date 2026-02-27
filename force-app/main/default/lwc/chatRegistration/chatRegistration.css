@@ -1,0 +1,31 @@
+.chat-container {
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.slds-chat-listitem_inbound {
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+.slds-chat-listitem_outbound {
+    text-align: right;
+    margin-bottom: 10px;
+}
+
+.slds-chat-listitem_inbound .slds-chat-bubble__content {
+    background-color: #f4f4f4;
+    display: inline-block;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.slds-chat-listitem_outbound .slds-chat-bubble__content {
+    background-color: #0070d2;
+    color: white;
+    display: inline-block;
+    padding: 10px;
+    border-radius: 10px;
+}

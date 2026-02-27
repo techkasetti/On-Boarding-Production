@@ -3,7 +3,6 @@
     <fullName>Verified_By__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <description>User who verified this clinical trial requirement.</description>
-    <externalId>false</externalId>
     <label>Verified By</label>
     <referenceTo>User</referenceTo>
     <relationshipLabel>Verified Requirements</relationshipLabel>

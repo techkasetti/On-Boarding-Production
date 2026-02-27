@@ -1,0 +1,33 @@
+<template>
+    <lightning-card title="Onboarding Chat" icon-name="standard:bot">
+        <div class="slds-p-around_medium chat-container">
+            <!-- Message History -->
+            <div for:each={messages} for:item="message" key={message.id}>
+                <div class={message.style}>
+                    <div class="slds-chat-bubble__content">
+                        <p>{message.text}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Message Input -->
+        <div slot="footer" class="slds-p-horizontal_medium">
+            <lightning-input
+                label="Your Message"
+                variant="label-hidden"
+                placeholder="Type your message..."
+                value={userInput}
+                onchange={handleInputChange}
+                onkeydown={handleKeyDown}
+                disabled={isLoading}>
+            </lightning-input>
+            <lightning-button
+                label="Send"
+                onclick={handleSendMessage}
+                variant="brand"
+                class="slds-m-top_small"
+                disabled={isLoading}>
+            </lightning-button>
+        </div>
+    </lightning-card>
+</template>
