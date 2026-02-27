@@ -1,12 +1,21 @@
+<<<<<<< ours
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Reward_Points__c</fullName>
     <externalId>false</externalId>
+=======
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Reward_Points__c</fullName>
+>>>>>>> theirs
     <label>Reward Points</label>
     <precision>8</precision>
     <required>false</required>
     <scale>0</scale>
     <trackTrending>false</trackTrending>
     <type>Number</type>
+<<<<<<< ours
     <unique>false</unique>
+=======
+>>>>>>> theirs
 </CustomField>

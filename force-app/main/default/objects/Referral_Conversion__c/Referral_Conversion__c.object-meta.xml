@@ -1,3 +1,4 @@
+<<<<<<< ours
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
@@ -142,16 +143,26 @@
     </actionOverrides>
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+=======
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+>>>>>>> theirs
     <deploymentStatus>Deployed</deploymentStatus>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>
     <enableHistory>false</enableHistory>
+<<<<<<< ours
     <enableLicensing>false</enableLicensing>
     <enableReports>true</enableReports>
     <enableSearch>true</enableSearch>
     <enableSharing>true</enableSharing>
     <enableStreamingApi>true</enableStreamingApi>
+=======
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+>>>>>>> theirs
     <externalSharingModel>Private</externalSharingModel>
     <label>Referral Conversion</label>
     <nameField>
@@ -160,7 +171,10 @@
         <type>AutoNumber</type>
     </nameField>
     <pluralLabel>Referral Conversions</pluralLabel>
+<<<<<<< ours
     <searchLayouts></searchLayouts>
+=======
+>>>>>>> theirs
     <sharingModel>ReadWrite</sharingModel>
     <visibility>Public</visibility>
 </CustomObject>

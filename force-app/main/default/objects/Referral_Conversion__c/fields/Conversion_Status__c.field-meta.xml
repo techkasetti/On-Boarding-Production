@@ -1,4 +1,8 @@
+<<<<<<< ours
 <?xml version="1.0" encoding="UTF-8"?>
+=======
+<?xml version="1.0" encoding="UTF-8" ?>
+>>>>>>> theirs
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Conversion_Status__c</fullName>
     <label>Conversion Status</label>
@@ -9,6 +13,7 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
+<<<<<<< ours
             <value>
                 <fullName>Shared</fullName>
                 <default>false</default>
@@ -34,6 +39,18 @@
                 <default>false</default>
                 <label>Hired</label>
             </value>
+=======
+            <value><fullName>Shared</fullName><default>false</default><label
+        >Shared</label></value>
+            <value><fullName>Applied</fullName><default>true</default><label
+        >Applied</label></value>
+            <value><fullName>Screened</fullName><default>false</default><label
+        >Screened</label></value>
+            <value><fullName>Interviewed</fullName><default
+        >false</default><label>Interviewed</label></value>
+            <value><fullName>Hired</fullName><default>false</default><label
+        >Hired</label></value>
+>>>>>>> theirs
         </valueSetDefinition>
     </valueSet>
 </CustomField>

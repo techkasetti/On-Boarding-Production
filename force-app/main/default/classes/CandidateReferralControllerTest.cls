@@ -2,6 +2,7 @@
 private class CandidateReferralControllerTest {
   private static Candidate__c createCandidate(String emailPrefix) {
     Candidate__c candidate = new Candidate__c(
+      Name = emailPrefix,
       Full_Name__c = emailPrefix + ' Test',
       Email__c = emailPrefix + '@example.com'
     );
@@ -29,8 +30,8 @@ private class CandidateReferralControllerTest {
       'Referral code should be generated'
     );
     System.assert(
-      generated.referralLink.contains(generated.referralCode),
-      'Referral link should embed code'
+      generated.referralLink.contains('ref=' + generated.referralCode),
+      'Referral link should embed code as query parameter'
     );
     System.assertEquals(1, shared.totalShares, 'Shares should increment');
   }
