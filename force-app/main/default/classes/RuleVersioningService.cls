@@ -200,9 +200,12 @@
 //         }
 //     }
 // }
-
 // =====================================================
-// RULE VERSIONING SERVICE - 
+// RULE VERSIONING SERVICE - COMPLETELY FIXED VERSION
+// Handles version control and rollback for rules
+// =====================================================
+// =====================================================
+// RULE VERSIONING SERVICE - COMPLETELY FIXED VERSION
 // Handles version control and rollback for rules
 // =====================================================
 

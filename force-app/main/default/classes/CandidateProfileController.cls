@@ -617,8 +617,7 @@ public without sharing class CandidateProfileController {
             throw new AuraHandledException('Failed to reset resume status: ' + e.getMessage());
         }
     }
-
-@AuraEnabled
+   @AuraEnabled
 public static String checkDuplicate(
     String candidateId,
     String recordType,

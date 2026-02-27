@@ -1,4 +1,3 @@
-
 // public with sharing class CandidateStatusController {
     
 //     public class CandidateStatusDto {
