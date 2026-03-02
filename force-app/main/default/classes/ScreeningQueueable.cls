@@ -430,7 +430,7 @@ public class ScreeningQueueable implements Queueable, Database.AllowsCallouts {
         List<Candidate__c> candidatesToUpdate = new List<Candidate__c>();
         for (Id candId : candidateIds) {
             Candidate__c candidate            = new Candidate__c(Id = candId);
-            candidate.Screening_Status__c     = 'Not Yet Screened';
+            candidate.Screening_Status__c     = 'Not Screened';
             candidate.Last_Screening_Date__c  = System.now();
             candidate.Last_Result_Summary__c  = 'No active screening rules found for the selected job posting.';
             candidatesToUpdate.add(candidate);
