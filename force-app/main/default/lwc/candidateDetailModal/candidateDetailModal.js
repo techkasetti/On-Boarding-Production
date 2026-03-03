@@ -1,4 +1,5 @@
 import { LightningElement, api, track, wire } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getCandidateDetails from '@salesforce/apex/MedicalRecruitmentController.getCandidateDetails';
 import updateApplicationStatus from '@salesforce/apex/MedicalRecruitmentController.updateApplicationStatus';
@@ -13,7 +14,7 @@ import getContacts from '@salesforce/apex/MedicalRecruitmentController.getContac
 import sendInterviewEmails from '@salesforce/apex/MedicalRecruitmentController.sendInterviewEmails';
 // import createZoomMeeting from '@salesforce/apex/ZoomMeetingService.createZoomMeeting';
 
-export default class CandidateDetailModal extends LightningElement {
+export default class CandidateDetailModal extends NavigationMixin(LightningElement) {
     @api applicationId;
     
     @track candidateDetail;
@@ -282,6 +283,13 @@ export default class CandidateDetailModal extends LightningElement {
             buttonLabel: 'Save Changes',
             allowEdit: false
         },
+        'Clinical Assessment Scheduled': {
+            objectName: null,
+            fields: [],
+            buttonLabel: 'Open Clinical Assessment Manager',
+            showClinicalAssessmentButton: true,
+            allowEdit: false
+        },
         'Background Check Cleared': {
             objectName: null,
             fields: [],
@@ -425,6 +433,13 @@ export default class CandidateDetailModal extends LightningElement {
         if (objectName === 'LicenseVerification__c') return 'License Verification Details';
         if (objectName === 'Interview_Detail__c') return 'Interview Details';
         return 'Stage Details';
+    }
+
+    get stageInfoMessage() {
+        if (this.expandedStepValue === 'Clinical Assessment Scheduled') {
+            return 'Click the button below to open Clinical Assessment Manager.';
+        }
+        return 'Click the button below to proceed to the Candidates Documents Generation.';
     }
 
     get currentStageFields() {
@@ -815,6 +830,10 @@ export default class CandidateDetailModal extends LightningElement {
     }
 
     handleSaveStepEdit() {
+        if (this.expandedStepValue === 'Clinical Assessment Scheduled') {
+            this.handleOpenClinicalAssessmentManager();
+            return;
+        }
         if (this.expandedStepValue === 'Background Check Cleared') {
             this.handleOpenDocflow();
             return;
@@ -921,6 +940,26 @@ export default class CandidateDetailModal extends LightningElement {
 
     handleOpenDocflow() {
         this.dispatchEvent(new CustomEvent('opendocflow', { detail: { applicationId: this.applicationId } }));
+    }
+
+    handleOpenClinicalAssessmentManager() {
+        const candidateId = this.candidateDetail?.application?.Candidate__c;
+        if (!candidateId) {
+            this.showToast('Error', 'Candidate Id not available.', 'error');
+            return;
+        }
+
+        this[NavigationMixin.Navigate]({
+            type: 'standard__navItemPage',
+            attributes: {
+                apiName: 'ClinicalAssessmentsManager'
+            },
+            state: {
+                c__candidateId: candidateId,
+                c__recordId: candidateId,
+                c__applicationId: this.applicationId
+            }
+        });
     }
 
     handleCloseDocflow() {
