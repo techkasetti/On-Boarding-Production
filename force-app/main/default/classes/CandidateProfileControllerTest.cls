@@ -329,4 +329,41 @@ private class CandidateProfileControllerTest {
             System.assert(true);
         }
     }
+
+    @IsTest
+    static void testProfilePhotoFlow() {
+        Candidate__c candidate = createCandidate();
+
+        ContentVersion photo1 = new ContentVersion(
+            Title = 'Headshot1',
+            PathOnClient = 'Headshot1.jpg',
+            VersionData = Blob.valueOf('img1'),
+            FirstPublishLocationId = candidate.Id,
+            IsMajorVersion = true
+        );
+        insert photo1;
+
+        Id doc1 = [
+            SELECT ContentDocumentId
+            FROM ContentVersion
+            WHERE Id = :photo1.Id
+            LIMIT 1
+        ].ContentDocumentId;
+
+        Test.startTest();
+        CandidateProfileController.setCandidateProfilePhoto(candidate.Id, doc1);
+        CandidateProfileController.PhotoInfo info = CandidateProfileController.getCandidatePhotoInfo(candidate.Id);
+        Test.stopTest();
+
+        System.assertEquals(true, info.hasPhoto);
+        System.assertEquals(doc1, info.contentDocumentId);
+        System.assertNotEquals(null, info.downloadUrl);
+
+        Test.startTest();
+        CandidateProfileController.deleteCandidatePhoto(candidate.Id);
+        CandidateProfileController.PhotoInfo info2 = CandidateProfileController.getCandidatePhotoInfo(candidate.Id);
+        Test.stopTest();
+
+        System.assertEquals(false, info2.hasPhoto);
+    }
 }

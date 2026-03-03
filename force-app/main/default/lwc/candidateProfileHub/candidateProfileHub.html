@@ -49,10 +49,74 @@
                   <div class="slds-media">
                     <div class="slds-media__figure">
                       <div class="profile-avatar">
-                        <lightning-icon
-                          icon-name="standard:user"
-                          size="large"
-                        ></lightning-icon>
+                        <template if:true={hasPhoto}>
+                          <img
+                            src={photoUrl}
+                            alt="Profile Photo"
+                            class="profile-avatar-image"
+                          />
+                        </template>
+                        <template if:false={hasPhoto}>
+                          <lightning-icon
+                            icon-name="standard:user"
+                            size="large"
+                          ></lightning-icon>
+                        </template>
+                      </div>
+
+                      <div class="profile-photo-actions slds-m-top_small">
+                        <template if:true={hasPhoto}>
+                          <button
+                            type="button"
+                            class="fancy-btn fancy-btn--primary"
+                            onclick={handleChangePhoto}
+                          >
+                            <span class="fancy-btn__label">Change Photo</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="fancy-btn fancy-btn--danger"
+                            onclick={handleRemovePhoto}
+                          >
+                            <span class="fancy-btn__label">Remove</span>
+                          </button>
+                        </template>
+                        <template if:false={hasPhoto}>
+                          <button
+                            type="button"
+                            class="fancy-btn fancy-btn--primary"
+                            onclick={handleUploadPhoto}
+                          >
+                            <span class="fancy-btn__label">Upload Photo</span>
+                          </button>
+                        </template>
+
+                        <template if:true={showPhotoUpload}>
+                          <div
+                            class="slds-box slds-theme_shade slds-m-top_small upload-container"
+                          >
+                            <h4 class="slds-text-heading_small slds-m-bottom_small">
+                              Upload Profile Photo
+                            </h4>
+                            <lightning-file-upload
+                              label="Select Image"
+                              record-id={currentCandidateId}
+                              accept=".jpg,.jpeg,.png,.webp,.gif"
+                              multiple="false"
+                              onuploadfinished={handlePhotoUploadFinished}
+                            >
+                            </lightning-file-upload>
+                            <div class="slds-m-top_small">
+                              <button
+                                type="button"
+                                class="fancy-btn fancy-btn--neutral"
+                                onclick={handleCancelPhotoUpload}
+                              >
+                                <span class="fancy-btn__label">Cancel</span>
+                              </button>
+                            </div>
+                          </div>
+                        </template>
                       </div>
                     </div>
                     <div

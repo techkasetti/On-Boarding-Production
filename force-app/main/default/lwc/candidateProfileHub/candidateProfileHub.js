@@ -5,6 +5,9 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getProfileData from '@salesforce/apex/CandidateProfileController.getProfileData';
 import getCandidateResumeInfo from '@salesforce/apex/CandidateProfileController.getCandidateResumeInfo';
 import resetResumeStatus from '@salesforce/apex/CandidateProfileController.resetResumeStatus';
+import getCandidatePhotoInfo from '@salesforce/apex/CandidateProfileController.getCandidatePhotoInfo';
+import setCandidateProfilePhoto from '@salesforce/apex/CandidateProfileController.setCandidateProfilePhoto';
+import deleteCandidatePhoto from '@salesforce/apex/CandidateProfileController.deleteCandidatePhoto';
 import deleteRecord from '@salesforce/apex/CandidateProfileController.deleteRecord';
 import persistStructuredResumeData from '@salesforce/apex/OnboardingOrchestratorV2.persistStructuredResumeData';
 
@@ -23,6 +26,14 @@ export default class CandidateProfileHub extends LightningElement {
     @track resumeUploadDate = '';
     @track s3ResumeUrl = '';
     @track useAiParsing = false;
+
+    // Profile photo properties
+    @track hasPhoto = false;
+    @track photoUrl = '';
+    @track photoFileName = '';
+    @track photoUploadDate = '';
+    @track photoDocumentId = '';
+    @track showPhotoUpload = false;
     
     // Upload UI properties  
     @track showResumeUpload = false;
@@ -50,6 +61,7 @@ export default class CandidateProfileHub extends LightningElement {
             setTimeout(() => {
                 this.loadProfileData();
                 this.loadResumeInfo();
+                this.loadPhotoInfo();
             }, 100);
         }
     }
@@ -108,6 +120,26 @@ export default class CandidateProfileHub extends LightningElement {
             console.log('   - AI Parsing:', this.useAiParsing);
         } catch (error) {
             console.error('Error loading resume info:', error);
+        }
+    }
+
+    async loadPhotoInfo() {
+        if (!this._candidateId) return;
+
+        try {
+            const photoInfo = await getCandidatePhotoInfo({ candidateId: this._candidateId });
+            this.hasPhoto = photoInfo?.hasPhoto === true;
+            this.photoUrl = photoInfo?.downloadUrl || '';
+            this.photoFileName = photoInfo?.fileName || '';
+            this.photoUploadDate = photoInfo?.uploadDate || '';
+            this.photoDocumentId = photoInfo?.contentDocumentId || '';
+        } catch (error) {
+            console.error('Error loading profile photo info:', error);
+            this.hasPhoto = false;
+            this.photoUrl = '';
+            this.photoFileName = '';
+            this.photoUploadDate = '';
+            this.photoDocumentId = '';
         }
     }
     
@@ -192,6 +224,56 @@ export default class CandidateProfileHub extends LightningElement {
         console.log('=== ❌ Upload Cancelled ===');
         this.showResumeUpload = false;
         this.resumeStatusWasReset = false;
+    }
+
+    handleUploadPhoto() {
+        this.showPhotoUpload = true;
+    }
+
+    handleChangePhoto() {
+        this.showPhotoUpload = true;
+    }
+
+    handleCancelPhotoUpload() {
+        this.showPhotoUpload = false;
+    }
+
+    async handlePhotoUploadFinished(event) {
+        const uploadedFiles = event.detail.files;
+
+        if (!uploadedFiles || uploadedFiles.length === 0) {
+            this.showPhotoUpload = false;
+            return;
+        }
+
+        try {
+            const uploaded = uploadedFiles[0];
+            await setCandidateProfilePhoto({
+                candidateId: this._candidateId,
+                contentDocumentId: uploaded.documentId
+            });
+
+            this.showPhotoUpload = false;
+            await this.loadPhotoInfo();
+            this.showToast('Success', 'Profile photo updated successfully', 'success');
+        } catch (error) {
+            this.showToast('Error', error.body?.message || 'Failed to update profile photo', 'error');
+        }
+    }
+
+    async handleRemovePhoto() {
+        if (!confirm('Remove current profile photo?')) {
+            return;
+        }
+
+        try {
+            await deleteCandidatePhoto({ candidateId: this._candidateId });
+            await this.loadPhotoInfo();
+            this.showPhotoUpload = false;
+            this.showToast('Success', 'Profile photo removed', 'success');
+        } catch (error) {
+            this.showToast('Error', error.body?.message || 'Failed to remove profile photo', 'error');
+        }
     }
     
     // /**
