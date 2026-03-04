@@ -60,11 +60,14 @@ export default class CandidateProfileHub extends LightningElement {
         
         if (value) {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             setTimeout(() => {
                 this.loadProfileData();
                 this.loadResumeInfo();
             }, 100);
 =======
+=======
+>>>>>>> Stashed changes
             this.showResumeUpload = false;
             this.showPhotoUpload = false;
             this.showPreviewModal = false;
@@ -76,6 +79,9 @@ export default class CandidateProfileHub extends LightningElement {
             this.loadResumeInfo();
             this.loadPhotoInfo();
             this.loadAllJobPostings();
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         }
     }
@@ -986,7 +992,11 @@ export default class CandidateProfileHub extends LightningElement {
     }
 <<<<<<< Updated upstream
 }
+<<<<<<< Updated upstream
 =======
 }
+
+>>>>>>> Stashed changes
+=======
 
 >>>>>>> Stashed changes
