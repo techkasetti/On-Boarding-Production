@@ -73,14 +73,9 @@ export default class CandidateProfileHub extends LightningElement {
             this.showResumeUpload = false;
             this.showPhotoUpload = false;
             this.showPreviewModal = false;
-            this.activeJobView = 'all';
-            this.hasLoadedMatchedJobs = false;
-            this.matchedJobs = [];
-            this.jobsError = '';
             this.loadProfileData();
             this.loadResumeInfo();
             this.loadPhotoInfo();
-            this.loadAllJobPostings();
         }
     }
     

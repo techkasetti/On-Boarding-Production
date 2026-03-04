@@ -74,6 +74,10 @@
                                     <lightning-icon icon-name="standard:work_order" size="x-small"></lightning-icon>
                                     <span>Applied Jobs</span>
                                 </div>
+                                <div class="menu-item" onclick={handleViewMatchedJobs}>
+                                    <lightning-icon icon-name="utility:einstein" size="x-small"></lightning-icon>
+                                    <span>Matched Job Postings</span>
+                                </div>
                                 <div class="menu-divider"></div>
                                 <div class="menu-item" onclick={handleLogout}>
                                     <lightning-icon icon-name="utility:logout" size="x-small"></lightning-icon>
@@ -223,9 +227,163 @@
             </div>
         </template>
 
+        <!-- Matched Jobs View -->
+        <template if:true={showMatchedJobsView}>
+            <div class="applied-jobs-view-container">
+                <div class="back-button-container">
+                    <lightning-button
+                        label="Back to Jobs"
+                        icon-name="utility:back"
+                        onclick={handleBackToJobs}
+                        variant="neutral"
+                        class="slds-m-bottom_medium"
+                    ></lightning-button>
+                </div>
+
+                <div class="applied-jobs-header slds-box slds-m-bottom_medium">
+                    <div class="slds-grid slds-grid_vertical-align-center">
+                        <div class="slds-col slds-grow">
+                            <h1 class="slds-text-heading_large slds-m-bottom_xx-small">
+                                <lightning-icon icon-name="utility:einstein" size="medium" class="slds-m-right_small"></lightning-icon>
+                                Matched Job Postings
+                            </h1>
+                            <p class="slds-text-body_regular slds-text-color_weak">
+                                Personalized matches based on your candidate profile
+                            </p>
+                        </div>
+                        <div class="slds-col slds-no-flex">
+                            <div class="applications-count-badge">
+                                <span class="count-number">{matchedJobsCount}</span>
+                                <span class="count-label">Matches</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <template if:true={isLoadingMatchedJobs}>
+                    <div class="slds-align_absolute-center slds-p-vertical_xx-large">
+                        <lightning-spinner alternative-text="Loading matched jobs..." size="medium"></lightning-spinner>
+                    </div>
+                </template>
+
+                <template if:false={isLoadingMatchedJobs}>
+                    <template if:true={noMatchedJobsFound}>
+                        <div class="slds-box slds-text-align_center slds-p-vertical_xx-large">
+                            <lightning-icon icon-name="utility:info" size="large" class="slds-m-bottom_medium"></lightning-icon>
+                            <h2 class="slds-text-heading_medium slds-m-bottom_small">No Matched Jobs Found</h2>
+                            <p class="slds-text-color_weak">Complete your profile details to improve matching quality.</p>
+                        </div>
+                    </template>
+
+                    <template if:true={hasMatchedJobs}>
+                        <div class="applications-grid">
+                            <template for:each={pagedMatchedJobs} for:item="job">
+                                <div key={job.Id} class="application-card slds-box slds-m-bottom_small">
+                                    <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                                        <div class="slds-col slds-grow">
+                                            <h3 class="slds-text-heading_small slds-m-bottom_xx-small">
+                                                {job.Job_Title__c}
+                                            </h3>
+                                            <div class="job-meta-info">
+                                                <span class="category-badge-small">{job.Category__c}</span>
+                                                <template if:true={job.Department__c}>
+                                                    <span class="department-badge-small">{job.Department__c}</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-no-flex">
+                                            <span class="status-badge status-application-received">{job.matchScore}% Match</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="application-details-grid slds-m-bottom_small">
+                                        <div class="detail-item">
+                                            <lightning-icon icon-name="utility:location" size="xx-small" class="detail-icon"></lightning-icon>
+                                            <span class="detail-text">{job.locationDisplay}</span>
+                                        </div>
+                                        <template if:true={job.experienceDisplay}>
+                                            <div class="detail-item">
+                                                <lightning-icon icon-name="utility:layers" size="xx-small" class="detail-icon"></lightning-icon>
+                                                <span class="detail-text">{job.experienceDisplay}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <div class="slds-text-align_right">
+                                        <lightning-button
+                                            label="View Job Details"
+                                            variant="neutral"
+                                            class="slds-m-right_x-small"
+                                            data-id={job.Id}
+                                            onclick={handleJobClick}
+                                        ></lightning-button>
+                                        <template if:true={job.isAlreadyApplied}>
+                                            <lightning-button
+                                                label="Already Applied"
+                                                variant="success"
+                                                disabled
+                                            ></lightning-button>
+                                        </template>
+                                        <template if:false={job.isAlreadyApplied}>
+                                            <lightning-button
+                                                label="Apply Now"
+                                                variant="brand"
+                                                data-id={job.Id}
+                                                onclick={handleApply}
+                                            ></lightning-button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <template if:true={hasLowScoreMatchedJobs}>
+                            <div class="slds-text-align_center slds-m-top_small">
+                                <lightning-button
+                                    label={lowScoreToggleLabel}
+                                    variant="neutral"
+                                    onclick={handleToggleLowScoreMatches}
+                                ></lightning-button>
+                                <template if:false={showLowScoreMatches}>
+                                    <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                                        {lowScoreMatchedJobsCount} matches are below 40%
+                                    </p>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template if:true={hasMatchedPagination}>
+                            <div class="slds-grid slds-grid_align-center slds-grid_vertical-align-center slds-gutters_small slds-m-top_medium">
+                                <div class="slds-col">
+                                    <lightning-button
+                                        label="Previous"
+                                        variant="neutral"
+                                        onclick={handleMatchedPrevPage}
+                                        disabled={isMatchedPrevDisabled}
+                                    ></lightning-button>
+                                </div>
+                                <div class="slds-col slds-p-horizontal_small">
+                                    <span class="slds-text-body_regular">Page {currentMatchedPage} of {totalMatchedPages}</span>
+                                </div>
+                                <div class="slds-col">
+                                    <lightning-button
+                                        label="Next"
+                                        variant="neutral"
+                                        onclick={handleMatchedNextPage}
+                                        disabled={isMatchedNextDisabled}
+                                    ></lightning-button>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                </template>
+            </div>
+        </template>
+
         <!-- Job Listings View -->
         <template if:false={showProfileView}>
             <template if:false={showAppliedJobsView}>
+                <template if:false={showMatchedJobsView}>
                 <!-- Header -->
                 <div class="header-section">
                     <lightning-card>
@@ -474,6 +632,7 @@
                         </div>
                     </template>
                 </div>
+                </template>
             </template>
         </template>
 

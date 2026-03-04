@@ -201,10 +201,6 @@
             </div>
           </div>
 
-          <c-viral-referral-panel
-            candidate-id={candidateId}
-          ></c-viral-referral-panel>
-
           <!-- Resume Upload Section -->
           <div class="resume-section slds-box slds-m-bottom_medium">
             <div
@@ -318,117 +314,6 @@
                   </lightning-button>
                 </div>
               </div>
-            </template>
-          </div>
-
-          <!-- AI Job Matcher Section -->
-          <div class="job-matcher-section slds-box slds-m-bottom_medium">
-            <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-m-bottom_small">
-              <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                <h3 class="slds-text-heading_small">
-                  <lightning-icon
-                    icon-name="utility:einstein"
-                    size="x-small"
-                    class="slds-m-right_xx-small"
-                  ></lightning-icon>
-                  AI Job Matcher
-                </h3>
-              </div>
-              <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-text-align_right">
-                <lightning-button-group>
-                  <lightning-button
-                    label="All Job Postings"
-                    variant={allJobsButtonVariant}
-                    data-view="all"
-                    onclick={handleJobViewChange}
-                  ></lightning-button>
-                  <lightning-button
-                    label="AI Matched Jobs"
-                    variant={matchedJobsButtonVariant}
-                    data-view="matched"
-                    onclick={handleJobViewChange}
-                  ></lightning-button>
-                </lightning-button-group>
-              </div>
-            </div>
-
-            <template if:true={jobsError}>
-              <div class="slds-notify slds-notify_alert slds-theme_error slds-m-bottom_small" role="alert">
-                <span class="slds-assistive-text">Error</span>
-                <h2>{jobsError}</h2>
-              </div>
-            </template>
-
-            <template if:true={isAllJobsView}>
-              <template if:true={isLoadingAllJobs}>
-                <div class="slds-p-vertical_medium slds-align_absolute-center">
-                  <lightning-spinner alternative-text="Loading jobs..." size="small"></lightning-spinner>
-                </div>
-              </template>
-              <template if:false={isLoadingAllJobs}>
-                <template if:true={hasAllJobs}>
-                  <div class="job-card-grid slds-grid slds-wrap slds-grid_pull-padded">
-                    <template for:each={allJobs} for:item="job">
-                      <div
-                        key={job.Id}
-                        class="slds-col slds-size_1-of-1 slds-large-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small"
-                      >
-                        <div class="job-card slds-box slds-box_x-small">
-                          <h4 class="slds-text-heading_small slds-truncate" title={job.title}>{job.title}</h4>
-                          <p class="slds-text-body_small slds-text-color_weak">Role: {job.Role_Type__c}</p>
-                          <p class="slds-text-body_small slds-text-color_weak">Experience: {job.experienceText}</p>
-                          <p class="slds-text-body_small slds-text-color_weak">Location: {job.locationText}</p>
-                          <p class="slds-text-body_small slds-m-top_x-small">Status: {job.statusText}</p>
-                        </div>
-                      </div>
-                    </template>
-                  </div>
-                </template>
-                <template if:false={hasAllJobs}>
-                  <p class="slds-text-color_weak slds-p-vertical_small">No job postings found.</p>
-                </template>
-              </template>
-            </template>
-
-            <template if:true={isMatchedJobsView}>
-              <template if:true={isLoadingMatchedJobs}>
-                <div class="slds-p-vertical_medium slds-align_absolute-center">
-                  <lightning-spinner alternative-text="Matching jobs..." size="small"></lightning-spinner>
-                </div>
-              </template>
-              <template if:false={isLoadingMatchedJobs}>
-                <template if:true={hasMatchedJobs}>
-                  <div class="job-card-grid slds-grid slds-wrap slds-grid_pull-padded">
-                    <template for:each={matchedJobs} for:item="job">
-                      <div
-                        key={job.Id}
-                        class="slds-col slds-size_1-of-1 slds-large-size_1-of-2 slds-p-horizontal_small slds-m-bottom_small"
-                      >
-                        <div class="job-card matched-job-card slds-box slds-box_x-small">
-                          <div class="slds-grid slds-grid_align-spread slds-m-bottom_x-small">
-                            <h4 class="slds-text-heading_small slds-truncate" title={job.title}>{job.title}</h4>
-                            <span class="match-score-badge">{job.matchScore}% ({job.scoreLabel})</span>
-                          </div>
-                          <p class="slds-text-body_small slds-text-color_weak">Role: {job.Role_Type__c}</p>
-                          <p class="slds-text-body_small slds-text-color_weak">Experience: {job.experienceText}</p>
-                          <p class="slds-text-body_small slds-text-color_weak">Location: {job.locationText}</p>
-                          <template if:true={job.hasReasons}>
-                            <div class="slds-m-top_x-small">
-                              <p class="slds-text-title_caps slds-m-bottom_xx-small">Why this matches</p>
-                              <template for:each={job.reasons} for:item="reason">
-                                <p key={reason} class="slds-text-body_small slds-text-color_weak">- {reason}</p>
-                              </template>
-                            </div>
-                          </template>
-                        </div>
-                      </div>
-                    </template>
-                  </div>
-                </template>
-                <template if:false={hasMatchedJobs}>
-                  <p class="slds-text-color_weak slds-p-vertical_small">No AI matched jobs found for this candidate.</p>
-                </template>
-              </template>
             </template>
           </div>
 
@@ -897,6 +782,11 @@
               </div>
             </div>
           </c-profile-section>
+
+          <!-- Viral Referral Generation Section -->
+          <c-viral-referral-panel
+            candidate-id={candidateId}
+          ></c-viral-referral-panel>
         </template>
       </div>
     </lightning-card>

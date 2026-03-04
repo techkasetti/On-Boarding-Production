@@ -22,6 +22,7 @@ public with sharing class CandidateJobMatcherController {
         public Set<String> allSkills = new Set<String>();
         public Set<String> clinicalSkills = new Set<String>();
         public Set<String> credentials = new Set<String>();
+        public Boolean hasResume = false;
     }
 
     @AuraEnabled(cacheable=true)
@@ -47,6 +48,9 @@ public with sharing class CandidateJobMatcherController {
         Integer safeLimit = (maxResults == null || maxResults <= 0) ? 25 : Math.min(maxResults, 100);
 
         CandidateSnapshot candidate = buildCandidateSnapshot(candidateId);
+        if (!isCandidateEligibleForMatching(candidate)) {
+            return new List<JobMatchResult>();
+        }
         List<Job_Posting__c> jobs = getAllJobPostings();
 
         if (jobs.isEmpty()) {
@@ -190,6 +194,15 @@ public with sharing class CandidateJobMatcherController {
             }
         }
 
+        // Detect whether candidate has uploaded a likely resume file.
+        Integer resumeCount = [
+            SELECT COUNT()
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :candidateId
+            AND ContentDocument.FileType IN ('PDF', 'WORD_X', 'WORD')
+        ];
+        snapshot.hasResume = resumeCount > 0;
+
         return snapshot;
     }
 
@@ -203,31 +216,58 @@ public with sharing class CandidateJobMatcherController {
     ) {
         Decimal score = 0;
         List<String> reasons = new List<String>();
+        Boolean hasRealMatch = false;
 
         String normalizedJobRole = normalize(job.Role_Type__c);
         if (String.isNotBlank(normalizedJobRole)) {
             if (candidate.roles.contains(normalizedJobRole)) {
                 score += 30;
                 reasons.add('Role alignment: direct match for ' + job.Role_Type__c);
+                hasRealMatch = true;
             } else if (hasTokenOverlap(candidate.roles, normalizedJobRole)) {
                 score += 15;
                 reasons.add('Role alignment: partial role overlap');
+                hasRealMatch = true;
             }
         }
 
         score += scoreExperience(candidate.yearsOfExperience, job.Min_Experience_Years__c, job.Max_Experience_Years__c, reasons);
-        score += scoreLocation(candidate.location, job.City__c, job.State__c, job.Country__c, reasons);
+        if (scoreLocation(candidate.location, job.City__c, job.State__c, job.Country__c, reasons) > 0) {
+            hasRealMatch = true;
+            score += 10;
+        }
 
         Set<String> requiredSkills = (procedureReqs == null) ? new Set<String>() : procedureReqs;
-        score += scoreRatio(requiredSkills, candidate.allSkills, 20, 'Required skills', reasons);
+        Decimal skillsScore = scoreRatio(requiredSkills, candidate.allSkills, 20, 'Required skills', reasons);
+        score += skillsScore;
+        if (requiredSkills != null && !requiredSkills.isEmpty() && countNormalizedMatches(requiredSkills, candidate.allSkills) > 0) {
+            hasRealMatch = true;
+        }
 
         Set<String> requiredClinical = (clinicalReqs == null) ? new Set<String>() : clinicalReqs;
-        score += scoreRatio(requiredClinical, candidate.clinicalSkills, 10, 'Clinical skills', reasons);
+        Decimal clinicalScore = scoreRatio(requiredClinical, candidate.clinicalSkills, 10, 'Clinical skills', reasons);
+        score += clinicalScore;
+        if (requiredClinical != null && !requiredClinical.isEmpty() && countNormalizedMatches(requiredClinical, candidate.clinicalSkills) > 0) {
+            hasRealMatch = true;
+        }
 
         Set<String> requiredCredentials = new Set<String>();
         if (licenseReqs != null) requiredCredentials.addAll(licenseReqs);
         if (certificationReqs != null) requiredCredentials.addAll(certificationReqs);
-        score += scoreRatio(requiredCredentials, candidate.credentials, 15, 'Certifications/Licenses', reasons);
+        Decimal credentialScore = scoreRatio(requiredCredentials, candidate.credentials, 15, 'Certifications/Licenses', reasons);
+        score += credentialScore;
+        if (!requiredCredentials.isEmpty() && countNormalizedMatches(requiredCredentials, candidate.credentials) > 0) {
+            hasRealMatch = true;
+        }
+
+        if (!hasRealMatch) {
+            JobMatchResult noMatch = new JobMatchResult();
+            noMatch.jobPosting = job;
+            noMatch.matchScore = 0;
+            noMatch.scoreLabel = 'Low';
+            noMatch.reasons = new List<String>{ 'No direct skill/role/location/credential match.' };
+            return noMatch;
+        }
 
         JobMatchResult result = new JobMatchResult();
         result.jobPosting = job;
@@ -282,8 +322,20 @@ public with sharing class CandidateJobMatcherController {
 
     private static Decimal scoreRatio(Set<String> required, Set<String> candidateSet, Decimal maxPoints, String factorName, List<String> reasons) {
         if (required == null || required.isEmpty()) {
-            reasons.add(factorName + ': no mandatory requirements defined');
-            return maxPoints;
+            reasons.add(factorName + ': no mandatory requirements defined (0 points)');
+            return 0;
+        }
+
+        Integer matched = countNormalizedMatches(required, candidateSet);
+
+        Decimal value = (Decimal.valueOf(matched) / required.size()) * maxPoints;
+        reasons.add(factorName + ': matched ' + matched + ' of ' + required.size());
+        return value;
+    }
+
+    private static Integer countNormalizedMatches(Set<String> required, Set<String> candidateSet) {
+        if (required == null || required.isEmpty() || candidateSet == null || candidateSet.isEmpty()) {
+            return 0;
         }
 
         Integer matched = 0;
@@ -292,10 +344,19 @@ public with sharing class CandidateJobMatcherController {
                 matched++;
             }
         }
+        return matched;
+    }
 
-        Decimal value = (Decimal.valueOf(matched) / required.size()) * maxPoints;
-        reasons.add(factorName + ': matched ' + matched + ' of ' + required.size());
-        return value;
+    private static Boolean isCandidateEligibleForMatching(CandidateSnapshot snapshot) {
+        if (snapshot == null) return false;
+        Boolean hasSkills = snapshot.allSkills != null && !snapshot.allSkills.isEmpty();
+        Boolean hasExperience = (snapshot.yearsOfExperience != null) || (snapshot.roles != null && !snapshot.roles.isEmpty());
+
+        // Hard gate: if no resume + no skills + no experience, do not return matches.
+        if (!snapshot.hasResume && !hasSkills && !hasExperience) {
+            return false;
+        }
+        return true;
     }
 
     private static Boolean containsNormalized(Set<String> values, String requirement) {
