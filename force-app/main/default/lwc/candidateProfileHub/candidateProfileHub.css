@@ -153,6 +153,34 @@
     background: white;
 }
 
+/* ========== AI Job Matcher Section ========== */
+.job-matcher-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+}
+
+.job-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    min-height: 9.5rem;
+}
+
+.matched-job-card {
+    border-left: 4px solid #4f46e5;
+}
+
+.match-score-badge {
+    background: #eef2ff;
+    color: #3730a3;
+    border-radius: 999px;
+    padding: 0.125rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 /* ========== RESUME PREVIEW MODAL - FORCE ABOVE NAVIGATION ========== */
 .resume-preview-backdrop,
 .resume-preview-backdrop.slds-backdrop,

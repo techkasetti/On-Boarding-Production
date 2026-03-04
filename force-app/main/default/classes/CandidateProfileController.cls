@@ -618,8 +618,168 @@ public without sharing class CandidateProfileController {
         }
     }
 
+<<<<<<< Updated upstream
 @AuraEnabled
 public static String checkDuplicate(
+=======
+    @AuraEnabled(cacheable=false)
+    public static PhotoInfo getCandidatePhotoInfo(Id candidateId) {
+        if (candidateId == null) {
+            throw new AuraHandledException('Candidate ID is required.');
+        }
+
+        PhotoInfo info = new PhotoInfo();
+        info.hasPhoto = false;
+
+        Candidate__c candidate = [
+            SELECT Id, Profile_Photo_Document_Id__c
+            FROM Candidate__c
+            WHERE Id = :candidateId
+            LIMIT 1
+        ];
+
+        if (String.isBlank(candidate.Profile_Photo_Document_Id__c)) {
+            return info;
+        }
+
+        Id photoDocId;
+        try {
+            photoDocId = (Id) candidate.Profile_Photo_Document_Id__c;
+        } catch (Exception e) {
+            candidate.Profile_Photo_Document_Id__c = null;
+            update candidate;
+            return info;
+        }
+
+        List<ContentVersion> versions = [
+            SELECT Id, Title, FileExtension, CreatedDate, ContentDocumentId
+            FROM ContentVersion
+            WHERE ContentDocumentId = :photoDocId
+            AND IsLatest = true
+            LIMIT 1
+        ];
+
+        if (versions.isEmpty()) {
+            candidate.Profile_Photo_Document_Id__c = null;
+            update candidate;
+            return info;
+        }
+
+        ContentVersion versionRec = versions[0];
+        Set<String> allowedExts = new Set<String>{ 'jpg', 'jpeg', 'png', 'webp', 'gif' };
+        String ext = versionRec.FileExtension == null ? '' : versionRec.FileExtension.toLowerCase();
+        if (!allowedExts.contains(ext)) {
+            candidate.Profile_Photo_Document_Id__c = null;
+            update candidate;
+            return info;
+        }
+
+        info.hasPhoto = true;
+        info.contentDocumentId = versionRec.ContentDocumentId;
+        info.contentVersionId = versionRec.Id;
+        info.fileName = versionRec.Title + '.' + versionRec.FileExtension;
+        info.uploadDate = versionRec.CreatedDate.format('MMM dd, yyyy');
+        info.downloadUrl = '/sfc/servlet.shepherd/version/download/' + versionRec.Id;
+        return info;
+    }
+
+    @AuraEnabled
+    public static void setCandidateProfilePhoto(Id candidateId, Id contentDocumentId) {
+        if (candidateId == null || contentDocumentId == null) {
+            throw new AuraHandledException('Candidate ID and content document ID are required.');
+        }
+
+        ContentVersion versionRec = [
+            SELECT Id, FileExtension, ContentDocumentId
+            FROM ContentVersion
+            WHERE ContentDocumentId = :contentDocumentId
+            AND IsLatest = true
+            LIMIT 1
+        ];
+
+        Set<String> allowedExts = new Set<String>{ 'jpg', 'jpeg', 'png', 'webp', 'gif' };
+        String ext = versionRec.FileExtension == null ? '' : versionRec.FileExtension.toLowerCase();
+        if (!allowedExts.contains(ext)) {
+            throw new AuraHandledException('Only image files are allowed for profile photo.');
+        }
+
+        Integer linkCount = [
+            SELECT COUNT()
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :candidateId
+            AND ContentDocumentId = :contentDocumentId
+        ];
+        if (linkCount == 0) {
+            throw new AuraHandledException('Uploaded image is not linked to the selected candidate.');
+        }
+
+        Candidate__c candidate = [
+            SELECT Id, Profile_Photo_Document_Id__c
+            FROM Candidate__c
+            WHERE Id = :candidateId
+            LIMIT 1
+        ];
+
+        String oldDocId = candidate.Profile_Photo_Document_Id__c;
+        String newDocId = String.valueOf(contentDocumentId);
+        candidate.Profile_Photo_Document_Id__c = newDocId;
+        update candidate;
+
+        if (!String.isBlank(oldDocId) && oldDocId != newDocId) {
+            try {
+                Id oldDocIdAsId = (Id) oldDocId;
+                List<ContentDocumentLink> oldLinks = [
+                    SELECT Id
+                    FROM ContentDocumentLink
+                    WHERE LinkedEntityId = :candidateId
+                    AND ContentDocumentId = :oldDocIdAsId
+                ];
+                if (!oldLinks.isEmpty()) {
+                    delete oldLinks;
+                }
+            } catch (Exception e) {
+                System.debug('Old profile photo cleanup skipped: ' + e.getMessage());
+            }
+        }
+    }
+
+    @AuraEnabled
+    public static void deleteCandidatePhoto(Id candidateId) {
+        if (candidateId == null) {
+            throw new AuraHandledException('Candidate ID is required.');
+        }
+
+        Candidate__c candidate = [
+            SELECT Id, Profile_Photo_Document_Id__c
+            FROM Candidate__c
+            WHERE Id = :candidateId
+            LIMIT 1
+        ];
+
+        String oldDocId = candidate.Profile_Photo_Document_Id__c;
+        candidate.Profile_Photo_Document_Id__c = null;
+        update candidate;
+
+        if (!String.isBlank(oldDocId)) {
+            try {
+                Id oldDocIdAsId = (Id) oldDocId;
+                List<ContentDocumentLink> oldLinks = [
+                    SELECT Id
+                    FROM ContentDocumentLink
+                    WHERE LinkedEntityId = :candidateId
+                    AND ContentDocumentId = :oldDocIdAsId
+                ];
+                if (!oldLinks.isEmpty()) {
+                    delete oldLinks;
+                }
+            } catch (Exception e) {
+                System.debug('Profile photo delete skipped: ' + e.getMessage());
+            }
+        }
+    }
+    @AuraEnabled
+    public static String checkDuplicate(
+>>>>>>> Stashed changes
     String candidateId,
     String recordType,
     String fieldsJson,
