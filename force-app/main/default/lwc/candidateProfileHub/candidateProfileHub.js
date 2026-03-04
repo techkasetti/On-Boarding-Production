@@ -6,6 +6,9 @@ import LightningConfirm from 'lightning/confirm';
 import getProfileData from '@salesforce/apex/CandidateProfileController.getProfileData';
 import getCandidateResumeInfo from '@salesforce/apex/CandidateProfileController.getCandidateResumeInfo';
 import resetResumeStatus from '@salesforce/apex/CandidateProfileController.resetResumeStatus';
+import getCandidatePhotoInfo from '@salesforce/apex/CandidateProfileController.getCandidatePhotoInfo';
+import setCandidateProfilePhoto from '@salesforce/apex/CandidateProfileController.setCandidateProfilePhoto';
+import deleteCandidatePhoto from '@salesforce/apex/CandidateProfileController.deleteCandidatePhoto';
 import deleteRecord from '@salesforce/apex/CandidateProfileController.deleteRecord';
 import persistStructuredResumeData from '@salesforce/apex/OnboardingOrchestratorV2.persistStructuredResumeData';
 import getAllJobPostings from '@salesforce/apex/CandidateJobMatcherController.getAllJobPostings';
@@ -26,6 +29,14 @@ export default class CandidateProfileHub extends LightningElement {
     @track resumeUploadDate = '';
     @track s3ResumeUrl = '';
     @track useAiParsing = false;
+
+    // Profile photo properties
+    @track hasPhoto = false;
+    @track photoUrl = '';
+    @track photoFileName = '';
+    @track photoUploadDate = '';
+    @track photoDocumentId = '';
+    @track showPhotoUpload = false;
     
     // Upload UI properties  
     @track showResumeUpload = false;
@@ -59,15 +70,6 @@ export default class CandidateProfileHub extends LightningElement {
         this._candidateId = value;
         
         if (value) {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-            setTimeout(() => {
-                this.loadProfileData();
-                this.loadResumeInfo();
-            }, 100);
-=======
-=======
->>>>>>> Stashed changes
             this.showResumeUpload = false;
             this.showPhotoUpload = false;
             this.showPreviewModal = false;
@@ -79,10 +81,6 @@ export default class CandidateProfileHub extends LightningElement {
             this.loadResumeInfo();
             this.loadPhotoInfo();
             this.loadAllJobPostings();
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
         }
     }
     
@@ -140,6 +138,26 @@ export default class CandidateProfileHub extends LightningElement {
             console.log('   - AI Parsing:', this.useAiParsing);
         } catch (error) {
             console.error('Error loading resume info:', error);
+        }
+    }
+
+    async loadPhotoInfo() {
+        if (!this._candidateId) return;
+
+        try {
+            const photoInfo = await getCandidatePhotoInfo({ candidateId: this._candidateId });
+            this.hasPhoto = photoInfo?.hasPhoto === true;
+            this.photoUrl = photoInfo?.downloadUrl || '';
+            this.photoFileName = photoInfo?.fileName || '';
+            this.photoUploadDate = photoInfo?.uploadDate || '';
+            this.photoDocumentId = photoInfo?.contentDocumentId || '';
+        } catch (error) {
+            console.error('Error loading profile photo info:', error);
+            this.hasPhoto = false;
+            this.photoUrl = '';
+            this.photoFileName = '';
+            this.photoUploadDate = '';
+            this.photoDocumentId = '';
         }
     }
     
@@ -225,8 +243,6 @@ export default class CandidateProfileHub extends LightningElement {
         this.showResumeUpload = false;
         this.resumeStatusWasReset = false;
     }
-<<<<<<< Updated upstream
-=======
 
     handleUploadPhoto() {
         this.showPhotoUpload = true;
@@ -375,7 +391,6 @@ export default class CandidateProfileHub extends LightningElement {
             this.showToast('Error', error.body?.message || 'Failed to remove profile photo', 'error');
         }
     }
->>>>>>> Stashed changes
     
     // /**
     //  * Shows modal with spinner immediately during S3 upload
@@ -990,13 +1005,4 @@ export default class CandidateProfileHub extends LightningElement {
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-<<<<<<< Updated upstream
 }
-<<<<<<< Updated upstream
-=======
-}
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> Stashed changes

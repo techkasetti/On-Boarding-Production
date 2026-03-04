@@ -3,7 +3,6 @@
     <fullName>Uploaded_File_Ids__c</fullName>
     <description>Stores comma-separated ContentDocumentIds uploaded for this clinical assessment.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Uploaded File Ids</label>
     <length>32768</length>
     <trackHistory>false</trackHistory>

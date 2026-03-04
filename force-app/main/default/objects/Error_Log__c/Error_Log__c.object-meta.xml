@@ -155,6 +155,7 @@
     <externalSharingModel>Private</externalSharingModel>
     <label>Error_Log</label>
     <nameField>
+        <encryptionScheme>None</encryptionScheme>
         <label>Error_Log Name</label>
         <type>Text</type>
     </nameField>

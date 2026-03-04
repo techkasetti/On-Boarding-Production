@@ -3,7 +3,6 @@
     <fullName>Verified_On__c</fullName>
     <description>Date and time when this requirement was verified as complete.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Verified On</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

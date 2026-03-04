@@ -30,4 +30,3 @@ global class ResumeParserMock implements HttpCalloutMock {
         return res;
     }
 }
-

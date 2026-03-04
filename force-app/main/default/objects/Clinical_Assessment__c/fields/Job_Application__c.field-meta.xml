@@ -3,7 +3,6 @@
     <fullName>Job_Application__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <description>Links the clinical assessment to the specific job application.</description>
-    <externalId>false</externalId>
     <label>Job Application</label>
     <referenceTo>Job_Application__c</referenceTo>
     <relationshipLabel>Clinical Assessments</relationshipLabel>

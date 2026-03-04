@@ -1,4 +1,3 @@
-
 // // candidateScreenStatus.js - UPDATED WITH JOB TITLE FIX AND CONFIDENCE TOOLTIP
 // import { LightningElement, api, wire, track } from 'lwc';
 // import { ShowToastEvent } from 'lightning/platformShowToastEvent';

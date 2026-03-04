@@ -151,10 +151,10 @@ public class GeminiAPIService {
         request.contents.add(userContent);
         
         return sendRequest(request, modelName);
-    } 
+    }
+    
   //////////////////////////////////////  
-   
-  /**
+    /**
      * Main Gemini call
      */
     
@@ -278,5 +278,3 @@ public class GeminiAPIService {
         }
     }
 }
-
-

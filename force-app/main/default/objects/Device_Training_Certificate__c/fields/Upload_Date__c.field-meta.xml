@@ -3,7 +3,6 @@
     <fullName>Upload_Date__c</fullName>
     <description>Date certificate was uploaded</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Upload Date</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

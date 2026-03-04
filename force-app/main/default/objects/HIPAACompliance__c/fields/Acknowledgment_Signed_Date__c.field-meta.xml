@@ -3,7 +3,6 @@
     <fullName>Acknowledgment_Signed_Date__c</fullName>
     <description>The date the contact e-signed the HIPAA acknowledgment and privacy consent form.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Acknowledgment Signed Date</label>
     <required>false</required>
     <trackHistory>false</trackHistory>
