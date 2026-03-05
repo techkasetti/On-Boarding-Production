@@ -1,0 +1,276 @@
+<!-- docflowsignature.html -->
+<template>
+
+  <!-- ══ BLOCKED: no c__requestId in URL ══════════════════════════ -->
+  <!-- showBlocked = !resolvedId = resolvedId is null                -->
+  <template if:true={showBlocked}>
+    <div style="min-height:100vh;background:#0f172a;display:flex;align-items:center;justify-content:center;padding:40px 16px;">
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:48px 40px;text-align:center;max-width:440px;width:100%;">
+        <div style="font-size:52px;margin-bottom:16px;">🔒</div>
+        <h2 style="color:#f1f5f9;font-family:Georgia,serif;font-size:22px;font-weight:400;margin:0 0 12px;">Access Restricted</h2>
+        <p style="color:#94a3b8;font-family:Arial,sans-serif;font-size:14px;line-height:1.7;margin:0;">
+          Your background check is not cleared.<br/>
+          You cannot access this page without a valid signing link.
+        </p>
+        <div style="margin-top:28px;padding-top:20px;border-top:1px solid #334155;font-size:11px;color:#475569;font-family:Arial,sans-serif;">
+          Powered by DocFlow · Legally compliant · End-to-end encrypted
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ══ ACCESS DENIED BY APEX (e.g. background check failed) ═════ -->
+  <template if:true={accessDenied}>
+    <div style="min-height:100vh;background:#0f172a;display:flex;align-items:center;justify-content:center;padding:40px 16px;">
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:48px 40px;text-align:center;max-width:440px;width:100%;">
+        <div style="font-size:52px;margin-bottom:16px;">🚫</div>
+        <h2 style="color:#f1f5f9;font-family:Georgia,serif;font-size:22px;font-weight:400;margin:0 0 12px;">Access Denied</h2>
+        <p style="color:#94a3b8;font-family:Arial,sans-serif;font-size:14px;line-height:1.7;margin:0;">{accessMessage}</p>
+        <div style="margin-top:28px;padding-top:20px;border-top:1px solid #334155;font-size:11px;color:#475569;font-family:Arial,sans-serif;">
+          Powered by DocFlow · Legally compliant · End-to-end encrypted
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ══ MAIN SIGNING UI: resolvedId present AND Apex OK ══════════ -->
+  <template if:true={showComponent}>
+    <div class="sp-root">
+      <div class="sp-bg-grid"></div>
+      <div class="sp-container">
+
+        <!-- HEADER -->
+        <div class="sp-header">
+          <div class="sp-header-brand">
+            <div class="sp-brand-dot"></div>
+            <span class="sp-brand-name">DocFlow</span>
+            <span class="sp-brand-sep">·</span>
+            <span class="sp-brand-sub">Electronic Signature</span>
+          </div>
+          <div class="sp-header-secure">
+            <svg class="sp-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            256-bit SSL secured
+          </div>
+        </div>
+
+        <!-- STEP PROGRESS -->
+        <div class="sp-steps">
+          <div class={step1Class}>
+            <div class="sp-step-circle">
+              <template if:true={step1Done}><span class="sp-step-check">✓</span></template>
+              <template if:false={step1Done}><span>1</span></template>
+            </div>
+            <div class="sp-step-label">Verify Identity</div>
+          </div>
+          <div class="sp-step-line"></div>
+          <div class={step2Class}>
+            <div class="sp-step-circle">
+              <template if:true={step2Done}><span class="sp-step-check">✓</span></template>
+              <template if:false={step2Done}><span>2</span></template>
+            </div>
+            <div class="sp-step-label">Review Document</div>
+          </div>
+          <div class="sp-step-line"></div>
+          <div class={step3Class}>
+            <div class="sp-step-circle"><span>3</span></div>
+            <div class="sp-step-label">Sign</div>
+          </div>
+          <div class="sp-step-line"></div>
+          <div class={step4Class}>
+            <div class="sp-step-circle"><span>4</span></div>
+            <div class="sp-step-label">Complete</div>
+          </div>
+        </div>
+
+        <!-- LOADING -->
+        <template if:true={isLoading}>
+          <div class="sp-card sp-loading-card">
+            <div class="sp-loading-ring"></div>
+            <p class="sp-loading-text">Processing…</p>
+          </div>
+        </template>
+
+        <template if:false={isLoading}>
+
+          <!-- STEP 1: FACE VERIFICATION -->
+          <template if:false={isFaceVerified}>
+            <div class="sp-card sp-fade-in">
+              <div class="sp-card-icon-wrap sp-icon-purple">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="sp-card-icon">
+                  <circle cx="12" cy="8" r="4"/>
+                  <path d="M6 20v-2a6 6 0 0 1 12 0v2"/>
+                  <path d="M17 11l1.5 1.5L21 10"/>
+                </svg>
+              </div>
+              <h2 class="sp-card-title">Identity Verification</h2>
+              <p class="sp-card-sub">Before signing, we need to confirm your identity using facial recognition.</p>
+              <div class="sp-face-wrap">
+                <c-face-verification
+                candidate-id={candidateId}
+                onverificationcomplete={handleVerificationSuccess}>
+              </c-face-verification>
+              </div>
+            </div>
+          </template>
+
+          <!-- STEP 2: REVIEW DOCUMENT -->
+          <template if:true={isFaceVerified}>
+            <template if:false={documentReviewed}>
+              <div class="sp-card sp-fade-in">
+                <div class="sp-card-icon-wrap sp-icon-blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="sp-card-icon">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <line x1="10" y1="9" x2="8" y2="9"/>
+                  </svg>
+                </div>
+                <h2 class="sp-card-title">Review Document</h2>
+                <p class="sp-card-sub">Please read the document carefully before providing your signature.</p>
+                <div class="sp-doc-meta-row">
+                  <div class="sp-doc-meta-item">
+                    <div class="sp-doc-meta-label">Document</div>
+                    <div class="sp-doc-meta-val">{documentTitle}</div>
+                  </div>
+                  <div class="sp-doc-meta-item">
+                    <div class="sp-doc-meta-label">Signer</div>
+                    <div class="sp-doc-meta-val">{signerName}</div>
+                  </div>
+                  <div class="sp-doc-meta-item">
+                    <div class="sp-doc-meta-label">Request ID</div>
+                    <div class="sp-doc-meta-val sp-mono">{shortRequestId}</div>
+                  </div>
+                </div>
+                <div class="sp-doc-scroll-wrap">
+                  <div class="sp-doc-scroll-inner">
+                    <div class="sp-doc-paper" lwc:dom="manual"></div>
+                  </div>
+                  <div class="sp-doc-scroll-fade"></div>
+                </div>
+                <div class="sp-doc-confirm-row">
+                  <label class="sp-checkbox-wrap">
+                    <input type="checkbox" class="sp-checkbox-input" checked={documentReadConfirmed} onchange={handleDocReadChange}/>
+                    <span class="sp-checkbox-box"></span>
+                    <span class="sp-checkbox-label">I have read and understood this document</span>
+                  </label>
+                </div>
+                <button class="sp-btn-primary" onclick={handleProceedToSign} disabled={isDocContinueDisabled}>Continue to Sign →</button>
+              </div>
+            </template>
+
+            <!-- STEP 3: SIGNATURE -->
+            <template if:true={documentReviewed}>
+              <template if:false={isSignatureComplete}>
+                <div class="sp-card sp-fade-in">
+                  <div class="sp-card-icon-wrap sp-icon-teal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="sp-card-icon">
+                      <path d="M20 7.5l-4-4-9.5 9.5L5 17l4-1.5L20 7.5z"/>
+                      <line x1="3" y1="21" x2="21" y2="21"/>
+                    </svg>
+                  </div>
+                  <h2 class="sp-card-title">Provide Your Signature</h2>
+                  <p class="sp-card-sub">Choose how you'd like to sign this document.</p>
+                  <div class="sp-method-tabs">
+                    <button class={tabTypeClass}   data-method="type"   onclick={handleMethodTab}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sp-tab-icon"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>Type
+                    </button>
+                    <button class={tabDrawClass}   data-method="draw"   onclick={handleMethodTab}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sp-tab-icon"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>Draw
+                    </button>
+                    <button class={tabUploadClass} data-method="upload" onclick={handleMethodTab}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sp-tab-icon"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>Upload
+                    </button>
+                  </div>
+
+                  <template if:true={isTypedSignature}>
+                    <div class="sp-sig-panel sp-fade-in">
+                      <label class="sp-field-label">Type your full legal name</label>
+                      <input class="sp-text-input" type="text" value={typedSignature} oninput={handleTypedSignatureChange} placeholder="Your full legal name…"/>
+                      <template if:true={typedSignature}>
+                        <div class="sp-typed-preview">
+                          <div class="sp-typed-sig-text">{typedSignature}</div>
+                          <div class="sp-typed-sig-line"></div>
+                          <div class="sp-typed-sig-caption">Signature Preview</div>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+
+                  <template if:true={isDrawSignature}>
+                    <div class="sp-sig-panel sp-fade-in">
+                      <label class="sp-field-label">Draw your signature below</label>
+                      <div class="sp-canvas-wrap">
+                        <canvas class="sp-canvas" width="560" height="180" style="touch-action:none;"
+                                onmousedown={startDrawing} onmousemove={draw} onmouseup={stopDrawing} onmouseleave={stopDrawing}
+                                ontouchstart={startDrawing} ontouchmove={draw} ontouchend={stopDrawing}></canvas>
+                        <div class="sp-canvas-hint">Sign here</div>
+                      </div>
+                      <div class="sp-canvas-actions">
+                        <button class="sp-btn-ghost sp-btn-sm" onclick={handleClearCanvas}>✕ Clear</button>
+                      </div>
+                    </div>
+                  </template>
+
+                  <template if:true={isUploadSignature}>
+                    <div class="sp-sig-panel sp-fade-in">
+                      <label class="sp-field-label">Upload a signature image</label>
+                      <div class="sp-upload-zone">
+                        <lightning-file-upload label="" name="signatureUpload" accept=".png,.jpg,.jpeg"
+                                               onuploadfinished={handleUploadFinished}
+                                               record-id={resolvedId} multiple="false">
+                        </lightning-file-upload>
+                        <div class="sp-upload-hint">PNG, JPG or JPEG · Max 5 MB</div>
+                      </div>
+                      <template if:true={uploadedSignatureUrl}>
+                        <div class="sp-upload-preview">
+                          <img src={uploadedSignatureUrl} alt="Signature preview" class="sp-upload-img"/>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+
+                  <div class="sp-agreement-wrap">
+                    <label class="sp-checkbox-wrap">
+                      <input type="checkbox" class="sp-checkbox-input" checked={agreementAccepted} onchange={handleAgreementChange}/>
+                      <span class="sp-checkbox-box"></span>
+                      <span class="sp-checkbox-label">I agree that this electronic signature is legally binding and has the same effect as a handwritten signature.</span>
+                    </label>
+                  </div>
+                  <button class="sp-btn-primary sp-btn-submit" onclick={handleSubmitSignature} disabled={isSubmitDisabled}>
+                    Submit Signature
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sp-btn-arrow">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </button>
+                </div>
+              </template>
+
+              <!-- STEP 4: COMPLETE -->
+              <template if:true={isSignatureComplete}>
+                <div class="sp-card sp-complete-card sp-fade-in">
+                  <div class="sp-complete-ring"><div class="sp-complete-check">✓</div></div>
+                  <h2 class="sp-complete-title">Signature Submitted</h2>
+                  <p class="sp-complete-sub">Your signature has been recorded successfully. A confirmation email has been sent to you.</p>
+                  <div class="sp-complete-details">
+                    <div class="sp-complete-detail-row"><span class="sp-complete-detail-label">Document</span><span class="sp-complete-detail-val">{documentTitle}</span></div>
+                    <div class="sp-complete-detail-row"><span class="sp-complete-detail-label">Signed by</span><span class="sp-complete-detail-val">{signerName}</span></div>
+                    <div class="sp-complete-detail-row"><span class="sp-complete-detail-label">Reference</span><span class="sp-complete-detail-val sp-mono">{shortRequestId}</span></div>
+                    <div class="sp-complete-detail-row"><span class="sp-complete-detail-label">Timestamp</span><span class="sp-complete-detail-val">{completedTimestamp}</span></div>
+                  </div>
+                  <div class="sp-complete-badge">Legally Binding · SSL Secured · Tamper-proof</div>
+                </div>
+              </template>
+            </template>
+          </template>
+        </template>
+
+        <div class="sp-footer">Powered by DocFlow &nbsp;·&nbsp; End-to-end encrypted &nbsp;·&nbsp; Legally compliant</div>
+      </div>
+    </div>
+  </template>
+
+</template>

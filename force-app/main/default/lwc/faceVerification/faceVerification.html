@@ -1,0 +1,150 @@
+<!-- faceVerification.html -->
+<template>
+  <div class="fv-root">
+
+    <!-- ══ NOT STARTED ══ -->
+    <template if:false={isCameraInitialized}>
+      <div class="fv-intro">
+        <div class="fv-icon-ring fv-icon-idle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="fv-icon-svg">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M6 20v-2a6 6 0 0 1 12 0v2"/>
+          </svg>
+        </div>
+        <h3 class="fv-intro-title">Identity Verification Required</h3>
+        <p class="fv-intro-sub">
+          We'll compare your live face against your registered profile photo
+          before you can sign. Your camera is only used for this step.
+        </p>
+        <div class="fv-checklist">
+          <div class="fv-check-item">
+            <span class="fv-check-icon">✓</span>
+            Face clearly visible and centred
+          </div>
+          <div class="fv-check-item">
+            <span class="fv-check-icon">✓</span>
+            Good, even lighting — avoid bright backlighting
+          </div>
+          <div class="fv-check-item">
+            <span class="fv-check-icon">✓</span>
+            Remove glasses or mask if possible
+          </div>
+        </div>
+
+        <!-- ★ Inline error for token / camera issues (replaces toast) -->
+        <template if:true={hasTokenError}>
+          <div class="fv-error-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="fv-error-icon">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p class="fv-error-msg">{tokenErrorMessage}</p>
+          </div>
+        </template>
+
+        <button class="fv-btn-primary" onclick={initializeCamera} disabled={isLoadingToken}>
+          <template if:true={isLoadingToken}>
+            <span class="fv-spinner"></span>
+            Loading profile…
+          </template>
+          <template if:false={isLoadingToken}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="fv-btn-icon">
+              <path d="M23 7l-7 5 7 5V7z"/>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+            Enable Camera
+          </template>
+        </button>
+      </div>
+    </template>
+
+    <!-- ══ CAMERA ACTIVE ══ -->
+    <template if:true={isCameraInitialized}>
+
+      <!-- VERIFIED STATE -->
+      <template if:true={isVerified}>
+        <div class="fv-verified-wrap">
+          <div class="fv-verified-ring">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="fv-verified-icon">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <h3 class="fv-verified-title">Identity Verified</h3>
+          <p class="fv-verified-sub">Your identity has been confirmed. Proceeding to document review.</p>
+          <div class="fv-confidence-badge">
+            <span class="fv-confidence-dot"></span>
+            Face matched · Confidence {confidenceDisplay}%
+          </div>
+        </div>
+      </template>
+
+      <!-- LIVE CAMERA VIEW -->
+      <template if:false={isVerified}>
+
+        <div class="fv-video-wrap">
+          <video data-id="video" playsinline autoplay class="fv-video"></video>
+
+          <!-- Face guide overlay -->
+          <div class="fv-overlay">
+            <div class={overlayFrameClass}>
+              <span class="fv-corner fv-tl"></span>
+              <span class="fv-corner fv-tr"></span>
+              <span class="fv-corner fv-bl"></span>
+              <span class="fv-corner fv-br"></span>
+            </div>
+            <div class="fv-overlay-hint">{overlayLabel}</div>
+          </div>
+
+          <!-- Scan animation -->
+          <template if:true={isVerifying}>
+            <div class="fv-scan-line"></div>
+          </template>
+        </div>
+
+        <!-- Status row -->
+        <div class="fv-status-row">
+          <div class={statusDotClass}></div>
+          <span class="fv-status-label">{statusText}</span>
+        </div>
+
+        <!-- ★ INLINE ERROR BANNER — shown when face doesn't match or no face detected -->
+        <!-- Replaces ShowToastEvent which is unreliable in Experience Cloud guest context -->
+        <template if:true={hasVerifyError}>
+          <div class="fv-error-banner fv-error-banner--camera">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="fv-error-icon">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p class="fv-error-msg">{verifyErrorMessage}</p>
+          </div>
+        </template>
+
+        <!-- Verify button -->
+        <button class="fv-btn-primary fv-btn-verify"
+                onclick={captureAndVerify}
+                disabled={isVerifyDisabled}>
+          <template if:true={isVerifying}>
+            <span class="fv-spinner"></span>
+            Comparing faces…
+          </template>
+          <template if:false={isVerifying}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="fv-btn-icon">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            Verify Face
+          </template>
+        </button>
+
+        <p class="fv-tip">Centre your face in the frame, then click Verify Face</p>
+
+      </template>
+    </template>
+
+    <!-- Hidden capture canvas (always in DOM) -->
+    <canvas data-id="canvas" class="fv-canvas-hidden"></canvas>
+
+  </div>
+</template>

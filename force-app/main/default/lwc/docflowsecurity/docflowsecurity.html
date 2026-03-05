@@ -1,0 +1,120 @@
+<!-- docflowsecurity.html -->
+<template>
+  <div class="ds-root">
+
+    <!-- HEADER -->
+    <div class="ds-page-header">
+      <div>
+        <h1 class="ds-page-title">Security Dashboard</h1>
+        <p class="ds-page-sub">Fraud detection analysis, risk scores, and signing anomalies</p>
+      </div>
+      <button class="ds-btn-refresh" onclick={loadData}>↻ Refresh</button>
+    </div>
+
+    <!-- LOADING -->
+    <template if:true={isLoading}>
+      <div class="ds-loading">
+        <lightning-spinner alternative-text="Loading..." size="medium" variant="brand"></lightning-spinner>
+      </div>
+    </template>
+
+    <template if:false={isLoading}>
+
+      <!-- SUMMARY CARDS — only Low Risk and High Risk -->
+      <div class="ds-cards-row">
+
+        <!-- LOW RISK -->
+        <div class="ds-card ds-card-low">
+          <div class="ds-card-top">
+            <div class="ds-card-label">LOW RISK SIGNATURES</div>
+            <div class="ds-card-icon ds-icon-low">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="ds-card-count ds-count-low">{lowRiskCount}</div>
+          <div class="ds-card-sub ds-sub-low">↑ {lowRiskPercent}% of all signed</div>
+        </div>
+
+        <!-- HIGH RISK -->
+        <div class="ds-card ds-card-high">
+          <div class="ds-card-top">
+            <div class="ds-card-label">HIGH RISK FLAGGED</div>
+            <div class="ds-card-icon ds-icon-high">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+          </div>
+          <div class="ds-card-count ds-count-high">{highRiskCount}</div>
+          <div class="ds-card-sub ds-sub-high">Immediate action</div>
+        </div>
+
+      </div>
+
+      <!-- RISK ASSESSMENT LOG TABLE -->
+      <div class="ds-table-card">
+        <div class="ds-table-header">
+          <h2 class="ds-table-title">Signature Risk Assessment Log</h2>
+          <div class="ds-table-count">{totalRecords} records</div>
+        </div>
+
+        <template if:true={hasRecords}>
+          <div class="ds-table-wrap">
+            <table class="ds-table">
+              <thead>
+                <tr>
+                  <th>SIGNER</th>
+                  <th>DOCUMENT</th>
+                  <th>IP ADDRESS</th>
+                  <th>LOCATION</th>
+                  <th>TIME TO SIGN</th>
+                  <th>RISK SCORE</th>
+                  <th>RISK LEVEL</th>
+                  <th>FRAUD ANALYSIS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template for:each={tableRows} for:item="row">
+                  <tr key={row.id} class={row.rowClass}>
+                    <td>
+                      <div class="ds-signer-name">{row.signerName}</div>
+                      <div class="ds-signer-email">{row.signerEmail}</div>
+                    </td>
+                    <td class="ds-doc-name">{row.docName}</td>
+                    <td>
+                      <span class={row.ipClass}>{row.ip}</span>
+                    </td>
+                    <td>
+                      <span class={row.locationClass}>{row.location}</span>
+                    </td>
+                    <td class={row.timeClass}>{row.timeToSign}</td>
+                    <td>
+                      <span class={row.scoreClass}>{row.riskScore}</span>
+                    </td>
+                    <td>
+                      <span class={row.badgeClass}>{row.riskLevel}</span>
+                    </td>
+                    <td class={row.analysisClass}>{row.fraudAnalysis}</td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </template>
+
+        <template if:false={hasRecords}>
+          <div class="ds-empty">
+            <div class="ds-empty-icon">🛡</div>
+            <div class="ds-empty-title">No signed documents yet</div>
+            <div class="ds-empty-sub">Risk assessments will appear here once documents are signed</div>
+          </div>
+        </template>
+      </div>
+
+    </template>
+
+  </div>
+</template>

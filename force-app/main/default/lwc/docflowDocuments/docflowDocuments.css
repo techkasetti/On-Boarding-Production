@@ -1,0 +1,185 @@
+/* docflowDocuments.css */
+
+.dd-root {
+    background: #0f1117;
+    min-height: 100vh;
+    padding: 32px 36px;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #e2e8f0;
+    box-sizing: border-box;
+}
+
+.dd-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.dd-page-title  { font-size: 26px; font-weight: 800; color: #fff; margin: 0 0 4px; letter-spacing: -0.4px; }
+.dd-page-sub    { font-size: 13px; color: #64748b; margin: 0; }
+
+.dd-filter-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: #161b27; border: 1px solid #1e2a3a;
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 18px; flex-wrap: wrap;
+}
+.dd-search-wrap  { flex: 1; min-width: 220px; position: relative; display: flex; align-items: center; }
+.dd-search-icon  { position: absolute; left: 11px; width: 15px; height: 15px; color: #475569; pointer-events: none; }
+.dd-search-input {
+    width: 100%; background: #0f1117; border: 1px solid #1e2a3a; border-radius: 7px;
+    padding: 8px 12px 8px 34px; font-size: 13px; color: #cbd5e1; outline: none;
+    box-sizing: border-box; transition: border-color 0.15s;
+}
+.dd-search-input:focus        { border-color: #3b82f6; }
+.dd-search-input::placeholder { color: #475569; }
+.dd-filter-select {
+    background: #0f1117; border: 1px solid #1e2a3a; border-radius: 7px;
+    padding: 8px 12px; font-size: 12.5px; color: #cbd5e1; outline: none; cursor: pointer;
+}
+.dd-filter-select:focus  { border-color: #3b82f6; }
+.dd-filter-select option { background: #161b27; }
+
+.dd-btn-primary { background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.dd-btn-primary:hover { background: #2563eb; }
+.dd-btn-ghost   { background: transparent; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.dd-btn-ghost:hover { border-color: #64748b; color: #e2e8f0; }
+
+.dd-loading { display: flex; justify-content: center; padding: 60px 0; }
+
+.dd-table-card { background: #161b27; border: 1px solid #1e2a3a; border-radius: 12px; overflow: hidden; }
+.dd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dd-table thead tr { border-bottom: 1px solid #1e2a3a; background: #0f1117; }
+.dd-table th { padding: 11px 18px; text-align: left; font-size: 10.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap; }
+.dd-row { border-bottom: 1px solid #1a2133; transition: background 0.1s; }
+.dd-row:last-child { border-bottom: none; }
+.dd-row:hover { background: #1a2235; }
+.dd-table td { padding: 13px 18px; vertical-align: middle; }
+
+.dd-doc-name-cell { display: flex; align-items: flex-start; gap: 12px; }
+.dd-doc-icon  { font-size: 22px; flex-shrink: 0; opacity: 0.85; margin-top: 2px; }
+.dd-doc-name  { font-weight: 700; color: #e2e8f0; font-size: 13.5px; margin-bottom: 2px; }
+.dd-doc-ref   { font-size: 11px; color: #475569; font-family: monospace; margin-bottom: 2px; }
+.dd-doc-tpl   { font-size: 11px; color: #60a5fa; font-weight: 600; }
+.dd-doc-meta  { color: #64748b; font-size: 12px; }
+
+.dd-recipient-name  { font-weight: 600; color: #cbd5e1; font-size: 13px; }
+.dd-recipient-email { font-size: 11.5px; color: #64748b; margin-top: 2px; }
+.dd-no-recipient    { color: #334155; font-size: 13px; }
+.dd-sent-date       { font-size: 11px; color: #475569; margin-top: 4px; }
+
+.dd-status { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
+.dd-status::before { content: '•'; font-size: 14px; line-height: 1; }
+.dd-status-green { background: rgba(52,211,153,0.12); color: #34d399; }
+.dd-status-amber { background: rgba(251,191,36,0.12);  color: #fbbf24; }
+.dd-status-grey  { background: rgba(100,116,139,0.12); color: #94a3b8; }
+.dd-status-blue  { background: rgba(59,130,246,0.12);  color: #60a5fa; }
+.dd-status-teal  { background: rgba(20,184,166,0.12);  color: #2dd4bf; }
+
+.dd-sig-badge  { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
+.dd-sig-sent   { background: rgba(59,130,246,0.12); color: #60a5fa; }
+.dd-sig-signed { background: rgba(20,184,166,0.12); color: #2dd4bf; }
+
+.dd-send-btn { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; border-radius: 7px; padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.dd-send-btn:hover { background: #3b82f6; color: #fff; }
+
+.dd-actions { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+.dd-action-btn {
+    background: transparent; border: 1px solid #263445;
+    color: #94a3b8; border-radius: 6px;
+    padding: 5px 10px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    font-family: inherit;
+}
+.dd-action-btn:hover { border-color: #64748b; color: #e2e8f0; }
+
+/* View — indigo tint */
+.dd-action-view { color: #a5b4fc; border-color: #2d3a5e; }
+.dd-action-view:hover { background: rgba(99,102,241,0.1); border-color: #6366f1; color: #c7d2fe; }
+
+/* Audit — amber tint */
+.dd-action-audit { color: #fbbf24; border-color: #3a2e1a; }
+.dd-action-audit:hover { background: rgba(251,191,36,0.08); border-color: #f59e0b; color: #fde68a; }
+
+/* Reminder — orange tint */
+.dd-action-reminder { color: #fb923c; border-color: #3a2010; }
+.dd-action-reminder:hover { background: rgba(251,146,60,0.1); border-color: #f97316; color: #fed7aa; }
+
+/* Download — blue tint */
+.dd-action-download { color: #60a5fa; border-color: #1e3a5f; }
+.dd-action-download:hover { background: rgba(59,130,246,0.1); border-color: #3b82f6; }
+
+/* Recipient template label */
+.dd-recipient-tpl {
+    font-size: 11px; color: #475569;
+    margin-top: 3px; font-style: italic;
+}
+
+.dd-empty { display: flex; flex-direction: column; align-items: center; padding: 56px 24px; gap: 8px; }
+.dd-empty-icon  { font-size: 40px; }
+.dd-empty-title { font-size: 16px; font-weight: 700; color: #64748b; }
+.dd-empty-sub   { font-size: 13px; color: #475569; }
+
+/* ── Modals ───────────────────────────────────────────── */
+.dd-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); }
+.dd-modal { background: #161b27; border: 1px solid #1e2a3a; border-radius: 14px; width: 100%; max-width: 860px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+.dd-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #1e2a3a; flex-shrink: 0; }
+.dd-modal-title  { font-size: 16px; font-weight: 700; color: #e2e8f0; }
+.dd-modal-close  { background: transparent; border: none; color: #64748b; font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: all 0.15s; line-height: 1; }
+.dd-modal-close:hover { background: #1e2a3a; color: #e2e8f0; }
+.dd-modal-body   { flex: 1; overflow-y: auto; padding: 24px; }
+.dd-modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px; border-top: 1px solid #1e2a3a; flex-shrink: 0; }
+
+.dd-modal-doc-wrap { background: #ffffff; border-radius: 8px; padding: 28px 32px; color: #111827; font-size: 13px; line-height: 1.7; min-height: 200px; word-break: break-word; }
+.dd-modal-loading  { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px 0; color: #64748b; font-size: 13px; }
+.dd-modal-empty    { text-align: center; color: #64748b; padding: 48px; font-size: 13px; }
+
+.dd-btn-download-modal { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.dd-btn-download-modal:hover { background: #3b82f6; color: #fff; }
+
+/* ── Send Modal ───────────────────────────────────────── */
+.dd-send-modal { max-width: 500px; }
+
+.dd-send-doc-badge { display: flex; align-items: flex-start; gap: 12px; background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.18); border-radius: 9px; padding: 12px 16px; margin-bottom: 20px; }
+.dd-send-doc-icon  { font-size: 22px; flex-shrink: 0; }
+.dd-send-doc-name  { font-size: 13.5px; font-weight: 700; color: #e2e8f0; margin-bottom: 2px; }
+.dd-send-doc-tpl   { font-size: 11.5px; color: #60a5fa; font-weight: 600; }
+
+/* ── Fraud Detection Toggles ─────────────────────────── */
+.dd-toggles-section { background: rgba(15,17,23,0.6); border: 1px solid #1e2a3a; border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
+.dd-toggles-title   { font-size: 12.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 14px; display: flex; align-items: baseline; gap: 8px; }
+.dd-toggles-hint    { font-size: 11px; font-weight: 400; color: #475569; }
+
+.dd-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1a2133; }
+.dd-toggle-row:last-child { border-bottom: none; }
+.dd-toggle-info { flex: 1; margin-right: 16px; }
+.dd-toggle-name { font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 2px; }
+.dd-toggle-desc { font-size: 11.5px; color: #64748b; line-height: 1.4; }
+
+/* Toggle switch */
+.dd-toggle { position: relative; width: 44px; height: 24px; border-radius: 12px; border: none; cursor: pointer; flex-shrink: 0; transition: background 0.2s; padding: 0; }
+.dd-toggle-off { background: #263445; }
+.dd-toggle-on  { background: #3b82f6; }
+.dd-toggle-knob { position: absolute; top: 3px; width: 18px; height: 18px; background: #ffffff; border-radius: 50%; transition: left 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.4); pointer-events: none; }
+.dd-toggle-off .dd-toggle-knob { left: 3px; }
+.dd-toggle-on  .dd-toggle-knob { left: 23px; }
+
+.dd-send-divider { border: none; border-top: 1px solid #1e2a3a; margin: 0 0 18px; }
+
+.dd-send-info  { font-size: 13px; color: #94a3b8; margin: 0 0 16px; line-height: 1.55; }
+.dd-send-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.dd-send-label { font-size: 11.5px; font-weight: 600; color: #64748b; }
+.dd-req        { color: #f87171; }
+
+.dd-send-input { background: #0f1117; border: 1px solid #1e2a3a; border-radius: 7px; padding: 9px 12px; font-size: 13px; color: #cbd5e1; outline: none; width: 100%; box-sizing: border-box; font-family: inherit; transition: border-color 0.15s; }
+.dd-send-input:focus        { border-color: #3b82f6; }
+.dd-send-input::placeholder { color: #475569; }
+
+.dd-send-error { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 7px; padding: 10px 14px; color: #fca5a5; font-size: 12.5px; margin-top: 4px; }
+.dd-btn-send   { background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+.dd-btn-send:hover    { background: #2563eb; }
+.dd-btn-send:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+
+@media (max-width: 800px) {
+    .dd-root { padding: 18px 14px; }
+    .dd-table th, .dd-table td { padding: 10px 12px; }
+    .dd-doc-ref, .dd-doc-tpl { display: none; }
+}
+@media (max-width: 600px) {
+    .dd-filter-bar  { flex-direction: column; align-items: stretch; }
+    .dd-page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+}

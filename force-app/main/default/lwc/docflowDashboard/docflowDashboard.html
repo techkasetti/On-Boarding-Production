@@ -1,0 +1,213 @@
+<!-- docflowDashboard.html -->
+<template>
+  <div class="dfd-root">
+
+    <!-- PAGE HEADER -->
+    <div class="dfd-page-header">
+      <div>
+        <h1 class="dfd-page-title">Dashboard</h1>
+        <p class="dfd-page-sub">Overview of your document lifecycle and eSignature activity</p>
+      </div>
+      <button class="dfd-btn-refresh" onclick={loadAll}>↻ Refresh</button>
+    </div>
+
+    <!-- LOADING -->
+    <template if:true={isLoading}>
+      <div class="dfd-loading">
+        <lightning-spinner alternative-text="Loading..." size="medium" variant="brand"></lightning-spinner>
+      </div>
+    </template>
+
+    <template if:false={isLoading}>
+
+      <!-- SUMMARY CARDS -->
+      <div class="dfd-cards-row">
+
+        <div class="dfd-card dfd-card-blue">
+          <div class="dfd-card-top">
+            <span class="dfd-card-label">TOTAL DOCUMENTS</span>
+            <div class="dfd-card-icon dfd-icon-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+          </div>
+          <div class="dfd-card-count">{totalDocs}</div>
+          <div class="dfd-card-trend dfd-trend-up">↑ {docsThisMonth} this month</div>
+        </div>
+
+        <div class="dfd-card dfd-card-green">
+          <div class="dfd-card-top">
+            <span class="dfd-card-label">SIGNED</span>
+            <div class="dfd-card-icon dfd-icon-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+          </div>
+          <div class="dfd-card-count">{signedCount}</div>
+          <div class="dfd-card-trend dfd-trend-up">↑ {signedThisMonth} this month</div>
+        </div>
+
+        <div class="dfd-card dfd-card-amber">
+          <div class="dfd-card-top">
+            <span class="dfd-card-label">PENDING SIGNATURE</span>
+            <div class="dfd-card-icon dfd-icon-amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+          </div>
+          <div class="dfd-card-count">{pendingCount}</div>
+          <div class="dfd-card-trend dfd-trend-warn">{expiringSoon} expiring soon</div>
+        </div>
+
+        <div class="dfd-card dfd-card-red">
+          <div class="dfd-card-top">
+            <span class="dfd-card-label">DECLINED / EXPIRED</span>
+            <div class="dfd-card-icon dfd-icon-red">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+          </div>
+          <div class="dfd-card-count">{declinedExpiredCount}</div>
+          <div class="dfd-card-trend dfd-trend-down">↓ {declinedVsLastMonth}% vs last month</div>
+        </div>
+
+      </div>
+
+      <!-- MIDDLE ROW — Recent Documents (full width) -->
+      <div class="dfd-mid-row">
+
+        <!-- Recent Documents -->
+        <div class="dfd-panel dfd-panel-docs">
+          <div class="dfd-panel-header">
+            <h2 class="dfd-panel-title">Recent Documents</h2>
+            <span class="dfd-panel-badge">Latest Activity</span>
+          </div>
+
+          <template if:true={hasRecentDocs}>
+            <div class="dfd-docs-table-wrap">
+              <table class="dfd-docs-table">
+                <thead>
+                  <tr>
+                    <th>DOCUMENT</th>
+                    <th>EMPLOYEE</th>
+                    <th>CONTRACT TYPE</th>
+                    <th>CREATED</th>
+                    <th>STATUS</th>
+                    <th>SIGNER</th>
+                    <th>SIGNED ON</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template for:each={recentDocs} for:item="doc">
+                    <tr key={doc.id} class={doc.rowClass}>
+                      <td>
+                        <div class="dfd-doc-name">{doc.name}</div>
+                        <div class="dfd-doc-ref">{doc.ref}</div>
+                      </td>
+                      <td class="dfd-doc-employee">{doc.employee}</td>
+                      <td class="dfd-doc-type">{doc.contractType}</td>
+                      <td class="dfd-doc-date">{doc.createdFmt}</td>
+                      <td><span class={doc.statusClass}>{doc.statusLabel}</span></td>
+                      <td class="dfd-doc-signer">{doc.signerName}</td>
+                      <td class="dfd-doc-date">{doc.signedOnFmt}</td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <template if:false={hasRecentDocs}>
+            <div class="dfd-panel-empty">No documents yet. Create your first document!</div>
+          </template>
+        </div>
+
+      </div>
+
+      <!-- BOTTOM ROW -->
+      <div class="dfd-bottom-row">
+
+        <!-- Fraud Risk Summary -->
+        <div class="dfd-panel dfd-panel-fraud">
+          <div class="dfd-panel-header">
+            <h2 class="dfd-panel-title">🛡 Fraud Risk Summary</h2>
+          </div>
+          <div class="dfd-fraud-grid">
+            <div class="dfd-fraud-item dfd-fraud-low">
+              <div class="dfd-fraud-count">{fraudLow}</div>
+              <div class="dfd-fraud-label">Low Risk</div>
+            </div>
+            <div class="dfd-fraud-item dfd-fraud-high">
+              <div class="dfd-fraud-count">{fraudHigh}</div>
+              <div class="dfd-fraud-label">High / Critical</div>
+            </div>
+          </div>
+          <template if:true={hasCriticalFraud}>
+            <div class="dfd-fraud-alert">
+              ⚠ {fraudHigh} signature(s) flagged — review in Security tab
+            </div>
+          </template>
+        </div>
+
+        <!-- Expiring Soon -->
+        <div class="dfd-panel dfd-panel-expiring">
+          <div class="dfd-panel-header">
+            <h2 class="dfd-panel-title">⏰ Expiring Soon</h2>
+            <span class="dfd-panel-badge dfd-badge-amber">Next 30 days</span>
+          </div>
+          <template if:true={hasExpiring}>
+            <div class="dfd-expiry-list">
+              <template for:each={expiringDocs} for:item="doc">
+                <div key={doc.id} class="dfd-expiry-item">
+                  <div class="dfd-expiry-info">
+                    <div class="dfd-expiry-name">{doc.name}</div>
+                    <div class="dfd-expiry-meta">{doc.employee} · {doc.contractType}</div>
+                  </div>
+                  <div class={doc.daysClass}>{doc.daysLabel}</div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <template if:false={hasExpiring}>
+            <div class="dfd-panel-empty">✓ No documents expiring in the next 30 days</div>
+          </template>
+        </div>
+
+        <!-- Recent Signers -->
+        <div class="dfd-panel dfd-panel-signers">
+          <div class="dfd-panel-header">
+            <h2 class="dfd-panel-title">✍ Recent Signers</h2>
+          </div>
+          <template if:true={hasSigners}>
+            <div class="dfd-signers-list">
+              <template for:each={recentSigners} for:item="s">
+                <div key={s.id} class="dfd-signer-row">
+                  <div class="dfd-signer-avatar">{s.initials}</div>
+                  <div class="dfd-signer-info">
+                    <div class="dfd-signer-name">{s.name}</div>
+                    <div class="dfd-signer-email">{s.email}</div>
+                  </div>
+                  <div class={s.methodClass}>{s.method}</div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <template if:false={hasSigners}>
+            <div class="dfd-panel-empty">No signatures yet</div>
+          </template>
+        </div>
+
+      </div>
+
+    </template>
+  </div>
+</template>

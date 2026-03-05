@@ -1,0 +1,178 @@
+<!-- docflowAuditTrail.html -->
+<template>
+  <div class="at-root">
+
+    <!-- Page Header -->
+    <div class="at-page-header">
+      <div>
+        <h1 class="at-page-title">Audit Trail</h1>
+        <p class="at-page-sub">Tamper-proof activity log for every document event</p>
+      </div>
+      <div class="at-header-actions">
+        <select class="at-doc-select" onchange={handleDocumentSelect}>
+          <template for:each={documentOptions} for:item="opt">
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          </template>
+        </select>
+        <button class="at-btn-ghost" onclick={handleExportLog}>↓ Export Log</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <template if:true={isLoading}>
+      <div class="at-loading">
+        <lightning-spinner alternative-text="Loading..." size="medium" variant="brand"></lightning-spinner>
+      </div>
+    </template>
+
+    <template if:false={isLoading}>
+      <div class="at-layout">
+
+        <!-- ══ LEFT COLUMN ══ -->
+        <div class="at-left-col">
+
+          <!-- Document Integrity -->
+          <div class="at-card at-integrity-card">
+            <div class="at-integrity-title-row">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span class="at-integrity-heading">Document Integrity</span>
+            </div>
+            <p class="at-integrity-sub">SHA-256 Hash (tamper-proof)</p>
+            <div class="at-sha-box">{shaHash}</div>
+            <div class="at-integrity-ok">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              Integrity verified — no modifications detected
+            </div>
+          </div>
+
+          <!-- Document Details -->
+          <div class="at-card">
+            <div class="at-card-label">Document Details</div>
+            <div class="at-details-list">
+
+              <div class="at-detail-row">
+                <span class="at-dk">Document</span>
+                <span class="at-dv at-dv-bold">{selectedDoc.name}</span>
+              </div>
+
+              <div class="at-detail-row">
+                <span class="at-dk">Region</span>
+                <span class={selectedDoc.regionTagCls}>{selectedDoc.region}</span>
+              </div>
+
+              <div class="at-detail-row">
+                <span class="at-dk">Compliance</span>
+                <span class={selectedDoc.compTagCls}>{selectedDoc.compliance}</span>
+              </div>
+
+              <div class="at-detail-row">
+                <span class="at-dk">AI Model</span>
+                <span class="at-dv">{selectedDoc.aiModel}</span>
+              </div>
+
+              <div class="at-detail-row">
+                <span class="at-dk">Signer</span>
+                <span class="at-dv">{selectedDoc.signer}</span>
+              </div>
+
+              <div class="at-detail-row">
+                <span class="at-dk">Status</span>
+                <span class={selectedDoc.statusPillCls}>
+                  <span class="at-pill-dot"></span>
+                  {selectedDoc.status}
+                </span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Signatory Status (if any) -->
+          <template if:true={hasSignatories}>
+            <div class="at-card">
+              <div class="at-card-label">Signatory Status</div>
+              <div class="at-sig-list">
+                <template for:each={signatories} for:item="sig">
+                  <div key={sig.id} class="at-sig-row">
+                    <div class={sig.avatarCls}>{sig.initials}</div>
+                    <div class="at-sig-info">
+                      <div class="at-sig-name">{sig.name}</div>
+                      <div class="at-sig-email">{sig.email}</div>
+                    </div>
+                    <span class={sig.pillCls}>{sig.status}</span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+        </div>
+
+        <!-- ══ RIGHT COLUMN — FULL EVENT LOG ══ -->
+        <div class="at-card at-log-card">
+
+          <div class="at-log-header">
+            <div class="at-card-label">Full Event Log</div>
+            <span class="at-event-count">{eventCountLabel}</span>
+          </div>
+
+          <template if:true={hasEvents}>
+            <div class="at-timeline">
+              <template for:each={auditEvents} for:item="evt">
+                <div key={evt.id} class="at-evt-row">
+
+                  <!-- Icon dot + connector line -->
+                  <div class="at-dot-col">
+                    <div class={evt.dotCls}>
+                      <span class="at-dot-glyph">{evt.glyph}</span>
+                    </div>
+                    <template if:false={evt.isLast}>
+                      <div class="at-connector"></div>
+                    </template>
+                  </div>
+
+                  <!-- Event content -->
+                  <div class="at-evt-body">
+                    <div class="at-evt-title">{evt.label}</div>
+                    <div class="at-evt-detail">{evt.detail}</div>
+                    <div class="at-evt-meta">{evt.meta}</div>
+
+                    <!-- Reminder tag -->
+                    <template if:true={evt.isReminder}>
+                      <span class="at-badge at-badge-reminder">⏰ Reminder sent</span>
+                    </template>
+
+                    <!-- Risk score tag -->
+                    <template if:true={evt.riskLine}>
+                      <span class="at-badge at-badge-risk">{evt.riskLine}</span>
+                    </template>
+                  </div>
+
+                  <!-- Timestamp -->
+                  <div class="at-evt-time">
+                    <div class="at-time-date">{evt.dateStr}</div>
+                    <div class="at-time-clock">{evt.timeStr}</div>
+                  </div>
+
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <template if:false={hasEvents}>
+            <div class="at-empty">
+              <div class="at-empty-icon">🔍</div>
+              <p class="at-empty-msg">Select a document to view its audit trail</p>
+            </div>
+          </template>
+
+        </div>
+      </div>
+    </template>
+
+  </div>
+</template>

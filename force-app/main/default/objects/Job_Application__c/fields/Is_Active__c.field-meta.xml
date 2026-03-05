@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Active__c</fullName>
+    <formula>NOT(
+OR(
+ISPICKVAL(Status__c, &quot;Rejected&quot;),
+ISPICKVAL(Status__c, &quot;Withdrawn&quot;),
+ISPICKVAL(Status__c, &quot;Hired&quot;)
+)
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Is_Active</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

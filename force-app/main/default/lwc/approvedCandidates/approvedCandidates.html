@@ -1,0 +1,147 @@
+<!-- approvedCandidates.html -->
+<template>
+  <div class="ac-root">
+
+    <!-- HEADER -->
+    <div class="ac-header">
+      <div class="ac-header-left">
+        <div class="ac-header-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="ac-title">Background Check Cleared</h1>
+          <p class="ac-subtitle">Candidates who have passed background verification</p>
+        </div>
+      </div>
+      <div class="ac-header-right">
+        <div class="ac-count-badge">
+          <span class="ac-count-num">{totalCount}</span>
+          <span class="ac-count-label">Cleared</span>
+        </div>
+        <div class="ac-search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="ac-search-icon">
+            <circle cx="11" cy="11" r="8" stroke="#64748b" stroke-width="2"/>
+            <path d="m21 21-4.35-4.35" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input class="ac-search"
+                 type="text"
+                 placeholder="Search candidates..."
+                 value={searchTerm}
+                 oninput={handleSearch}/>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <template if:true={isLoading}>
+      <div class="ac-loading">
+        <div class="ac-spinner"></div>
+        <span>Loading candidates...</span>
+      </div>
+    </template>
+
+    <!-- ERROR -->
+    <template if:true={hasError}>
+      <div class="ac-error">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="#ef4444" stroke-width="2"/>
+          <line x1="12" y1="8" x2="12" y2="12" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="16" r="1" fill="#ef4444"/>
+        </svg>
+        <span>{errorMessage}</span>
+      </div>
+    </template>
+
+    <!-- EMPTY STATE -->
+    <template if:true={isEmpty}>
+      <div class="ac-empty">
+        <div class="ac-empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="9" cy="7" r="4" stroke="#334155" stroke-width="1.5"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p class="ac-empty-title">No cleared candidates found</p>
+        <p class="ac-empty-sub">
+          <template if:true={searchTerm}>No results for &quot;{searchTerm}&quot;</template>
+          <template if:false={searchTerm}>Candidates with &quot;Background Check Cleared&quot; status will appear here</template>
+        </p>
+      </div>
+    </template>
+
+    <!-- TABLE -->
+    <template if:true={hasData}>
+      <div class="ac-table-wrap">
+        <table class="ac-table">
+          <thead>
+            <tr>
+              <th class="ac-th ac-th-idx">#</th>
+              <th class="ac-th ac-th-name" onclick={handleSortName}>
+                <span>Candidate Name</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="ac-sort-icon">
+                  <path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </th>
+              <th class="ac-th">Candidate ID</th>
+              <th class="ac-th">Status</th>
+              <th class="ac-th ac-th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={filteredCandidates} for:item="c">
+              <tr key={c.Id} class="ac-tr">
+                <td class="ac-td ac-td-idx">{c._index}</td>
+                <td class="ac-td ac-td-name">
+                  <div class="ac-avatar">{c._initials}</div>
+                  <div class="ac-name-wrap">
+                    <span class="ac-name">{c.Name}</span>
+                  </div>
+                </td>
+                <td class="ac-td ac-td-id">
+                  <span class="ac-id-chip">{c.Id}</span>
+                </td>
+                <td class="ac-td">
+                  <span class="ac-status-badge">
+                    <span class="ac-status-dot"></span>
+                    Background Check Cleared
+                  </span>
+                </td>
+                <!-- CHANGED: View button replaced with Generate Document button -->
+                <td class="ac-td ac-td-actions">
+                  <button class="ac-btn-generate"
+                          data-id={c.Id}
+                          data-name={c.Name}
+                          onclick={handleGenerateDocument}>
+                    + Generate Document
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION -->
+      <div class="ac-pagination">
+        <span class="ac-page-info">
+          Showing {pageStart}–{pageEnd} of {totalCount} candidates
+        </span>
+        <div class="ac-page-btns">
+          <button class="ac-page-btn" onclick={handlePrevPage} disabled={isFirstPage}>
+            ← Prev
+          </button>
+          <span class="ac-page-num">Page {currentPage} of {totalPages}</span>
+          <button class="ac-page-btn" onclick={handleNextPage} disabled={isLastPage}>
+            Next →
+          </button>
+        </div>
+      </div>
+    </template>
+
+  </div>
+</template>
