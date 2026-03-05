@@ -1,0 +1,364 @@
+﻿.console-shell {
+    --border: #d7e0ea;
+    --panel: #ffffff;
+    --ink: #0a1e33;
+    --muted: #52657a;
+    --surface: #f4f8fc;
+    --ok: #0a7a46;
+    --warn: #8a5a00;
+    --danger: #ba0517;
+}
+
+.hero-banner {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid #c7d8ea;
+    border-radius: 0.9rem;
+    padding: 1rem;
+    background:
+        radial-gradient(circle at 12% 20%, #ffffff 0%, rgba(255, 255, 255, 0.85) 30%, transparent 60%),
+        linear-gradient(125deg, #edf6ff 0%, #e8fff8 55%, #fef8ef 100%);
+}
+
+.hero-kicker {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    color: #2462a6;
+}
+
+.hero-title {
+    margin-top: 0.2rem;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.hero-subtitle {
+    margin-top: 0.3rem;
+    color: var(--muted);
+    max-width: 40rem;
+}
+
+.hero-metrics {
+    min-width: 15rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.metric-tile {
+    border: 1px solid #d4e2f1;
+    border-radius: 0.65rem;
+    background: rgba(255, 255, 255, 0.78);
+    padding: 0.5rem 0.7rem;
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--muted);
+}
+
+.metric-value {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: 1.03rem;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    padding: 0.95rem;
+    box-shadow: 0 1px 3px rgba(8, 34, 64, 0.04);
+}
+
+.panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.7rem;
+}
+
+.panel-head h3 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.pill,
+.readiness,
+.chunk-badge {
+    border-radius: 999px;
+    padding: 0.17rem 0.62rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.pill.neutral {
+    background: #eff4fb;
+    color: #21466f;
+}
+
+.pill.success,
+.readiness.ok {
+    background: #ecf8f1;
+    color: var(--ok);
+}
+
+.pill.error,
+.readiness.blocked {
+    background: #fff0f1;
+    color: var(--danger);
+}
+
+.hint-box {
+    background: var(--surface);
+    border: 1px solid #d9e5f1;
+    border-radius: 0.65rem;
+    padding: 0.55rem;
+    min-height: 4.8rem;
+}
+
+.hint-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #21466f;
+}
+
+.hint-copy {
+    margin-top: 0.2rem;
+    font-size: 0.79rem;
+    color: var(--muted);
+}
+
+.autofill-note {
+    margin-top: 0.45rem;
+    font-size: 0.78rem;
+    color: #20496f;
+}
+
+.candidate-picker {
+    position: relative;
+}
+
+.suggestion-list {
+    position: absolute;
+    z-index: 10;
+    top: 100%;
+    left: 0;
+    right: 0;
+    border: 1px solid #d0dde9;
+    border-radius: 0.45rem;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    max-height: 13rem;
+    overflow-y: auto;
+}
+
+.suggestion-item {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: #fff;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.78rem;
+    color: #0a1e33;
+    cursor: pointer;
+}
+
+.suggestion-item:hover {
+    background: #f1f7fe;
+}
+
+.chunk-list {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.chunk-card {
+    border: 1px solid #dbe5ef;
+    background: linear-gradient(180deg, #fbfdff 0%, #f6f9fd 100%);
+    border-radius: 0.7rem;
+    padding: 0.65rem;
+}
+
+.chunk-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.chunk-badge {
+    background: #e8f0ff;
+    color: #274f81;
+}
+
+.chunk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.run-panel {
+    position: sticky;
+    top: 0.5rem;
+}
+
+.action-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.spinner-wrap {
+    min-height: 2rem;
+}
+
+.error-box {
+    border: 1px solid #f3c0c4;
+    background: #fff4f5;
+    color: var(--danger);
+    border-radius: 0.6rem;
+    padding: 0.55rem;
+}
+
+.result-shell {
+    border: 1px solid #dce6f0;
+    border-radius: 0.75rem;
+    background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%);
+    padding: 0.7rem;
+}
+
+.decision-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.decision-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.decision {
+    font-weight: 800;
+}
+
+.decision.allow {
+    color: var(--ok);
+}
+
+.decision.block {
+    color: var(--danger);
+}
+
+.decision.review {
+    color: var(--warn);
+}
+
+.decision.neutral {
+    color: var(--ink);
+}
+
+.result-label {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #3a5775;
+}
+
+.chip {
+    display: inline-block;
+    border: 1px solid #d2dfec;
+    border-radius: 999px;
+    padding: 0.1rem 0.45rem;
+    margin-right: 0.35rem;
+    margin-bottom: 0.35rem;
+    background: #edf4fb;
+    font-size: 0.74rem;
+    color: #254b77;
+}
+
+.list {
+    padding-left: 1.1rem;
+}
+
+.muted {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.history-item {
+    border: 1px solid #d9e5f0;
+    border-radius: 0.6rem;
+    padding: 0.55rem;
+    margin-bottom: 0.45rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    background: #fff;
+}
+
+.history-decision {
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.history-when,
+.history-correlation {
+    font-size: 0.73rem;
+    color: var(--muted);
+}
+
+.history-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+}
+
+pre {
+    background: #f4f7fb;
+    border: 1px solid #d8e2ee;
+    border-radius: 0.35rem;
+    padding: 0.5rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 20rem;
+    overflow: auto;
+}
+
+@media (max-width: 1100px) {
+    .hero-banner {
+        flex-direction: column;
+    }
+
+    .hero-metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .run-panel {
+        position: static;
+    }
+}
+
+@media (max-width: 800px) {
+    .chunk-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-metrics {
+        grid-template-columns: 1fr;
+    }
+}

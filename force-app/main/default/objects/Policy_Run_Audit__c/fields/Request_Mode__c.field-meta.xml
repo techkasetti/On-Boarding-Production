@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Request_Mode__c</fullName>
+    <label>Request Mode</label>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>MANUAL_INPUT</fullName><default>true</default><label>MANUAL_INPUT</label></value>
+            <value><fullName>STORED_RETRIEVAL</fullName><default>false</default><label>STORED_RETRIEVAL</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

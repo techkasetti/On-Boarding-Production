@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <classAccesses>
+        <apexClass>PolicyRagComplianceCopilotService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>PolicyRagPolicyRepository</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>PolicyRagPolicyIngestionService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>PolicyRagAuditService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <description>Enterprise access bundle for Policy RAG Compliance Copilot administration and operations.</description>
+    <fieldPermissions><editable>true</editable><field>Policy_Document__c.Jurisdiction__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Document__c.Policy_Type__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Document__c.Version__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Document__c.Status__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Document__c.Is_Current__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Document__c.Source_File_Id__c</field><readable>true</readable></fieldPermissions>
+
+    <fieldPermissions><editable>true</editable><field>Policy_Chunk__c.Policy_Document__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Chunk__c.Source_Ref__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Chunk__c.Content__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Chunk__c.Jurisdiction__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Chunk__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Chunk__c.Sequence__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Chunk__c.Keywords__c</field><readable>true</readable></fieldPermissions>
+
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Candidate__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Question__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Jurisdiction__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Decision__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Confidence__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Citations__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Missing_Information__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Chunks_Used__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Model_Response__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Correlation_Id__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Request_Mode__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Retrieval_Query__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Run_Timestamp__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Success__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Policy_Run_Audit__c.Message__c</field><readable>true</readable></fieldPermissions>
+
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>Policy RAG Admin</label>
+
+    <objectPermissions>
+        <allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords><object>Policy_Document__c</object><viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords><object>Policy_Chunk__c</object><viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>false</allowEdit><allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords><object>Policy_Run_Audit__c</object><viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate><allowDelete>false</allowDelete><allowEdit>false</allowEdit><allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords><object>Candidate__c</object><viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+</PermissionSet>
