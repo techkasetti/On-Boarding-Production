@@ -1,0 +1,85 @@
+<template>
+  <div class="slds-box slds-m-bottom_medium">
+    <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+      <h3 class="slds-text-heading_small">Viral Referral Generation</h3>
+      <lightning-button
+        variant="brand"
+        label="Generate Link"
+        onclick={handleGenerateLink}
+      ></lightning-button>
+    </div>
+
+    <template if:true={isLoading}>
+      <lightning-spinner
+        size="small"
+        alternative-text="Loading referral dashboard"
+      ></lightning-spinner>
+    </template>
+
+    <template if:true={error}>
+      <div class="slds-text-color_error slds-m-bottom_small">{error}</div>
+    </template>
+
+    <template if:true={dashboard}>
+      <div class="slds-grid slds-wrap slds-gutters slds-m-bottom_small">
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+          Shares: <strong>{dashboard.totalShares}</strong>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+          Conversions: <strong>{dashboard.totalConversions}</strong>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+          Reward Points: <strong>{dashboard.rewardPoints}</strong>
+        </div>
+      </div>
+
+      <template if:true={hasLink}>
+        <lightning-input
+          type="url"
+          label="Referral Link"
+          value={dashboard.referralLink}
+          readonly
+        ></lightning-input>
+        <lightning-button
+          class="slds-m-top_x-small"
+          label="Copy Link"
+          onclick={handleCopyLink}
+        ></lightning-button>
+
+        <div class="slds-m-top_small">
+          <span class="slds-text-title_bold">Share On</span>
+          <div class="slds-button-group slds-m-top_x-small" role="group">
+            <template for:each={shareChannels} for:item="channel">
+              <lightning-button
+                key={channel.value}
+                data-channel={channel.value}
+                label={channel.value}
+                onclick={handleSocialShare}
+              >
+              </lightning-button>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <div class="slds-m-top_medium">
+        <h4 class="slds-text-title_bold">Recent Conversion Events</h4>
+        <template if:true={hasRecentConversions}>
+          <ul class="slds-list_dotted slds-m-top_x-small">
+            <template for:each={recentConversions} for:item="conversion">
+              <li key={conversion.Id}>
+                {conversion.Channel__c} • {conversion.Conversion_Status__c} •
+                +{conversion.Reward_Points__c} points
+              </li>
+            </template>
+          </ul>
+        </template>
+        <template if:false={hasRecentConversions}>
+          <p class="slds-text-color_weak slds-m-top_x-small">
+            No conversion activity yet.
+          </p>
+        </template>
+      </div>
+    </template>
+  </div>
+</template>
