@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>65.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <environments>Default</environments>
+    <formulas>
+        <name>containsInvalidLicense</name>
+        <dataType>Boolean</dataType>
+        <expression>ISPICKVAL($Record.Status__c, &quot;Expired&quot;) ||
+ISPICKVAL($Record.Status__c, &quot;Suspended&quot;) ||
+ISPICKVAL($Record.Status__c, &quot;Not Found&quot;)</expression>
+    </formulas>
+    <interviewLabel>License Verification - Update Provider Flag {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>License Verification - Update Provider Flag</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordUpdates>
+        <name>Update_Provider_Invalid_License_Flag</name>
+        <label>Update Provider Invalid License Flag</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Candidate__r.Id</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Has_Invalid_License__c</field>
+            <value>
+                <elementReference>containsInvalidLicense</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Candidate__c</object>
+    </recordUpdates>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Update_Provider_Invalid_License_Flag</targetReference>
+        </connector>
+        <object>LicenseVerification__c</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordAfterSave</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

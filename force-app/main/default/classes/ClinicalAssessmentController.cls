@@ -202,6 +202,7 @@ public with sharing class ClinicalAssessmentController {
             } else {
                 insert writableRecord;
             }
+            syncJobApplicationAssessmentPassedFlag(writableRecord.Job_Application__c);
 
             List<Clinical_Assessment__c> savedRows = [
                 SELECT
@@ -422,6 +423,83 @@ public with sharing class ClinicalAssessmentController {
         } catch (Exception e) {
             throw new AuraHandledException('Unable to load assessment context: ' + e.getMessage());
         }
+    }
+
+    public static void syncJobApplicationAssessmentPassedFlag(Id jobApplicationId) {
+        if (jobApplicationId == null) {
+            return;
+        }
+        syncJobApplicationAssessmentPassedFlags(new Set<Id>{ jobApplicationId });
+    }
+
+    public static void syncJobApplicationAssessmentPassedFlags(Set<Id> jobApplicationIds) {
+        if (jobApplicationIds == null || jobApplicationIds.isEmpty()) {
+            return;
+        }
+        jobApplicationIds.remove(null);
+        if (jobApplicationIds.isEmpty()) {
+            return;
+        }
+        if (!Schema.sObjectType.Job_Application__c.isUpdateable()) {
+            return;
+        }
+
+        Map<String, Schema.SObjectField> appFieldMap = Schema.SObjectType.Job_Application__c.fields.getMap();
+        if (!appFieldMap.containsKey('Clinical_Assessments_Passed__c')) {
+            return;
+        }
+
+        Schema.DescribeFieldResult passFlagDescribe =
+            appFieldMap.get('Clinical_Assessments_Passed__c').getDescribe();
+        if (!passFlagDescribe.isUpdateable()) {
+            return;
+        }
+
+        List<Clinical_Assessment__c> relatedAssessments = [
+            SELECT Job_Application__c, Status__c
+            FROM Clinical_Assessment__c
+            WHERE Job_Application__c IN :jobApplicationIds
+        ];
+
+        Set<Id> applicationsWithAssessments = new Set<Id>();
+        Set<Id> applicationsWithNonPassedAssessments = new Set<Id>();
+        for (Clinical_Assessment__c assessment : relatedAssessments) {
+            applicationsWithAssessments.add(assessment.Job_Application__c);
+            if (assessment.Status__c != 'Passed') {
+                applicationsWithNonPassedAssessments.add(assessment.Job_Application__c);
+            }
+        }
+
+        List<Job_Application__c> updates = new List<Job_Application__c>();
+        for (Id applicationId : jobApplicationIds) {
+            Boolean allPassed =
+                applicationsWithAssessments.contains(applicationId) &&
+                !applicationsWithNonPassedAssessments.contains(applicationId);
+            Job_Application__c applicationUpdate = new Job_Application__c(Id = applicationId);
+            applicationUpdate.put('Clinical_Assessments_Passed__c', allPassed);
+            updates.add(applicationUpdate);
+        }
+
+        List<SObject> toSanitize = new List<SObject>();
+        toSanitize.addAll(updates);
+        SObjectAccessDecision writeDecision =
+            Security.stripInaccessible(System.AccessType.UPDATABLE, toSanitize);
+        List<Job_Application__c> writableApps =
+            (List<Job_Application__c>) writeDecision.getRecords();
+
+        if (writableApps.isEmpty()) {
+            return;
+        }
+        List<Job_Application__c> finalUpdates = new List<Job_Application__c>();
+        for (Job_Application__c app : writableApps) {
+            if (app.getPopulatedFieldsAsMap().size() > 1) {
+                finalUpdates.add(app);
+            }
+        }
+        if (finalUpdates.isEmpty()) {
+            return;
+        }
+        update finalUpdates;
     }
 
     private static Id parseId(Object value) {
