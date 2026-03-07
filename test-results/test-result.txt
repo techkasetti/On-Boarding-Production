@@ -1,0 +1,34 @@
+=== Test Results
+TEST NAME                                                                  OUTCOME  MESSAGE  RUNTIME (MS)
+─────────────────────────────────────────────────────────────────────────  ───────  ───────  ────────────
+EmployeeConversionServiceTest.testConvertSingleCreatesEmployeeAndContract  Pass              1669        
+EmployeeConversionServiceTest.testInvocableBatchPath                       Pass              247         
+
+
+=== Apex Code Coverage by Class
+CLASSES                    PERCENT  UNCOVERED LINES   
+─────────────────────────  ───────  ──────────────────
+EmployeeConversionService  79%      24,38,39,40,52,...
+CandidateTriggerHandler    75%      8,13              
+ContactTriggerHandler      86%      6,20,36,54,55     
+CandidateTrigger           100%                       
+ContactTrigger             100%                       
+
+
+
+
+=== Test Summary
+NAME                 VALUE               
+───────────────────  ────────────────────
+Outcome              Passed              
+Tests Ran            2                   
+Pass Rate            100%                
+Fail Rate            0%                  
+Skip Rate            0%                  
+Test Run Id          707am00002TDWvj     
+Test Setup Time      0 ms                
+Test Execution Time  1916 ms             
+Test Total Time      1916 ms             
+Org Id               00Dfo000008XfMLEA0  
+Username             pavan@onboarding.com
+Org Wide Coverage    55%                 
