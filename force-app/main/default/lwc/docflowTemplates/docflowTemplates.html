@@ -1,0 +1,191 @@
+<!-- docflowTemplates.html -->
+<template>
+  <div class="tl-root">
+
+    <!-- Page Header -->
+    <div class="tl-page-header">
+      <div class="tl-title-block">
+        <h1 class="tl-page-title">Template Library</h1>
+        <p class="tl-page-sub">Manage region-specific, role-based, multi-jurisdiction templates</p>
+      </div>
+      <button class="tl-btn-primary" onclick={handleNewTemplate}>+ New Template</button>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="tl-filter-bar">
+      <!-- Search -->
+      <div class="tl-search-wrap">
+        <svg class="tl-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="tl-search-input"
+          placeholder="Search by name, type, reg..."
+          value={_searchText}
+          oninput={handleSearchInput}/>
+      </div>
+
+      <!-- Region Chips -->
+      <div class="tl-filter-group">
+        <span class="tl-filter-label">Region / Jurisdiction</span>
+        <div class="tl-chip-row">
+          <template for:each={regionChips} for:item="chip">
+            <button key={chip.value} class={chip.cssClass} data-value={chip.value} onclick={handleRegionChip}>
+              {chip.label}
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Role Chips -->
+      <div class="tl-filter-group">
+        <span class="tl-filter-label">Role</span>
+        <div class="tl-chip-row">
+          <template for:each={roleChips} for:item="chip">
+            <button key={chip.value} class={chip.cssClass} data-value={chip.value} onclick={handleRoleChip}>
+              {chip.label}
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <template if:true={isLoading}>
+      <div class="tl-loading">
+        <lightning-spinner alternative-text="Loading..." size="medium" variant="brand"></lightning-spinner>
+      </div>
+    </template>
+
+    <!-- Content -->
+    <template if:false={isLoading}>
+
+      <!-- Template Grid -->
+      <div class="tl-grid">
+
+        <template for:each={filteredTemplates} for:item="tpl">
+          <div key={tpl.id}
+               class={tpl.cssClass}
+               data-id={tpl.id}
+               onclick={handleSelectTemplate}>
+
+            <!-- Document Preview Thumbnail -->
+            <div class="tl-thumb">
+              <div class="tl-thumb-line tl-line-wide tl-line-accent"></div>
+              <div class="tl-thumb-line tl-line-med"></div>
+              <div class="tl-thumb-line tl-line-short"></div>
+              <div class="tl-thumb-line tl-line-accent tl-line-narrow"></div>
+              <div class="tl-thumb-line tl-line-wide"></div>
+              <div class="tl-thumb-line tl-line-med"></div>
+            </div>
+
+            <!-- Card Info -->
+            <div class="tl-card-body">
+              <div class="tl-card-name">{tpl.name}</div>
+              <div class="tl-card-meta">Updated {tpl.lastUpdatedFormatted} · {tpl.variableCount} variables</div>
+              <div class="tl-tag-row">
+                <template for:each={tpl.tags} for:item="tag">
+                  <span key={tag.label} class={tag.cssClass}>{tag.label}</span>
+                </template>
+              </div>
+            </div>
+
+            <!-- Selected indicator -->
+            <template if:true={tpl.isSelected}>
+              <div class="tl-selected-dot"></div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Empty state -->
+        <template if:true={hasNoResults}>
+          <div class="tl-empty">
+            <div class="tl-empty-icon">🔍</div>
+            <div class="tl-empty-title">No templates found</div>
+            <div class="tl-empty-sub">Try adjusting your filters or search term</div>
+          </div>
+        </template>
+
+        <!-- Add New Card -->
+        <div class="tl-card tl-add-card" onclick={handleNewTemplate}>
+          <div class="tl-add-icon">+</div>
+          <div class="tl-add-label">Create New Template</div>
+          <div class="tl-add-sub">From scratch or import</div>
+        </div>
+      </div>
+
+      <!-- New Template Modal -->
+      <template if:true={showNewTemplateModal}>
+        <div class="tl-modal-overlay" onclick={handleModalOverlayClick}>
+          <div class="tl-modal" onclick={stopPropagation}>
+            <div class="tl-modal-header">
+              <div class="tl-modal-title">Create New Template</div>
+              <button class="tl-modal-close" onclick={handleCancelNew}>✕</button>
+            </div>
+            <div class="tl-modal-body">
+              <div class="tl-field-group">
+                <label class="tl-field-label">Template Name *</label>
+                <input class="tl-field-input" data-field="Name" value={newTemplate.Name} oninput={handleNewTemplateField} placeholder="e.g. Non-Disclosure Agreement"/>
+              </div>
+              <div class="tl-field-row">
+                <div class="tl-field-group">
+                  <label class="tl-field-label">Region</label>
+                  <select class="tl-field-input" data-field="Region1__c" onchange={handleNewTemplateField}>
+                    <option value="">-- Select --</option>
+                    <option value="EU (European Union)">EU (European Union)</option>
+                    <option value="North America">North America</option>
+                    <option value="APAC">APAC</option>
+                    <option value="UK">UK</option>
+                    <option value="LATAM">LATAM</option>
+                    <option value="Global">Global</option>
+                  </select>
+                </div>
+                <div class="tl-field-group">
+                  <label class="tl-field-label">Role</label>
+                  <select class="tl-field-input" data-field="Role__c" onchange={handleNewTemplateField}>
+                    <option value="">-- Select --</option>
+                    <option value="HR">HR</option>
+                    <option value="Legal">Legal</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Employee">Employee</option>
+                    <option value="Contractor">Contractor</option>
+                  </select>
+                </div>
+              </div>
+              <div class="tl-field-group">
+                <label class="tl-field-label">Contract Type</label>
+                <select class="tl-field-input" data-field="Contract_Type__c" onchange={handleNewTemplateField}>
+                  <option value="">-- Select --</option>
+                  <option value="Employment Agreement">Employment Agreement</option>
+                  <option value="NDA">NDA</option>
+                  <option value="Statement of work">Statement of Work</option>
+                  <option value="Vendor Agreement">Vendor Agreement</option>
+                </select>
+              </div>
+              <div class="tl-field-group">
+                <label class="tl-field-label">Template Body (HTML)</label>
+                <textarea class="tl-field-textarea" data-field="Body__c" oninput={handleNewTemplateField} placeholder="Enter template HTML with {{variable}} placeholders..."></textarea>
+              </div>
+              <div class="tl-field-toggle">
+                <label class="tl-toggle-label">
+                  <input type="checkbox" data-field="IsActive__c" checked={newTemplate.IsActive__c} onchange={handleNewTemplateToggle}/>
+                  <span class="tl-toggle-text">Active Template</span>
+                </label>
+              </div>
+            </div>
+            <div class="tl-modal-footer">
+              <button class="tl-btn-ghost" onclick={handleCancelNew}>Cancel</button>
+              <button class="tl-btn-primary" onclick={handleSaveNew} disabled={isSaving}>
+                <template if:true={isSaving}>Saving...</template>
+                <template if:false={isSaving}>Save Template</template>
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+
+    </template>
+
+  </div>
+</template>

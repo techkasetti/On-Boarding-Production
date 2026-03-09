@@ -1,0 +1,341 @@
+/* docflowsecurity.css */
+
+/* ══════════════════════════════════════════════
+   ROOT
+   ══════════════════════════════════════════════ */
+.ds-root {
+    min-height: 100vh;
+    background: #0d1117;
+    padding: 28px 32px 48px;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #e6edf3;
+    box-sizing: border-box;
+}
+
+/* ══════════════════════════════════════════════
+   HEADER
+   ══════════════════════════════════════════════ */
+.ds-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+}
+
+.ds-page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 4px;
+    letter-spacing: -0.5px;
+}
+
+.ds-page-sub {
+    font-size: 13px;
+    color: #7d8590;
+    margin: 0;
+}
+
+.ds-btn-refresh {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.ds-btn-refresh:hover {
+    background: #30363d;
+    border-color: #8b949e;
+}
+
+/* ══════════════════════════════════════════════
+   LOADING
+   ══════════════════════════════════════════════ */
+.ds-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 80px 0;
+}
+
+/* ══════════════════════════════════════════════
+   SUMMARY CARDS — 2 cards only
+   ══════════════════════════════════════════════ */
+.ds-cards-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.ds-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.ds-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+}
+
+.ds-card-low::before  { background: linear-gradient(90deg, #1f6feb, #388bfd); }
+.ds-card-high::before { background: linear-gradient(90deg, #da3633, #f85149); }
+
+.ds-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.ds-card-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #7d8590;
+}
+
+.ds-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ds-card-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.ds-icon-low  { background: rgba(31, 111, 235, 0.15); color: #388bfd; }
+.ds-icon-high { background: rgba(218, 54, 51, 0.15);  color: #f85149; }
+
+.ds-card-count {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: -2px;
+}
+
+.ds-count-low  { color: #ffffff; }
+.ds-count-high { color: #ffffff; }
+
+.ds-card-sub {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.ds-sub-low  { color: #3fb950; }
+.ds-sub-high { color: #f85149; }
+
+/* ══════════════════════════════════════════════
+   TABLE CARD
+   ══════════════════════════════════════════════ */
+.ds-table-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.ds-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid #21262d;
+}
+
+.ds-table-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e6edf3;
+    margin: 0;
+}
+
+.ds-table-count {
+    font-size: 12px;
+    color: #7d8590;
+    background: #21262d;
+    border: 1px solid #30363d;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.ds-table-wrap {
+    overflow-x: auto;
+}
+
+.ds-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.ds-table thead tr {
+    background: #0d1117;
+}
+
+.ds-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    color: #7d8590;
+    border-bottom: 1px solid #21262d;
+    white-space: nowrap;
+}
+
+.ds-table tbody tr {
+    border-bottom: 1px solid #21262d;
+    transition: background 0.12s;
+}
+
+.ds-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.ds-table tbody tr:hover {
+    background: #1c2128;
+}
+
+.ds-row-high {
+    background: rgba(218, 54, 51, 0.04);
+}
+
+.ds-row-high:hover {
+    background: rgba(218, 54, 51, 0.08) !important;
+}
+
+.ds-table td {
+    padding: 12px 16px;
+    vertical-align: middle;
+    color: #c9d1d9;
+}
+
+/* ── Signer cell ── */
+.ds-signer-name {
+    font-weight: 600;
+    color: #e6edf3;
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.ds-signer-email {
+    font-size: 11px;
+    color: #7d8590;
+}
+
+/* ── Doc name ── */
+.ds-doc-name {
+    color: #c9d1d9;
+    font-size: 13px;
+}
+
+/* ── Flagged cell values ── */
+.ds-cell-flagged {
+    color: #f85149;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+/* ── Risk score ── */
+.ds-score {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.ds-score-low    { color: #3fb950; }
+.ds-score-medium { color: #d29922; }
+.ds-score-high   { color: #f85149; }
+
+/* ── Risk level badge ── */
+.ds-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+.ds-badge-low {
+    background: rgba(63, 185, 80, 0.15);
+    color: #3fb950;
+    border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+.ds-badge-medium {
+    background: rgba(210, 153, 34, 0.15);
+    color: #d29922;
+    border: 1px solid rgba(210, 153, 34, 0.3);
+}
+
+.ds-badge-high {
+    background: rgba(248, 81, 73, 0.15);
+    color: #f85149;
+    border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+/* ── Fraud analysis text ── */
+.ds-analysis-ok {
+    color: #7d8590;
+    font-size: 12px;
+}
+
+.ds-analysis-flagged {
+    color: #f85149;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* ══════════════════════════════════════════════
+   EMPTY STATE
+   ══════════════════════════════════════════════ */
+.ds-empty {
+    text-align: center;
+    padding: 64px 32px;
+}
+
+.ds-empty-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+
+.ds-empty-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #c9d1d9;
+    margin-bottom: 6px;
+}
+
+.ds-empty-sub {
+    font-size: 13px;
+    color: #7d8590;
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .ds-root { padding: 16px; }
+    .ds-cards-row { grid-template-columns: 1fr 1fr; }
+    .ds-page-header { flex-direction: column; gap: 12px; }
+}

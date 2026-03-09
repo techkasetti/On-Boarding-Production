@@ -1,0 +1,323 @@
+<!-- docflowCreateDoc.html -->
+    <template>
+      <div class="cd-root">
+
+        <div class="cd-page-header">
+          <h1 class="cd-page-title">Create Document</h1>
+          <p class="cd-page-sub">Select a template and fill in the details — the document updates live</p>
+        </div>
+
+        <div class="cd-main-grid">
+
+          <!-- ════ LEFT — FORM ════ -->
+          <div class="cd-form-col">
+
+            <!-- Template Selector -->
+            <div class="cd-card">
+              <div class="cd-card-title">Select Template</div>
+              <template if:true={isLoadingTemplates}>
+                <div class="cd-loading-row">
+                  <lightning-spinner size="x-small" alternative-text="Loading"></lightning-spinner>
+                  <span>Loading templates…</span>
+                </div>
+              </template>
+              <template if:false={isLoadingTemplates}>
+                <select class="cd-select" onchange={handleTemplateSelect}>
+                  <option value="">-- Choose a template --</option>
+                  <template for:each={availableTemplates} for:item="t">
+                    <option key={t.Id} value={t.Id}>{t.Name}</option>
+                  </template>
+                </select>
+              </template>
+            </div>
+
+            <!-- Fields — only when template selected -->
+            <template if:true={templateSelected}>
+
+              <!-- EINSTEIN AI CLAUSE SUGGESTION CARD -->
+              <div class="cd-card cd-ai-card">
+                <div class="cd-ai-card-header">
+                  <div class="cd-ai-card-title">
+                    <span class="cd-ai-star">&#10022;</span>
+                    Einstein AI Clause Suggestion
+                  </div>
+                  <div class="cd-ai-toggle-wrap">
+                    <button class={aiToggleClass} onclick={handleAIToggle}>
+                      <span class="cd-ai-toggle-knob"></span>
+                    </button>
+                    <span class="cd-ai-toggle-label">{aiToggleLabel}</span>
+                  </div>
+                </div>
+
+                <template if:true={aiSuggestionEnabled}>
+                  <div class="cd-ai-panel">
+
+                    <div class="cd-ai-field">
+                      <label class="cd-ai-label">AI Model</label>
+                      <template if:true={aiModelOptions.length}>
+                        <select class="cd-ai-select" onchange={handleAIModelChange}>
+                          <template for:each={aiModelOptions} for:item="m">
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                          </template>
+                        </select>
+                      </template>
+                      <template if:false={aiModelOptions.length}>
+                        <input class="cd-ai-input" type="text" value="Einstein Intent Detection (Salesforce)" readonly/>
+                      </template>
+                    </div>
+
+                    <div class="cd-ai-field">
+                      <label class="cd-ai-label">Clause Prompt</label>
+                      <textarea class="cd-ai-textarea"
+                                value={aiClausePrompt}
+                                oninput={handleClausePromptChange}
+                                placeholder="Describe the clause you want AI to generate…">{aiClausePrompt}</textarea>
+                    </div>
+
+                    <button class="cd-ai-generate-btn"
+                            onclick={handleGenerateAIClause}
+                            disabled={isGeneratingClause}>
+                      <template if:true={isGeneratingClause}>
+                        <lightning-spinner size="x-small" alternative-text="Generating" variant="inverse"></lightning-spinner>
+                        <span>Generating…</span>
+                      </template>
+                      <template if:false={isGeneratingClause}>
+                        &#10022; Generate AI Clause
+                      </template>
+                    </button>
+
+                    <!-- Success note — no clause preview here, it goes in the T&C block -->
+                    <template if:true={aiGeneratedClause}>
+                      <div class="cd-ai-ready-note">
+                        <span class="cd-ai-ready-icon">&#10003;</span>
+                        AI clause ready — visible in the Terms &amp; Conditions block below
+                      </div>
+                    </template>
+
+                  </div>
+                </template>
+              </div>
+
+              <!-- Fill in Details -->
+              <div class="cd-card">
+                <div class="cd-card-title">Fill in Details</div>
+                <p class="cd-hint">These fields update the document preview as you type.</p>
+
+                <div class="cd-field-group">
+                  <label class="cd-label">Employee Name <span>*</span></label>
+                  <input class="cd-input" name="employeeName" value={formData.employeeName}
+                        oninput={handleField} placeholder="e.g. John Smith"/>
+                </div>
+
+                <div class="cd-field-group">
+                  <label class="cd-label">Position / Job Title</label>
+                  <input class="cd-input" name="position" value={formData.position}
+                        oninput={handleField} placeholder="e.g. Software Engineer"/>
+                </div>
+
+                <div class="cd-field-group">
+                  <label class="cd-label">Address</label>
+                  <input class="cd-input" name="address" value={formData.address}
+                        oninput={handleField} placeholder="e.g. 123 Main St, City, Country"/>
+                </div>
+
+                <div class="cd-field-row">
+                  <div class="cd-field-group">
+                    <label class="cd-label">Company Name <span>*</span></label>
+                   <lightning-input
+    class="cd-input"
+    name="companyName"
+    value={formData.companyName}
+    onchange={handleField}>
+</lightning-input>
+                  </div>
+                  <div class="cd-field-group">
+                    <label class="cd-label">Effective / Start Date</label>
+                    <input class="cd-input" type="date" name="effectiveDate" value={formData.effectiveDate}
+                          oninput={handleField}/>
+                  </div>
+                </div>
+
+                <div class="cd-field-row">
+                  <div class="cd-field-group">
+                    <label class="cd-label">Expiry Date</label>
+                    <input class="cd-input" type="date" name="expiryDate" value={formData.expiryDate}
+                          oninput={handleField}/>
+                  </div>
+                  <div class="cd-field-group">
+                    <label class="cd-label">Department</label>
+                    <input class="cd-input" name="department" value={formData.department}
+                          oninput={handleField} placeholder="e.g. Engineering"/>
+                  </div>
+                </div>
+
+                <div class="cd-field-group">
+                  <label class="cd-label">Additional Notes / Special Clauses</label>
+                  <textarea class="cd-textarea" name="additionalNotes"
+                            oninput={handleField}
+                            placeholder="Any additional requirements or clauses...">{formData.additionalNotes}</textarea>
+                </div>
+              </div>
+
+              <template if:true={hasError}>
+                <div class="cd-error">&#9888; {errorMessage}</div>
+              </template>
+
+              <button class="cd-btn-generate" onclick={handleGenerate} disabled={isSending}>
+                <template if:true={isSending}>&#9203; Generating…</template>
+                <template if:false={isSending}>
+                  <template if:true={aiSuggestionEnabled}>&#10022; Generate with AI Clause</template>
+                  <template if:false={aiSuggestionEnabled}>&#10022; Generate Document</template>
+                </template>
+              </button>
+
+              <div class="cd-btn-row">
+                <button class="cd-btn-view" onclick={handleViewDocument} disabled={isNotGenerated}>
+                  View Document
+                </button>
+                <button class="cd-btn-download" onclick={handleDownloadDocument} disabled={isNotGenerated}>
+                  Download
+                </button>
+              </div>
+
+            </template>
+
+            <template if:false={templateSelected}>
+              <div class="cd-empty-hint">
+                <div class="cd-empty-icon">&#9757;</div>
+                <div>Select a template above to get started</div>
+              </div>
+            </template>
+
+          </div>
+
+          <!-- ════ RIGHT — DOCUMENT PREVIEW ════ -->
+          <div class="cd-preview-col">
+            <div class="cd-preview-label">
+              Document Preview
+              <span class="cd-live-dot"></span>
+              <span class="cd-live-text">Live</span>
+              <template if:true={aiSuggestionEnabled}>
+                <span class="cd-ai-preview-badge">&#10022; Einstein AI</span>
+              </template>
+            </div>
+
+            <div class="cd-paper">
+
+              <!-- State A: after Generate — show server-rendered HTML -->
+              <template if:true={hasRenderedContent}>
+                <div class="cd-rendered-wrap" lwc:dom="manual"></div>
+              </template>
+
+              <!-- State B: live placeholder preview before Generate is clicked -->
+              <template if:false={hasRenderedContent}>
+
+                <div class="cd-paper-title">{previewTemplateName}</div>
+
+                <div class="cd-paper-section">
+                  <table class="cd-meta-table">
+                    <tr><td class="cd-meta-key">Name:</td><td class="cd-meta-val">{previewEmployeeName}</td></tr>
+                    <tr><td class="cd-meta-key">Region:</td><td class="cd-meta-val">{tplRegion}</td></tr>
+                    <tr><td class="cd-meta-key">Role:</td><td class="cd-meta-val">{tplRole}</td></tr>
+                    <tr><td class="cd-meta-key">Contract Type:</td><td class="cd-meta-val">{tplContractType}</td></tr>
+                  </table>
+                  <p class="cd-intro-sentence">{introSentence}</p>
+                </div>
+
+                <!-- Data Protection section — always shows compliance text, never AI clause -->
+                <div class="cd-paper-section">
+                  <div class="cd-section-title">Data Protection &amp; Privacy</div>
+                  <p class="cd-section-text"><strong>{complianceAct}:</strong> {complianceText}</p>
+                  <p class="cd-section-text">
+                    <strong>Governing Law:</strong> This Agreement shall be governed by and construed
+                    in accordance with the laws applicable in the {tplRegion} jurisdiction,
+                    without regard to conflict of law principles.
+                  </p>
+                  <p class="cd-section-text cd-italic">
+                    This Agreement may be executed electronically and shall have the same legal
+                    effect as an original signed document.
+                  </p>
+                </div>
+
+                <!-- Terms & Conditions — THE single place for both AI and non-AI clauses -->
+                <div class="cd-paper-section">
+                  <div class="cd-section-title">
+                    Terms &amp; Conditions
+                    <template if:true={aiSuggestionEnabled}>
+                      <span class="cd-tc-ai-badge">&#10022; Einstein AI</span>
+                    </template>
+                  </div>
+                  <div class="cd-tc-box">
+
+                    <!-- AI toggle ON — show AI clause or placeholder -->
+                    <template if:true={aiSuggestionEnabled}>
+                      <template if:true={aiGeneratedClause}>
+                        <!-- AI clause generated: show it here and ONLY here -->
+                        <div class="cd-ai-clause-in-tc">
+                          <div class="cd-ai-clause-in-tc-label">&#10022; Einstein AI Generated Clause</div>
+                          <p class="cd-section-text cd-ai-tc-text">{aiGeneratedClause}</p>
+                        </div>
+                      </template>
+                      <template if:false={aiGeneratedClause}>
+                        <!-- AI toggle ON but not yet generated -->
+                        <p class="cd-section-text cd-ai-tc-placeholder">
+                          &#10022; AI clause will appear here after you click "Generate AI Clause" above
+                        </p>
+                      </template>
+                    </template>
+
+                    <!-- AI toggle OFF — show standard non-AI terms text -->
+                    <template if:false={aiSuggestionEnabled}>
+                      <p class="cd-section-text">{termsText}</p>
+                    </template>
+
+                  </div>
+                </div>
+
+                <div class="cd-paper-section cd-sig-section">
+                  <div class="cd-sig-cols">
+                    <div class="cd-sig-col">
+                      <div class="cd-sig-heading">Signed By (Employee)</div>
+                      <div class="cd-sig-line"></div>
+                      <div class="cd-sig-detail">Name: {previewEmployeeName}</div>
+                      <div class="cd-sig-detail">Date: _______________</div>
+                    </div>
+                    <div class="cd-sig-col">
+                      <div class="cd-sig-heading">Company Representative</div>
+                      <div class="cd-sig-line"></div>
+                      <div class="cd-sig-detail">Name: _______________</div>
+                      <div class="cd-sig-detail">Date: _______________</div>
+                    </div>
+                  </div>
+                </div>
+
+              </template>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- VIEW DOCUMENT MODAL -->
+        <template if:true={showViewModal}>
+          <div class="cd-modal-backdrop" onclick={handleCloseModal}>
+            <div class="cd-modal" onclick={stopPropagation}>
+              <div class="cd-modal-header">
+                <div class="cd-modal-title">&#128196; {previewTemplateName}</div>
+                <button class="cd-modal-close" onclick={handleCloseModal}>&#10005;</button>
+              </div>
+              <div class="cd-modal-body">
+                <div class="cd-modal-paper">
+                  <div class="cd-modal-rendered-wrap" lwc:dom="manual"></div>
+                </div>
+              </div>
+              <div class="cd-modal-footer">
+                <button class="cd-btn-download" onclick={handleDownloadDocument}>Download Document</button>
+                <button class="cd-btn-modal-close" onclick={handleCloseModal}>Close</button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+      </div>
+    </template>

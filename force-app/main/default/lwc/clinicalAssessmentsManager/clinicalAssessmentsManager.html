@@ -1,0 +1,309 @@
+<template>
+    <lightning-card title="Clinical Assessments" icon-name="standard:task2">
+        <div class="slds-p-horizontal_medium slds-p-bottom_small">
+            <div class="slds-grid slds-wrap slds-grid_align-spread slds-gutters_small header-row">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3">
+                    <p class="slds-text-body_small summary-text">
+                        Track candidate assessment outcomes, attempts, and submission status.
+                    </p>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3 slds-text-align_right">
+                    <lightning-button
+                        label="New Assessment"
+                        icon-name="utility:add"
+                        variant="brand"
+                        onclick={handleNewAssessment}
+                        class="slds-m-right_x-small"
+                    ></lightning-button>
+                    <lightning-button-icon
+                        icon-name="utility:refresh"
+                        variant="border-filled"
+                        alternative-text="Refresh"
+                        title="Refresh"
+                        onclick={handleRefresh}
+                    ></lightning-button-icon>
+                </div>
+            </div>
+        </div>
+
+        <template if:true={isLoading}>
+            <div class="slds-is-relative spinner-shell">
+                <lightning-spinner alternative-text="Loading assessments"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:false={isLoading}>
+            <template if:true={hasAssessments}>
+                <div class="table-shell slds-p-horizontal_medium slds-p-bottom_medium">
+                    <div class="slds-scrollable_x">
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_fixed-layout">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col">
+                                        <div class="slds-truncate">Status</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">Department</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">Role Type</div>
+                                    </th>
+                                    <th scope="col">
+                                        <button class="sort-button" onclick={handleAssessmentDateSort} title="Sort by Assessment Date">
+                                            <span class="slds-truncate slds-m-right_x-small">Assessment Date</span>
+                                            <lightning-icon
+                                                icon-name={assessmentDateSortIcon}
+                                                size="xx-small"
+                                                alternative-text="Sort direction"
+                                            ></lightning-icon>
+                                        </button>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">Attempt #</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">Submitted Date</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">Files</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate slds-text-align_right">Actions</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={displayAssessments} for:item="assessment">
+                                    <tr key={assessment.id}>
+                                        <td>
+                                            <span class={assessment.statusClass}>{assessment.statusLabel}</span>
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate">{assessment.department}</div>
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate">{assessment.roleType}</div>
+                                        </td>
+                                        <td>
+                                            <template if:true={assessment.assessmentDate}>
+                                                <lightning-formatted-date-time
+                                                    value={assessment.assessmentDate}
+                                                    year="numeric"
+                                                    month="short"
+                                                    day="2-digit"
+                                                ></lightning-formatted-date-time>
+                                            </template>
+                                            <template if:false={assessment.assessmentDate}>
+                                                <span class="muted-value">-</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate">{assessment.attemptNumber}</div>
+                                        </td>
+                                        <td>
+                                            <template if:true={assessment.submittedDate}>
+                                                <lightning-formatted-date-time
+                                                    value={assessment.submittedDate}
+                                                    year="numeric"
+                                                    month="short"
+                                                    day="2-digit"
+                                                    hour="2-digit"
+                                                    minute="2-digit"
+                                                ></lightning-formatted-date-time>
+                                            </template>
+                                            <template if:false={assessment.submittedDate}>
+                                                <span class="muted-value">-</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate">{assessment.uploadedFileCount}</div>
+                                        </td>
+                                        <td class="slds-text-align_right">
+                                            <lightning-button-icon
+                                                icon-name="utility:edit"
+                                                variant="border-filled"
+                                                alternative-text="Edit assessment"
+                                                title="Edit"
+                                                data-id={assessment.id}
+                                                onclick={handleEditAssessment}
+                                            ></lightning-button-icon>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </template>
+
+            <template if:false={hasAssessments}>
+                <div class="empty-state slds-p-around_large slds-text-align_center">
+                    <lightning-icon icon-name="utility:warning" size="small" alternative-text="No data"></lightning-icon>
+                    <p class="slds-text-heading_small slds-m-top_small">No Assessments Found</p>
+                    <p class="slds-text-body_small slds-m-top_x-small">
+                        Create the first clinical assessment for this candidate.
+                    </p>
+                </div>
+            </template>
+        </template>
+    </lightning-card>
+
+    <template if:true={isModalOpen}>
+        <section
+            role="dialog"
+            tabindex="-1"
+            aria-modal="true"
+            aria-labelledby="clinical-assessment-modal-title"
+            class="slds-modal slds-fade-in-open"
+        >
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button
+                        class="slds-button slds-button_icon slds-modal__close"
+                        title="Close"
+                        onclick={handleModalClose}
+                    >
+                        <lightning-icon icon-name="utility:close" alternative-text="Close" size="small"></lightning-icon>
+                    </button>
+                    <h2 id="clinical-assessment-modal-title" class="slds-text-heading_medium">{modalTitle}</h2>
+                </header>
+
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                            <lightning-input
+                                type="date"
+                                label="Assessment Date"
+                                required
+                                value={formModel.assessmentDate}
+                                data-field="assessmentDate"
+                                onchange={handleFieldChange}
+                            ></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                            <lightning-combobox
+                                label="Assessment Type"
+                                value={formModel.assessmentType}
+                                required
+                                options={assessmentTypeOptions}
+                                data-field="assessmentType"
+                                onchange={handleFieldChange}
+                            ></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                            <lightning-input
+                                type="number"
+                                label="Attempt Number"
+                                required
+                                min="1"
+                                value={formModel.attemptNumber}
+                                data-field="attemptNumber"
+                                onchange={handleFieldChange}
+                            ></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                            <lightning-combobox
+                                label="Status"
+                                value={formModel.status}
+                                required
+                                options={statusOptions}
+                                data-field="status"
+                                onchange={handleFieldChange}
+                            ></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                            <lightning-combobox
+                                label="Department"
+                                value={formModel.department}
+                                required
+                                options={departmentOptions}
+                                disabled={isDepartmentRoleLocked}
+                                data-field="department"
+                                onchange={handleFieldChange}
+                            ></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                            <lightning-combobox
+                                label="Role Type"
+                                value={formModel.roleType}
+                                required
+                                options={roleTypeOptions}
+                                disabled={isDepartmentRoleLocked}
+                                data-field="roleType"
+                                onchange={handleFieldChange}
+                            ></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1">
+                            <lightning-textarea
+                                label="Assessor Notes"
+                                value={formModel.assessorNotes}
+                                data-field="assessorNotes"
+                                onchange={handleFieldChange}
+                            ></lightning-textarea>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <template if:true={isEditMode}>
+                                <lightning-file-upload
+                                    label="Upload Assessment Files"
+                                    name="assessmentFiles"
+                                    record-id={formModel.id}
+                                    accept={acceptedFormats}
+                                    multiple
+                                    onuploadfinished={handleUploadFinished}
+                                ></lightning-file-upload>
+                                <template if:true={hasExistingFiles}>
+                                    <p class="slds-text-body_small slds-m-top_x-small">{existingFilesLabel}</p>
+                                </template>
+
+                                <div class="slds-m-top_small">
+                                    <template if:true={isFilesLoading}>
+                                        <lightning-spinner alternative-text="Loading files" size="small"></lightning-spinner>
+                                    </template>
+                                    <template if:false={isFilesLoading}>
+                                        <template if:true={hasAssessmentFiles}>
+                                            <ul class="slds-list_dotted slds-m-left_medium">
+                                                <template for:each={assessmentFiles} for:item="file">
+                                                    <li key={file.key} class="slds-m-vertical_xx-small">
+                                                        <a href={file.viewUrl} target="_blank">{file.title}</a>
+                                                        <span class="slds-text-body_small muted-value slds-m-left_x-small">
+                                                            ({file.fileType})
+                                                        </span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                        <template if:false={hasAssessmentFiles}>
+                                            <p class="slds-text-body_small muted-value">No files uploaded yet.</p>
+                                        </template>
+                                    </template>
+                                </div>
+                            </template>
+                            <template if:false={isEditMode}>
+                                <p class="slds-text-body_small muted-value">
+                                    Save the assessment first, then upload related documents, videos, or images.
+                                </p>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="slds-modal__footer">
+                    <lightning-button
+                        label="Cancel"
+                        variant="neutral"
+                        onclick={handleModalClose}
+                        class="slds-m-right_small"
+                    ></lightning-button>
+                    <lightning-button
+                        label={saveButtonLabel}
+                        variant="brand"
+                        onclick={handleSave}
+                        disabled={isSaving}
+                    ></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

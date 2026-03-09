@@ -1,0 +1,41 @@
+:host {
+    display: block;
+}
+
+.header-row {
+    align-items: center;
+}
+
+.summary-text {
+    color: var(--lwc-colorTextLabel, #3e3e3c);
+}
+
+.spinner-shell {
+    min-height: 8rem;
+}
+
+.table-shell {
+    border-top: 1px solid var(--lwc-colorBorder, #dddbda);
+}
+
+.sort-button {
+    display: inline-flex;
+    align-items: center;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: var(--lwc-colorTextDefault, #181818);
+    cursor: pointer;
+}
+
+.sort-button:hover {
+    color: var(--lwc-colorTextBrand, #0176d3);
+}
+
+.muted-value {
+    color: var(--lwc-colorTextWeak, #706e6b);
+}
+
+.empty-state {
+    border-top: 1px solid var(--lwc-colorBorder, #dddbda);
+}

@@ -1,0 +1,299 @@
+<!-- docflowDocuments.html -->
+<template>
+  <div class="dd-root">
+
+    <!-- Header -->
+    <div class="dd-page-header">
+      <div>
+        <h1 class="dd-page-title">All Documents</h1>
+        <p class="dd-page-sub">Track, manage and download all created documents</p>
+      </div>
+      <button class="dd-btn-primary" onclick={handleNewDocument}>+ New Document</button>
+    </div>
+
+    <!-- Filter Bar — search only, no status dropdown -->
+    <div class="dd-filter-bar">
+      <div class="dd-search-wrap">
+        <svg class="dd-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input class="dd-search-input" placeholder="Search by employee name or template…"
+               value={searchTerm} oninput={handleSearchChange}/>
+      </div>
+      <button class="dd-btn-ghost" onclick={loadDocuments}>↻ Refresh</button>
+    </div>
+
+    <!-- Loading -->
+    <template if:true={isLoading}>
+      <div class="dd-loading">
+        <lightning-spinner alternative-text="Loading..." size="medium" variant="brand"></lightning-spinner>
+      </div>
+    </template>
+
+    <!-- Table -->
+    <template if:false={isLoading}>
+      <div class="dd-table-card">
+        <table class="dd-table">
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Recipient / Template</th>
+              <th>Created</th>
+              <th>Send for Signature</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={filteredDocuments} for:item="doc">
+              <tr key={doc.Id} class="dd-row">
+
+                <!-- Document -->
+                <td class="dd-doc-name-cell">
+                  <div class="dd-doc-icon">📄</div>
+                  <div>
+                    <div class="dd-doc-name">{doc.Name}</div>
+                    <div class="dd-doc-ref">{doc.shortId}</div>
+                  </div>
+                </td>
+
+                <!-- Recipient: Employee Name + Template Name below -->
+                <td>
+                  <template if:true={doc.recipientName}>
+                    <div class="dd-recipient-name">{doc.recipientName}</div>
+                  </template>
+                  <template if:true={doc.templateLabel}>
+                    <div class="dd-recipient-tpl">📋 {doc.templateLabel}</div>
+                  </template>
+                  <template if:false={doc.recipientName}>
+                    <template if:false={doc.templateLabel}>
+                      <span class="dd-no-recipient">—</span>
+                    </template>
+                  </template>
+                </td>
+
+                <!-- Created Date -->
+                <td class="dd-doc-meta">{doc.createdFmt}</td>
+
+                <!-- Send for Signature -->
+                <td>
+                  <template if:true={doc.isSigned}>
+                    <span class="dd-sig-badge dd-sig-signed">✓ Signed</span>
+                  </template>
+                  <template if:false={doc.isSigned}>
+                    <template if:true={doc.isSent}>
+                      <span class="dd-sig-badge dd-sig-sent">✉ Sent</span>
+                    </template>
+                    <template if:false={doc.isSent}>
+                      <button class="dd-send-btn"
+                              data-id={doc.Id}
+                              data-name={doc.Name}
+                              data-tpl={doc.templateLabel}
+                              onclick={handleSendForSignature}>
+                        ✉ Send
+                      </button>
+                    </template>
+                  </template>
+                </td>
+
+                <!-- Actions: View | Audit | Reminder (when sent) | ⬇ -->
+                <td>
+                  <div class="dd-actions">
+
+                    <button class="dd-action-btn dd-action-view"
+                            data-id={doc.Id}
+                            data-name={doc.Name}
+                            onclick={handleView}
+                            title="View generated document">
+                      👁 View
+                    </button>
+
+                    <button class="dd-action-btn dd-action-audit"
+                            data-id={doc.Id}
+                            onclick={handleAudit}
+                            title="View audit trail">
+                      📋 Audit
+                    </button>
+
+                    <template if:true={doc.isSent}>
+                      <button class="dd-action-btn dd-action-reminder"
+                              data-id={doc.Id}
+                              data-name={doc.Name}
+                              onclick={handleSendReminder}
+                              title="Send reminder to signer">
+                        🔔 Reminder
+                      </button>
+                    </template>
+
+                    <button class="dd-action-btn dd-action-download"
+                            data-cdid={doc.ContentDocumentString__c}
+                            data-id={doc.Id}
+                            onclick={handleDownload}
+                            title="Download document">
+                      ⬇
+                    </button>
+
+                  </div>
+                </td>
+
+              </tr>
+            </template>
+          </tbody>
+        </table>
+
+        <template if:true={isEmpty}>
+          <div class="dd-empty">
+            <div class="dd-empty-icon">📭</div>
+            <div class="dd-empty-title">No documents found</div>
+            <div class="dd-empty-sub">Documents you generate will appear here</div>
+            <button class="dd-btn-primary" style="margin-top:14px;" onclick={handleNewDocument}>
+              Create your first document
+            </button>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <!-- VIEW DOCUMENT MODAL -->
+    <template if:true={showViewModal}>
+      <div class="dd-modal-backdrop" onclick={handleCloseModal}>
+        <div class="dd-modal" onclick={stopProp}>
+          <div class="dd-modal-header">
+            <div class="dd-modal-title">📄 {viewingDocName}</div>
+            <button class="dd-modal-close" onclick={handleCloseModal}>✕</button>
+          </div>
+          <div class="dd-modal-body">
+            <template if:true={isLoadingView}>
+              <div class="dd-modal-loading">
+                <lightning-spinner size="medium" alternative-text="Loading" variant="brand"></lightning-spinner>
+                <p>Loading document…</p>
+              </div>
+            </template>
+            <template if:false={isLoadingView}>
+              <template if:true={viewDocContent}>
+                <div class="dd-modal-doc-wrap" lwc:dom="manual"></div>
+              </template>
+              <template if:false={viewDocContent}>
+                <div class="dd-modal-empty">No content available for this document.</div>
+              </template>
+            </template>
+          </div>
+          <div class="dd-modal-footer">
+            <button class="dd-btn-download-modal" onclick={handleDownloadFromModal}>⬇ Download</button>
+            <button class="dd-btn-ghost" onclick={handleCloseModal}>Close</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- SEND FOR SIGNATURE MODAL -->
+    <template if:true={showSendModal}>
+      <div class="dd-modal-backdrop" onclick={handleCloseSendModal}>
+        <div class="dd-modal dd-send-modal" onclick={stopProp}>
+          <div class="dd-modal-header">
+            <div class="dd-modal-title">✉ Send for Signature</div>
+            <button class="dd-modal-close" onclick={handleCloseSendModal}>✕</button>
+          </div>
+          <div class="dd-modal-body">
+            <div class="dd-send-doc-badge">
+              <span class="dd-send-doc-icon">📄</span>
+              <div>
+                <div class="dd-send-doc-name">{sendingDocName}</div>
+                <template if:true={sendingDocTpl}>
+                  <div class="dd-send-doc-tpl">{sendingDocTpl}</div>
+                </template>
+              </div>
+            </div>
+            <div class="dd-toggles-section">
+              <div class="dd-toggles-title">
+                🛡 Fraud Detection Rules
+                <span class="dd-toggles-hint">Enable checks to run when the signer signs</span>
+              </div>
+              <div class="dd-toggle-row">
+                <div class="dd-toggle-info">
+                  <div class="dd-toggle-name">IP Address Anomaly</div>
+                  <div class="dd-toggle-desc">Detect if signer signs from an unusual IP country</div>
+                </div>
+                <button class={ipToggleClass} data-toggle="IP_ANOMALY" onclick={handleToggle}>
+                  <span class="dd-toggle-knob"></span>
+                </button>
+              </div>
+              <div class="dd-toggle-row">
+                <div class="dd-toggle-info">
+                  <div class="dd-toggle-name">Location Anomaly</div>
+                  <div class="dd-toggle-desc">Detect impossible travel or unusual signing location</div>
+                </div>
+                <button class={locationToggleClass} data-toggle="LOCATION_ANOMALY" onclick={handleToggle}>
+                  <span class="dd-toggle-knob"></span>
+                </button>
+              </div>
+              <div class="dd-toggle-row">
+                <div class="dd-toggle-info">
+                  <div class="dd-toggle-name">Behavioural Anomaly</div>
+                  <div class="dd-toggle-desc">Detect robotic or unusually fast signing behaviour</div>
+                </div>
+                <button class={behavToggleClass} data-toggle="BEHAVIORAL_ANOMALY" onclick={handleToggle}>
+                  <span class="dd-toggle-knob"></span>
+                </button>
+              </div>
+            </div>
+            <div class="dd-send-divider"></div>
+            <p class="dd-send-info">
+              Enter the signer's details. They will receive an email with the document
+              and a <strong>"Sign Document Now"</strong> button.
+            </p>
+            <div class="dd-send-field">
+              <label class="dd-send-label">Signer Full Name</label>
+              <input class="dd-send-input" name="signerName" value={sendData.signerName}
+                     oninput={handleSendField} placeholder="e.g. John Smith"/>
+            </div>
+            <div class="dd-send-field">
+              <label class="dd-send-label">Signer Email <span class="dd-req">*</span></label>
+              <input class="dd-send-input" type="email" name="signerEmail" value={sendData.signerEmail}
+                     oninput={handleSendField} placeholder="john@company.com"/>
+            </div>
+            <template if:true={hasSendError}>
+              <div class="dd-send-error">⚠ {sendErrorMsg}</div>
+            </template>
+          </div>
+          <div class="dd-modal-footer">
+            <button class="dd-btn-ghost" onclick={handleCloseSendModal}>Cancel</button>
+            <button class="dd-btn-send" onclick={handleConfirmSend} disabled={isSending}>
+              <template if:true={isSending}>⏳ Sending…</template>
+              <template if:false={isSending}>✉ Send for Signature</template>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- REMINDER MODAL -->
+    <template if:true={showReminderModal}>
+      <div class="dd-modal-backdrop" onclick={handleCloseReminderModal}>
+        <div class="dd-modal dd-reminder-modal" onclick={stopProp}>
+          <div class="dd-modal-header">
+            <div class="dd-modal-title">🔔 Send Reminder</div>
+            <button class="dd-modal-close" onclick={handleCloseReminderModal}>✕</button>
+          </div>
+          <div class="dd-modal-body">
+            <div class="dd-reminder-doc-badge">
+              <span>📄</span>
+              <span class="dd-reminder-doc-name">{reminderDocName}</span>
+            </div>
+            <p class="dd-send-info" style="margin-top:16px;">
+              A reminder email will be sent to the signer for this document,
+              and a <strong>Reminder Email Sent</strong> event will be logged in the Audit Trail.
+            </p>
+          </div>
+          <div class="dd-modal-footer">
+            <button class="dd-btn-ghost" onclick={handleCloseReminderModal}>Cancel</button>
+            <button class="dd-btn-send" onclick={handleConfirmReminder} disabled={isSendingReminder}>
+              <template if:true={isSendingReminder}>⏳ Sending…</template>
+              <template if:false={isSendingReminder}>🔔 Send Reminder</template>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+  </div>
+</template>

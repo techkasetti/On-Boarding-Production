@@ -3,7 +3,6 @@
     <fullName>Completion_Date__c</fullName>
     <description>The date the provider completed the training.</description>
     <encryptionScheme>None</encryptionScheme>
-    <externalId>false</externalId>
     <label>Completion Date</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

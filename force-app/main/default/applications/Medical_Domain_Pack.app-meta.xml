@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#2CAEAE</headerColor>
+        <logo>Screenshot_20251217_144846</logo>
+        <logoVersion>1</logoVersion>
+        <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
+    </brand>
+    <formFactors>Small</formFactors>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>Medical Domain Pack</label>
+    <navType>Standard</navType>
+    <tabs>standard-home</tabs>
+    <tabs>Candidate__c</tabs>
+    <tabs>ProviderCredential__c</tabs>
+    <tabs>CMERecord__c</tabs>
+    <tabs>HIPAACompliance__c</tabs>
+    <tabs>standard-Task</tabs>
+    <tabs>standard-report</tabs>
+    <tabs>standard-Dashboard</tabs>
+    <tabs>ModelRegistry__c</tabs>
+    <tabs>AI_Screening_Result__c</tabs>
+    <tabs>Trial_Assignment__c</tabs>
+    <tabs>ClinicalTrialRequirement__c</tabs>
+    <tabs>Invoice_Payment__c</tabs>
+    <tabs>FeatureEntitlement__c</tabs>
+    <tabs>Device_Training__c</tabs>
+    <tabs>Device_Training_Certificate__c</tabs>
+    <tabs>Clause__c</tabs>
+    <tabs>DocumentLifecycleConfiguration__c</tabs>
+    <tabs>Signature_Request__c</tabs>
+    <tabs>Job_Clinical_Skill__c</tabs>
+    <tabs>Screening_Override__c</tabs>
+    <tabs>Job_Application__c</tabs>
+    <tabs>Interview_Question__c</tabs>
+    <tabs>Interview_Detail__c</tabs>
+    <tabs>AI_Features__c</tabs>
+    <tabs>DocumentTemplate__c</tabs>
+    <tabs>Clinical_Assessment__c</tabs>
+    <uiType>Lightning</uiType>
+</CustomApplication>

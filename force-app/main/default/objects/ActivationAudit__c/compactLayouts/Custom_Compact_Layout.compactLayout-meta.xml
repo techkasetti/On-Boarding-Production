@@ -4,6 +4,5 @@
     <fields>Name</fields>
     <fields>FeatureKey__c</fields>
     <fields>Enabled__c</fields>
-    <fields>Reason__c</fields>
     <label>Custom Compact Layout</label>
 </CompactLayout>

@@ -1,0 +1,123 @@
+<!-- docflowApp.html -->
+<template>
+
+  <!-- NAV -->
+  <nav class="df-nav">
+    <div class="nav-logo">
+      <svg viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="7" fill="url(#ng)"/>
+        <path d="M8 14l4 4 8-8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs>
+          <linearGradient id="ng" x1="0" y1="0" x2="28" y2="28">
+            <stop stop-color="#3B82F6"/>
+            <stop offset="1" stop-color="#6366F1"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span>DocFlow</span>
+    </div>
+
+    <div class="nav-tabs">
+      <template for:each={navTabs} for:item="tab">
+        <button key={tab.id}
+                class={tab.cssClass}
+                data-section={tab.id}
+                onclick={handleNavTab}>
+          {tab.label}
+        </button>
+      </template>
+    </div>
+
+    <div class="nav-right">
+      <button class="btn btn-primary btn-sm" onclick={handleNewDocument}>+ New Document</button>
+      <div class="tooltip-wrap notif">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="color:#94A3B8;cursor:pointer">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="tooltip">{pendingCount} pending signatures</div>
+      </div>
+      <div class="avatar">{userInitials}</div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class={mainClass}>
+
+    <!-- DASHBOARD -->
+    <template if:true={isDashboard}>
+      <c-docflow-dashboard
+        key={keyDashboard}
+        onnavigatesection={handleChildNavigate}>
+      </c-docflow-dashboard>
+    </template>
+
+    <!-- TEMPLATES -->
+    <template if:true={isTemplates}>
+      <c-docflow-templates
+        key={keyTemplates}
+        onnavigatesection={handleChildNavigate}
+        onnewtemplate={openTemplateEditor}>
+      </c-docflow-templates>
+    </template>
+
+    <!-- CLEARED CANDIDATES -->
+    <template if:true={isApprovedCandidates}>
+      <c-approved-candidates
+        key={keyApprovedCandidates}
+        onnavigatesection={handleChildNavigate}>
+      </c-approved-candidates>
+    </template>
+
+    <!-- CREATE DOCUMENT
+         IMPORTANT: wrapped in if:true so it only mounts when the tab is active.
+         This guarantees @api candidateId is set correctly before connectedCallback runs.
+         The key forces a fresh remount (and fresh candidateId) every navigation.
+    -->
+    <template if:true={isCreate}>
+      <c-docflow-create-doc
+        key={keyCreate}
+        candidate-id={selectedCandidateId}
+        candidate-name={selectedCandidateName}
+        onnavigatesection={handleChildNavigate}>
+      </c-docflow-create-doc>
+    </template>
+
+    <!-- DOCUMENTS -->
+    <template if:true={isDocuments}>
+      <c-docflow-documents
+        key={keyDocuments}
+        onnavigatesection={handleChildNavigate}
+        ondocumentselected={handleDocumentSelected}>
+      </c-docflow-documents>
+    </template>
+
+    <!-- SIGNATURE -->
+    <template if:true={isSignature}>
+      <c-docflowsignature
+        key={keySignature}
+        request-id={requestIdFromUrl}
+        onnavigatesection={handleChildNavigate}>
+      </c-docflowsignature>
+    </template>
+
+    <!-- AUDIT TRAIL -->
+    <template if:true={isAudit}>
+      <c-docflow-audit-trail
+        key={keyAudit}
+        document-id={selectedDocumentId}
+        onnavigatesection={handleChildNavigate}>
+      </c-docflow-audit-trail>
+    </template>
+
+    <!-- SECURITY -->
+    <template if:true={isSecurity}>
+      <c-docflowsecurity
+        key={keySecurity}
+        onnavigatesection={handleChildNavigate}>
+      </c-docflowsecurity>
+    </template>
+
+  </main>
+
+</template>

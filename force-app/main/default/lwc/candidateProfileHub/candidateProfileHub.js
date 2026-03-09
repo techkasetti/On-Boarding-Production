@@ -2,11 +2,17 @@
 
 import { LightningElement, track, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import LightningConfirm from 'lightning/confirm';
 import getProfileData from '@salesforce/apex/CandidateProfileController.getProfileData';
 import getCandidateResumeInfo from '@salesforce/apex/CandidateProfileController.getCandidateResumeInfo';
 import resetResumeStatus from '@salesforce/apex/CandidateProfileController.resetResumeStatus';
+import getCandidatePhotoInfo from '@salesforce/apex/CandidateProfileController.getCandidatePhotoInfo';
+import setCandidateProfilePhoto from '@salesforce/apex/CandidateProfileController.setCandidateProfilePhoto';
+import deleteCandidatePhoto from '@salesforce/apex/CandidateProfileController.deleteCandidatePhoto';
 import deleteRecord from '@salesforce/apex/CandidateProfileController.deleteRecord';
 import persistStructuredResumeData from '@salesforce/apex/OnboardingOrchestratorV2.persistStructuredResumeData';
+import getAllJobPostings from '@salesforce/apex/CandidateJobMatcherController.getAllJobPostings';
+import getAiMatchedJobs from '@salesforce/apex/CandidateJobMatcherController.getAiMatchedJobs';
 
 export default class CandidateProfileHub extends LightningElement {
     _candidateId;
@@ -23,6 +29,14 @@ export default class CandidateProfileHub extends LightningElement {
     @track resumeUploadDate = '';
     @track s3ResumeUrl = '';
     @track useAiParsing = false;
+
+    // Profile photo properties
+    @track hasPhoto = false;
+    @track photoUrl = '';
+    @track photoFileName = '';
+    @track photoUploadDate = '';
+    @track photoDocumentId = '';
+    @track showPhotoUpload = false;
     
     // Upload UI properties  
     @track showResumeUpload = false;
@@ -33,6 +47,15 @@ export default class CandidateProfileHub extends LightningElement {
     // Modal and analyzing states
     @track showPreviewModal = false;
     @track isAnalyzingResume = false;
+
+    // AI job matcher states
+    @track activeJobView = 'all';
+    @track allJobs = [];
+    @track matchedJobs = [];
+    @track isLoadingAllJobs = false;
+    @track isLoadingMatchedJobs = false;
+    @track jobsError = '';
+    hasLoadedMatchedJobs = false;
     
     @api
     get candidateId() {
@@ -47,10 +70,12 @@ export default class CandidateProfileHub extends LightningElement {
         this._candidateId = value;
         
         if (value) {
-            setTimeout(() => {
-                this.loadProfileData();
-                this.loadResumeInfo();
-            }, 100);
+            this.showResumeUpload = false;
+            this.showPhotoUpload = false;
+            this.showPreviewModal = false;
+            this.loadProfileData();
+            this.loadResumeInfo();
+            this.loadPhotoInfo();
         }
     }
     
@@ -108,6 +133,26 @@ export default class CandidateProfileHub extends LightningElement {
             console.log('   - AI Parsing:', this.useAiParsing);
         } catch (error) {
             console.error('Error loading resume info:', error);
+        }
+    }
+
+    async loadPhotoInfo() {
+        if (!this._candidateId) return;
+
+        try {
+            const photoInfo = await getCandidatePhotoInfo({ candidateId: this._candidateId });
+            this.hasPhoto = photoInfo?.hasPhoto === true;
+            this.photoUrl = photoInfo?.downloadUrl || '';
+            this.photoFileName = photoInfo?.fileName || '';
+            this.photoUploadDate = photoInfo?.uploadDate || '';
+            this.photoDocumentId = photoInfo?.contentDocumentId || '';
+        } catch (error) {
+            console.error('Error loading profile photo info:', error);
+            this.hasPhoto = false;
+            this.photoUrl = '';
+            this.photoFileName = '';
+            this.photoUploadDate = '';
+            this.photoDocumentId = '';
         }
     }
     
@@ -192,6 +237,154 @@ export default class CandidateProfileHub extends LightningElement {
         console.log('=== ❌ Upload Cancelled ===');
         this.showResumeUpload = false;
         this.resumeStatusWasReset = false;
+    }
+
+    handleUploadPhoto() {
+        this.showPhotoUpload = true;
+    }
+
+    handleChangePhoto() {
+        this.showPhotoUpload = true;
+    }
+
+    handleCancelPhotoUpload() {
+        this.showPhotoUpload = false;
+    }
+
+    async handlePhotoUploadFinished(event) {
+        if (!this._candidateId) {
+            this.showPhotoUpload = false;
+            this.showToast('Error', 'Candidate ID is missing. Please refresh and try again.', 'error');
+            return;
+        }
+
+        const uploadedFiles = event.detail.files;
+
+        if (!uploadedFiles || uploadedFiles.length === 0) {
+            this.showPhotoUpload = false;
+            return;
+        }
+
+        try {
+            const uploaded = uploadedFiles[0];
+            const fileName = (uploaded.name || '').toLowerCase();
+            const isImage = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].some(ext => fileName.endsWith(ext));
+            if (!isImage) {
+                this.showPhotoUpload = false;
+                this.showToast('Error', 'Only JPG, JPEG, PNG, WEBP, and GIF files are allowed.', 'error');
+                return;
+            }
+
+            await setCandidateProfilePhoto({
+                candidateId: this._candidateId,
+                contentDocumentId: uploaded.documentId
+            });
+
+            this.showPhotoUpload = false;
+            await this.loadPhotoInfo();
+            this.showToast('Success', 'Profile photo updated successfully', 'success');
+        } catch (error) {
+            this.showToast('Error', error.body?.message || 'Failed to update profile photo', 'error');
+        }
+    }
+
+    async loadAllJobPostings() {
+        this.isLoadingAllJobs = true;
+        this.jobsError = '';
+        try {
+            const rows = await getAllJobPostings();
+            this.allJobs = (rows || []).map((job) => this.toJobCard(job));
+        } catch (error) {
+            this.jobsError = error?.body?.message || error?.message || 'Failed to load job postings.';
+            this.allJobs = [];
+        } finally {
+            this.isLoadingAllJobs = false;
+        }
+    }
+
+    async loadMatchedJobs(forceReload = false) {
+        if (!this._candidateId) return;
+        if (this.hasLoadedMatchedJobs && !forceReload) return;
+
+        this.isLoadingMatchedJobs = true;
+        this.jobsError = '';
+        try {
+            const rows = await getAiMatchedJobs({ candidateId: this._candidateId, maxResults: 25 });
+            this.matchedJobs = (rows || []).map((row) => this.toMatchedJobCard(row));
+            this.hasLoadedMatchedJobs = true;
+        } catch (error) {
+            this.jobsError = error?.body?.message || error?.message || 'Failed to load AI matched jobs.';
+            this.matchedJobs = [];
+        } finally {
+            this.isLoadingMatchedJobs = false;
+        }
+    }
+
+    async handleJobViewChange(event) {
+        const selected = event.currentTarget?.dataset?.view;
+        if (!selected || selected === this.activeJobView) return;
+        this.activeJobView = selected;
+        if (selected === 'matched') {
+            await this.loadMatchedJobs();
+        }
+    }
+
+    toJobCard(job) {
+        return {
+            ...job,
+            title: job.Job_Title__c || job.Name || 'Untitled Job',
+            locationText: this.formatJobLocation(job),
+            experienceText: this.formatJobExperience(job),
+            statusText: job.Job_Status__c || 'Not specified'
+        };
+    }
+
+    toMatchedJobCard(row) {
+        const card = this.toJobCard(row.jobPosting || {});
+        return {
+            ...card,
+            matchScore: row.matchScore,
+            scoreLabel: row.scoreLabel || 'Match',
+            reasons: row.reasons || [],
+            hasReasons: (row.reasons || []).length > 0
+        };
+    }
+
+    formatJobLocation(job) {
+        const parts = [job.City__c, job.State__c, job.Country__c].filter(Boolean);
+        return parts.length > 0 ? parts.join(', ') : 'Location not specified';
+    }
+
+    formatJobExperience(job) {
+        const min = job.Min_Experience_Years__c;
+        const max = job.Max_Experience_Years__c;
+        if (min != null && max != null) return `${min}-${max} years`;
+        if (min != null) return `${min}+ years`;
+        if (max != null) return `Up to ${max} years`;
+        return 'Experience not specified';
+    }
+
+    async handleRemovePhoto() {
+        if (!this._candidateId) {
+            this.showToast('Error', 'Candidate ID is missing. Please refresh and try again.', 'error');
+            return;
+        }
+
+        const confirmed = await LightningConfirm.open({
+            message: 'Remove current profile photo?',
+            label: 'Confirm Remove',
+            variant: 'headerless'
+        });
+        if (!confirmed) return;
+
+        try {
+            await deleteCandidatePhoto({ candidateId: this._candidateId });
+            await this.loadPhotoInfo();
+            this.showPhotoUpload = false;
+            this.showToast('Success', 'Profile photo removed', 'success');
+        } catch (error) {
+            this.showToast('Error', error.body?.message || 'Failed to remove profile photo', 'error');
+        }
     }
     
     // /**
@@ -441,7 +634,13 @@ export default class CandidateProfileHub extends LightningElement {
             return;
         }
         
-        if (!confirm(`Are you sure you want to delete this ${recordLabel}?`)) {
+        const confirmed = await LightningConfirm.open({
+            message: `Are you sure you want to delete this ${recordLabel}?`,
+            label: `Delete ${recordLabel}`,
+            variant: 'headerless'
+        });
+
+        if (!confirmed) {
             console.log('Delete cancelled by user');
             return;
         }
@@ -527,15 +726,15 @@ export default class CandidateProfileHub extends LightningElement {
         return startStr;
     }
     
- formatEducationDuration(edu) {
-    // parseInt removes any comma formatting Salesforce adds to Number fields
-    const startYear = edu.Start_Year__c ? parseInt(edu.Start_Year__c, 10) : null;
-    const endYear   = edu.End_Year__c   ? parseInt(edu.End_Year__c,   10) : null;
-    if (!startYear) return '';
-    if (endYear)    return `${startYear} – ${endYear}`;
-    return String(startYear);
-}
-    
+    formatEducationDuration(edu) {
+        // parseInt removes any comma formatting Salesforce adds to Number fields
+        const startYear = edu.Start_Year__c ? parseInt(edu.Start_Year__c, 10) : null;
+        const endYear = edu.End_Year__c ? parseInt(edu.End_Year__c, 10) : null;
+        if (!startYear) return '';
+        if (endYear) return `${startYear} - ${endYear}`;
+        return String(startYear);
+    }
+
     formatLicenseDates(license) {
         const parts = [];
         if (license.Issue_Date__c) {
@@ -778,6 +977,12 @@ export default class CandidateProfileHub extends LightningElement {
     get hasInternships() { return this.profileData?.internships?.length > 0; }
     get hasResearchPublications() { return this.profileData?.researchPublications?.length > 0; }
     get hasMemberships() { return this.profileData?.memberships?.length > 0; }
+    get isAllJobsView() { return this.activeJobView === 'all'; }
+    get isMatchedJobsView() { return this.activeJobView === 'matched'; }
+    get allJobsButtonVariant() { return this.isAllJobsView ? 'brand' : 'neutral'; }
+    get matchedJobsButtonVariant() { return this.isMatchedJobsView ? 'brand' : 'neutral'; }
+    get hasAllJobs() { return this.allJobs.length > 0; }
+    get hasMatchedJobs() { return this.matchedJobs.length > 0; }
     
     // ========================================
     // UTILITIES

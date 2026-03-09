@@ -431,7 +431,7 @@ public static Map<String, Object> generateQuestionsForCandidate(Id candidateId) 
         
         // Step 2: Build candidate-focused prompt
         String prompt = buildCandidatePrompt(context);
-        System.debug('📝 Candidate prompt created (length: ' + prompt.length() + ')');
+        System.debug('?? Candidate prompt created (length: ' + prompt.length() + ')');
         
         // Step 3: Call Gemini API
         GeminiAPIService.GeminiResponse geminiResponse = GeminiAPIService.callGeminiAPIWithPrompt(prompt);

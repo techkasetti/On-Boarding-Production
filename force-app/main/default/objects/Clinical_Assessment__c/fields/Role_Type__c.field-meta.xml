@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Role_Type__c</fullName>
+    <label>Role Type</label>
+    <required>true</required>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Doctor</fullName>
+                <default>false</default>
+                <label>Doctor</label>
+            </value>
+            <value>
+                <fullName>Nurse</fullName>
+                <default>false</default>
+                <label>Nurse</label>
+            </value>
+            <value>
+                <fullName>Specialist</fullName>
+                <default>false</default>
+                <label>Specialist</label>
+            </value>
+            <value>
+                <fullName>Surgeon</fullName>
+                <default>false</default>
+                <label>Surgeon</label>
+            </value>
+            <value>
+                <fullName>Pharmacist</fullName>
+                <default>false</default>
+                <label>Pharmacist</label>
+            </value>
+            <value>
+                <fullName>Radiologist</fullName>
+                <default>false</default>
+                <label>Radiologist</label>
+            </value>
+            <value>
+                <fullName>Lab_Technician</fullName>
+                <default>false</default>
+                <label>Lab Technician</label>
+            </value>
+            <value>
+                <fullName>Physiotherapist</fullName>
+                <default>false</default>
+                <label>Physiotherapist</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

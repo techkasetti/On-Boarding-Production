@@ -9,6 +9,9 @@ export default class JobPostingsList extends LightningElement {
     @track selectedApplicationId;
     @track showModal = false;
     @track isLoading = false;
+
+    @track showDocflowApp = false;
+    @track docflowApplicationId = null;
     
     wiredJobsResult;
 
@@ -116,6 +119,22 @@ export default class JobPostingsList extends LightningElement {
                 applicationsListComp.refreshApplications();
             }
         }
+    }
+
+     handleOpenDocflow(event) {
+        console.log('Opening DocflowApp:', event.detail.applicationId);
+        this.docflowApplicationId = event.detail.applicationId;
+        // this.showCandidateModal = false;
+                    // this.showDocflowApp = true;  
+    window.open('/lightning/cmp/c__docflowApp', '_blank');
+
+    }
+    
+    // ADD THIS METHOD:
+    handleCloseDocflow() {
+        console.log('Closing DocflowApp');
+        this.showDocflowApp = false;
+        this.docflowApplicationId = null;
     }
 
     showToast(title, message, variant) {

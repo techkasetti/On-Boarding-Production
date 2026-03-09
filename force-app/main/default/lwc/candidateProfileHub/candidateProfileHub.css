@@ -62,6 +62,92 @@
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
+.profile-avatar-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+.profile-photo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    max-width: 260px;
+}
+
+.fancy-btn {
+    --btn-bg: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    --btn-shadow: rgba(37, 99, 235, 0.35);
+    border: 0;
+    border-radius: 999px;
+    background: var(--btn-bg);
+    color: #fff;
+    padding: 0.5rem 0.95rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transform: translateY(0);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    box-shadow: 0 6px 14px var(--btn-shadow);
+}
+
+.fancy-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -130%;
+    width: 110%;
+    height: 100%;
+    background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+    transition: left 0.45s ease;
+}
+
+.fancy-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    filter: saturate(1.08);
+}
+
+.fancy-btn:hover::before {
+    left: 130%;
+}
+
+.fancy-btn:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 3px 8px var(--btn-shadow);
+}
+
+.fancy-btn:focus-visible {
+    outline: 2px solid #1f9dff;
+    outline-offset: 2px;
+}
+
+.fancy-btn__label {
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
+}
+
+.fancy-btn--primary {
+    --btn-bg: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    --btn-shadow: rgba(37, 99, 235, 0.35);
+}
+
+.fancy-btn--danger {
+    --btn-bg: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    --btn-shadow: rgba(185, 28, 28, 0.35);
+}
+
+.fancy-btn--neutral {
+    --btn-bg: linear-gradient(135deg, #475569 0%, #334155 100%);
+    --btn-shadow: rgba(51, 65, 85, 0.3);
+}
+
 .profile-details {
     margin-top: 50px;
 }
@@ -151,6 +237,34 @@
 .upload-container:hover {
     border-color: #667eea;
     background: white;
+}
+
+/* ========== AI Job Matcher Section ========== */
+.job-matcher-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+}
+
+.job-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    min-height: 9.5rem;
+}
+
+.matched-job-card {
+    border-left: 4px solid #4f46e5;
+}
+
+.match-score-badge {
+    background: #eef2ff;
+    color: #3730a3;
+    border-radius: 999px;
+    padding: 0.125rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 /* ========== RESUME PREVIEW MODAL - FORCE ABOVE NAVIGATION ========== */
@@ -596,6 +710,15 @@
     .resume-preview-modal .slds-modal__container {
         max-width: 95%;
         min-height: 400px;
+    }
+
+    .profile-photo-actions {
+        max-width: 100%;
+    }
+
+    .fancy-btn {
+        font-size: 0.72rem;
+        padding: 0.48rem 0.78rem;
     }
     
     .analyzing-container {

@@ -397,7 +397,7 @@ public static Map<String, Object> createJobsFromCSV(String csvContent) {
         if (jobMap.containsKey('Id') && jobMap.get('Id') != null) {
             job.Id = (Id) jobMap.get('Id');
         }
-        //organization
+
         if (jobMap.containsKey('Account__c') && jobMap.get('Account__c') != null) {
             job.Account__c = (Id) jobMap.get('Account__c');
         }

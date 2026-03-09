@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Contract_Type__c</fullName>
+    <label>Contract Type</label>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Full Time</fullName><default>false</default><label>Full Time</label></value>
+            <value><fullName>Part Time</fullName><default>false</default><label>Part Time</label></value>
+            <value><fullName>Contract</fullName><default>true</default><label>Contract</label></value>
+            <value><fullName>Locum</fullName><default>false</default><label>Locum</label></value>
+            <value><fullName>Per Diem</fullName><default>false</default><label>Per Diem</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

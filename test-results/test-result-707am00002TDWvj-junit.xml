@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+    <testsuite name="force.apex" timestamp="2026-03-06T18:03:20.000Z" hostname="https://ktonboarding-dev-ed.develop.my.salesforce.com" tests="2" failures="0"  errors="0"  time="1.92">
+        <properties>
+            <property name="outcome" value="Successful"/>
+            <property name="testsRan" value="2"/>
+            <property name="passing" value="2"/>
+            <property name="failing" value="0"/>
+            <property name="skipped" value="0"/>
+            <property name="passRate" value="100%"/>
+            <property name="failRate" value="0%"/>
+            <property name="testStartTime" value="Fri Mar 06 2026 11:33:20 pm"/>
+            <property name="testSetupTimeInMs" value="0"/>
+            <property name="testExecutionTime" value="1.92 s"/>
+            <property name="testTotalTime" value="1.92 s"/>
+            <property name="commandTime" value="0.61 s"/>
+            <property name="hostname" value="https://ktonboarding-dev-ed.develop.my.salesforce.com"/>
+            <property name="orgId" value="00Dfo000008XfMLEA0"/>
+            <property name="username" value="pavan@onboarding.com"/>
+            <property name="testRunId" value="707am00002TDWvj"/>
+            <property name="userId" value="005fo0000025o33AAA"/>
+            <property name="coveredLines" value="131"/>
+            <property name="testRunCoverage" value="81%"/>
+            <property name="orgWideCoverage" value="55%"/>
+        </properties>
+        <testcase name="testConvertSingleCreatesEmployeeAndContract" classname="EmployeeConversionServiceTest" time="1.67">
+        </testcase>
+        <testcase name="testInvocableBatchPath" classname="EmployeeConversionServiceTest" time="0.25">
+        </testcase>
+    </testsuite>
+</testsuites>

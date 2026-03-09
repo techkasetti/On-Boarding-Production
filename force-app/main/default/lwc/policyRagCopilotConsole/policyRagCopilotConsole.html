@@ -1,0 +1,346 @@
+﻿<template>
+    <lightning-card title="Policy RAG Compliance Copilot" icon-name="utility:einstein">
+        <div class="console-shell slds-p-around_medium">
+            <section class="hero-banner">
+                <div>
+                    <p class="hero-kicker">AI + Policy Evidence</p>
+                    <h2 class="hero-title">Compliance Decision Studio</h2>
+                    <p class="hero-subtitle">
+                        Build policy evidence, run grounded reasoning, and audit outputs with citations and confidence.
+                    </p>
+                </div>
+                <div class="hero-metrics">
+                    <div class="metric-tile">
+                        <span class="metric-label">Mode</span>
+                        <span class="metric-value">{inputMode}</span>
+                    </div>
+                    <div class="metric-tile">
+                        <span class="metric-label">Chunks</span>
+                        <span class="metric-value">{chunkCount}</span>
+                    </div>
+                    <div class="metric-tile">
+                        <span class="metric-label">Question Size</span>
+                        <span class="metric-value">{questionLength}</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="workspace slds-grid slds-wrap slds-gutters_medium slds-m-top_medium">
+                <div class="slds-col slds-size_1-of-1 slds-large-size_8-of-12">
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>1. Prompt Composer</h3>
+                            <span class={readinessClass}>{readinessLabel}</span>
+                        </div>
+
+                        <div class="slds-grid slds-wrap slds-gutters_small">
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12">
+                                <lightning-combobox
+                                    label="Question Template"
+                                    value={selectedTemplate}
+                                    options={templateOptions}
+                                    onchange={handleTemplateChange}
+                                ></lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12">
+                                <lightning-input
+                                    label="Jurisdiction"
+                                    value={jurisdiction}
+                                    data-field="jurisdiction"
+                                    onchange={handleInputChange}
+                                ></lightning-input>
+                            </div>
+                        </div>
+
+                        <div class="slds-grid slds-wrap slds-gutters_small slds-m-top_small">
+                            <div class="slds-col slds-size_1-of-1">
+                                <div class="hint-box">
+                                    <p class="hint-title">Run Readiness</p>
+                                    <p class="hint-copy">{readinessHint}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="candidate-picker slds-m-top_small">
+                            <lightning-input
+                                type="search"
+                                label="Candidate"
+                                value={candidateSearchText}
+                                onchange={handleCandidateSearchInput}
+                                onfocus={handleCandidateSearchFocus}
+                                onblur={handleCandidateSearchBlur}
+                                placeholder="Type candidate name or email"
+                            ></lightning-input>
+                            <template if:true={shouldShowCandidateSuggestions}>
+                                <div class="suggestion-list">
+                                    <template for:each={visibleCandidateOptions} for:item="opt">
+                                        <button
+                                            key={opt.id}
+                                            class="suggestion-item"
+                                            type="button"
+                                            data-id={opt.id}
+                                            onclick={handleCandidateSuggestionClick}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                        <template if:true={autoFillMessage}>
+                            <p class="autofill-note">{autoFillMessage}</p>
+                        </template>
+
+                        <lightning-textarea
+                            class="slds-m-top_small"
+                            label="Question"
+                            value={question}
+                            data-field="question"
+                            onchange={handleInputChange}
+                            placeholder="Can this candidate proceed if HIPAA is pending?"
+                            maxlength="1000"
+                        ></lightning-textarea>
+                    </section>
+
+                    <section class="panel slds-m-top_medium">
+                        <div class="panel-head">
+                            <h3>2. Evidence Composer</h3>
+                            <span class={jsonStatusClass}>{jsonStatusLabel}</span>
+                        </div>
+                        <div class="slds-m-bottom_small">
+                            <lightning-input
+                                type="toggle"
+                                label="Use Stored Policy Retrieval"
+                                checked={useStoredEvidence}
+                                message-toggle-active="Stored retrieval enabled"
+                                message-toggle-inactive="Manual evidence input"
+                                onchange={handleStoredEvidenceToggle}
+                            ></lightning-input>
+                        </div>
+                        <template if:true={useStoredEvidence}>
+                            <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_small">
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12">
+                                    <lightning-input
+                                        label="Policy Type Filter"
+                                        value={policyType}
+                                        data-field="policyType"
+                                        onchange={handleInputChange}
+                                        placeholder="Compliance, Credentialing, etc."
+                                    ></lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12">
+                                    <lightning-input
+                                        type="number"
+                                        label="Max Retrieved Chunks"
+                                        value={maxRetrievedChunks}
+                                        data-field="maxRetrievedChunks"
+                                        min="1"
+                                        max="20"
+                                        onchange={handleInputChange}
+                                    ></lightning-input>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template if:false={useStoredEvidence}>
+                            <lightning-radio-group
+                                label="Chunk Input Mode"
+                                type="button"
+                                options={modeOptions}
+                                value={inputMode}
+                                onchange={handleModeChange}
+                            ></lightning-radio-group>
+                        </template>
+
+                        <template if:true={isBuilderMode}>
+                            <template if:false={useStoredEvidence}>
+                            <div class="chunk-list slds-m-top_small">
+                                <template for:each={chunkRows} for:item="row">
+                                    <article key={row.uid} class="chunk-card">
+                                        <div class="chunk-card-head">
+                                            <span class="chunk-badge">Policy Chunk</span>
+                                            <lightning-button-icon
+                                                icon-name="utility:delete"
+                                                alternative-text="Remove chunk"
+                                                title="Remove chunk"
+                                                data-uid={row.uid}
+                                                onclick={removeChunk}
+                                            ></lightning-button-icon>
+                                        </div>
+                                        <div class="chunk-grid">
+                                            <lightning-input
+                                                label="Chunk ID"
+                                                data-uid={row.uid}
+                                                data-field="chunkId"
+                                                value={row.chunkId}
+                                                onchange={handleChunkFieldChange}
+                                            ></lightning-input>
+
+                                            <lightning-input
+                                                label="Source"
+                                                data-uid={row.uid}
+                                                data-field="source"
+                                                value={row.source}
+                                                onchange={handleChunkFieldChange}
+                                            ></lightning-input>
+                                        </div>
+
+                                        <lightning-textarea
+                                            class="slds-m-top_x-small"
+                                            label="Content"
+                                            data-uid={row.uid}
+                                            data-field="content"
+                                            value={row.content}
+                                            onchange={handleChunkFieldChange}
+                                            rows="3"
+                                        ></lightning-textarea>
+                                    </article>
+                                </template>
+                            </div>
+
+                            <div class="slds-m-top_small">
+                                <lightning-button
+                                    variant="neutral"
+                                    label="Add Chunk"
+                                    icon-name="utility:add"
+                                    onclick={addChunk}
+                                ></lightning-button>
+                            </div>
+                            </template>
+                        </template>
+
+                        <template if:true={isJsonMode}>
+                            <template if:false={useStoredEvidence}>
+                            <div class="slds-m-top_small">
+                                <lightning-textarea
+                                    label="Retrieved Policy Chunks JSON"
+                                    value={chunksJson}
+                                    data-field="chunksJson"
+                                    onchange={handleInputChange}
+                                    rows="14"
+                                ></lightning-textarea>
+                                <div class="slds-m-top_x-small">
+                                    <lightning-button label="Format JSON" variant="neutral" onclick={formatJson}></lightning-button>
+                                </div>
+                            </div>
+                            </template>
+                        </template>
+                    </section>
+                </div>
+
+                <div class="slds-col slds-size_1-of-1 slds-large-size_4-of-12">
+                    <section class="panel run-panel">
+                        <div class="panel-head">
+                            <h3>3. Execution</h3>
+                        </div>
+
+                        <div class="action-row">
+                            <lightning-button label="Load Sample" variant="neutral" onclick={loadSample}></lightning-button>
+                            <lightning-button
+                                label={runButtonLabel}
+                                variant="brand"
+                                onclick={runCopilot}
+                                disabled={loading}
+                            ></lightning-button>
+                        </div>
+
+                        <template if:true={loading}>
+                            <div class="spinner-wrap slds-m-top_small">
+                                <lightning-spinner size="small" alternative-text="Running"></lightning-spinner>
+                            </div>
+                        </template>
+
+                        <template if:true={errorMessage}>
+                            <div class="error-box slds-m-top_small">{errorMessage}</div>
+                        </template>
+
+                        <template if:true={hasResult}>
+                            <article class="result-shell slds-m-top_small">
+                                <div class="decision-row">
+                                    <div class="decision-meta">
+                                        <lightning-icon icon-name={decisionIcon} size="x-small"></lightning-icon>
+                                        <span class={decisionClass}>{result.decision}</span>
+                                    </div>
+                                    <lightning-progress-ring
+                                        value={confidencePercent}
+                                        size="medium"
+                                        variant={confidenceVariant}
+                                    ></lightning-progress-ring>
+                                </div>
+
+                                <p class="result-label">Answer</p>
+                                <p>{result.answer}</p>
+
+                                <p class="result-label slds-m-top_small">Reasoning</p>
+                                <p>{result.reasoning}</p>
+
+                                <p class="result-label slds-m-top_small">Citations</p>
+                                <template if:true={hasCitations}>
+                                    <div>
+                                        <template for:each={citations} for:item="c">
+                                            <span key={c} class="chip">{c}</span>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template if:false={hasCitations}>
+                                    <p>No citations returned.</p>
+                                </template>
+
+                                <p class="result-label slds-m-top_small">Missing Information</p>
+                                <template if:true={hasMissingInformation}>
+                                    <ul class="list">
+                                        <template for:each={missingInformation} for:item="m">
+                                            <li key={m}>{m}</li>
+                                        </template>
+                                    </ul>
+                                </template>
+                                <template if:false={hasMissingInformation}>
+                                    <p>None</p>
+                                </template>
+
+                                <p class="result-label slds-m-top_small">Correlation Id</p>
+                                <p class="muted">{result.correlationId}</p>
+                                <p class="result-label slds-m-top_small">Retrieval Mode</p>
+                                <p class="muted">{result.retrievalMode}</p>
+
+                                <details class="slds-m-top_small">
+                                    <summary>Raw JSON</summary>
+                                    <pre>{resultJsonPretty}</pre>
+                                </details>
+                            </article>
+                        </template>
+                    </section>
+
+                    <template if:true={hasHistory}>
+                        <section class="panel slds-m-top_medium">
+                            <div class="panel-head">
+                                <h3>Recent Runs</h3>
+                            </div>
+
+                            <template for:each={runHistory} for:item="r">
+                                <article key={r.id} class="history-item">
+                                    <div>
+                                        <p class="history-decision">{r.decision}</p>
+                                        <p class="history-when">{r.when}</p>
+                                        <p class="history-correlation">{r.correlationId}</p>
+                                    </div>
+                                    <div class="history-right">
+                                        <p>{r.confidence}</p>
+                                        <p class="history-correlation">{r.retrievalMode}</p>
+                                        <lightning-button-icon
+                                            icon-name="utility:refresh"
+                                            alternative-text="Restore"
+                                            title="Restore this run"
+                                            data-id={r.id}
+                                            onclick={restoreRun}
+                                        ></lightning-button-icon>
+                                    </div>
+                                </article>
+                            </template>
+                        </section>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </lightning-card>
+</template>

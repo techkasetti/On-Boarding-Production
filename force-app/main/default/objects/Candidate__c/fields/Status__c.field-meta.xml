@@ -58,6 +58,11 @@
                 <default>false</default>
                 <label>Hired</label>
             </value>
+            <value>
+                <fullName>Offer Accepted - Compliance Pending</fullName>
+                <default>false</default>
+                <label>Offer Accepted - Compliance Pending</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

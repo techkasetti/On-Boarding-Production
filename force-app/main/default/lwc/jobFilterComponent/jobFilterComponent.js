@@ -11,6 +11,7 @@ import createJobApplication from '@salesforce/apex/JobPostingController.createJo
 import getCandidateApplications from '@salesforce/apex/JobPostingController.getCandidateApplications';
 import { refreshApex } from '@salesforce/apex';
 import checkCandidateEligibility from '@salesforce/apex/JobPostingController.checkCandidateEligibility';
+import getAiMatchedJobs from '@salesforce/apex/CandidateJobMatcherController.getAiMatchedJobs';
 
 export default class JobFilterComponent extends NavigationMixin(LightningElement) {
     @track keyword = '';
@@ -28,11 +29,17 @@ export default class JobFilterComponent extends NavigationMixin(LightningElement
     @track showProfileMenu = false;
     @track showProfileView = false;
     @track showAppliedJobsView = false;
+    @track showMatchedJobsView = false;
     @track candidateId = null;
     @track candidateName = 'User';
     @track appliedJobs = [];
+    @track matchedJobs = [];
     @track isLoadingApplications = false;
+    @track isLoadingMatchedJobs = false;
     @track isJobAlreadyApplied = false;
+    @track showLowScoreMatches = false;
+    @track currentMatchedPage = 1;
+    matchedPageSize = 6;
     
     appliedJobIds = new Set();
 
@@ -248,6 +255,64 @@ export default class JobFilterComponent extends NavigationMixin(LightningElement
         return !this.isLoadingApplications && (!this.appliedJobs || this.appliedJobs.length === 0);
     }
 
+    get matchedJobsCount() {
+        return this.matchedJobs?.length || 0;
+    }
+
+    get highScoreMatchedJobs() {
+        return (this.matchedJobs || []).filter(job => (Number(job.matchScore) || 0) >= 40);
+    }
+
+    get lowScoreMatchedJobs() {
+        return (this.matchedJobs || []).filter(job => (Number(job.matchScore) || 0) < 40);
+    }
+
+    get hasLowScoreMatchedJobs() {
+        return this.lowScoreMatchedJobs.length > 0;
+    }
+
+    get lowScoreMatchedJobsCount() {
+        return this.lowScoreMatchedJobs.length;
+    }
+
+    get visibleMatchedJobsPool() {
+        return this.showLowScoreMatches ? (this.matchedJobs || []) : this.highScoreMatchedJobs;
+    }
+
+    get totalMatchedPages() {
+        const total = this.visibleMatchedJobsPool.length;
+        return total === 0 ? 1 : Math.ceil(total / this.matchedPageSize);
+    }
+
+    get pagedMatchedJobs() {
+        const start = (this.currentMatchedPage - 1) * this.matchedPageSize;
+        return this.visibleMatchedJobsPool.slice(start, start + this.matchedPageSize);
+    }
+
+    get hasMatchedJobs() {
+        return this.pagedMatchedJobs.length > 0;
+    }
+
+    get noMatchedJobsFound() {
+        return !this.isLoadingMatchedJobs && this.visibleMatchedJobsPool.length === 0;
+    }
+
+    get hasMatchedPagination() {
+        return this.visibleMatchedJobsPool.length > this.matchedPageSize;
+    }
+
+    get isMatchedPrevDisabled() {
+        return this.currentMatchedPage <= 1;
+    }
+
+    get isMatchedNextDisabled() {
+        return this.currentMatchedPage >= this.totalMatchedPages;
+    }
+
+    get lowScoreToggleLabel() {
+        return this.showLowScoreMatches ? 'Hide Below 40% Matches' : 'Show Below 40% Matches';
+    }
+
     get notificationClass() {
         const baseClass = 'custom-notification slds-notify slds-notify_alert';
         const variantClass = `slds-theme_${this.notificationVariant}`;
@@ -353,7 +418,8 @@ export default class JobFilterComponent extends NavigationMixin(LightningElement
     event.preventDefault();
     
     const jobId = event.currentTarget.dataset.id;
-    const jobName = this.jobs.find(job => job.Id === jobId)?.Job_Title__c;
+    const jobName = this.jobs.find(job => job.Id === jobId)?.Job_Title__c ||
+                    this.matchedJobs.find(job => job.Id === jobId)?.Job_Title__c;
     
     this.handleCloseModal();
     
@@ -600,6 +666,7 @@ export default class JobFilterComponent extends NavigationMixin(LightningElement
         
         this.showProfileView = true;
         this.showAppliedJobsView = false;
+        this.showMatchedJobsView = false;
     }
 
     async handleViewAppliedJobs() {
@@ -612,7 +679,68 @@ export default class JobFilterComponent extends NavigationMixin(LightningElement
         
         this.showAppliedJobsView = true;
         this.showProfileView = false;
+        this.showMatchedJobsView = false;
         await this.loadAppliedJobs();
+    }
+
+    async handleViewMatchedJobs() {
+        this.showProfileMenu = false;
+
+        if (!this.candidateId) {
+            this.showToast('Error', 'Unable to load matched jobs. Please refresh the page.', 'error');
+            return;
+        }
+
+        this.showMatchedJobsView = true;
+        this.showProfileView = false;
+        this.showAppliedJobsView = false;
+        await this.loadMatchedJobs();
+    }
+
+    async loadMatchedJobs() {
+        this.isLoadingMatchedJobs = true;
+        try {
+            const rows = await getAiMatchedJobs({ candidateId: this.candidateId, maxResults: 100 });
+            this.matchedJobs = (rows || []).map(row => {
+                const job = row.jobPosting || {};
+                const isApplied = this.appliedJobIds.has(job.Id);
+                return {
+                    ...job,
+                    matchScore: Number(row.matchScore) || 0,
+                    scoreLabel: row.scoreLabel,
+                    reasons: row.reasons || [],
+                    hasReasons: (row.reasons || []).length > 0,
+                    locationDisplay: this.formatLocation(job),
+                    experienceDisplay: this.formatExperienceRange(job),
+                    isAlreadyApplied: isApplied
+                };
+            });
+            this.showLowScoreMatches = false;
+            this.currentMatchedPage = 1;
+        } catch (error) {
+            console.error('Error loading matched jobs:', error);
+            this.matchedJobs = [];
+            this.showToast('Error', 'Failed to load matched jobs', 'error');
+        } finally {
+            this.isLoadingMatchedJobs = false;
+        }
+    }
+
+    handleToggleLowScoreMatches() {
+        this.showLowScoreMatches = !this.showLowScoreMatches;
+        this.currentMatchedPage = 1;
+    }
+
+    handleMatchedPrevPage() {
+        if (this.currentMatchedPage > 1) {
+            this.currentMatchedPage -= 1;
+        }
+    }
+
+    handleMatchedNextPage() {
+        if (this.currentMatchedPage < this.totalMatchedPages) {
+            this.currentMatchedPage += 1;
+        }
     }
 
     async loadAppliedJobs() {
@@ -662,6 +790,13 @@ export default class JobFilterComponent extends NavigationMixin(LightningElement
                 console.log('   Jobs marked as applied:', this.jobs.filter(j => j.isAlreadyApplied).length);
             } else {
                 console.log('⚠️ No jobs loaded yet, will be updated when jobs wire fires');
+            }
+
+            if (this.matchedJobs && this.matchedJobs.length > 0) {
+                this.matchedJobs = [...this.matchedJobs].map(job => ({
+                    ...job,
+                    isAlreadyApplied: this.appliedJobIds.has(job.Id)
+                }));
             }
             
         } catch (error) {
@@ -816,6 +951,7 @@ export default class JobFilterComponent extends NavigationMixin(LightningElement
     handleBackToJobs() {
         this.showProfileView = false;
         this.showAppliedJobsView = false;
+        this.showMatchedJobsView = false;
     }
 
     handleLogout() {

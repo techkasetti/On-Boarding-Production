@@ -9,11 +9,12 @@
         <members>LicenseStatusViewerController</members>
         <members>LicenseVerificationApi</members>
         <members>LicenseVerificationInvoker</members>
-\        <members>LicenseVerificationQueueable</members>
+        <members>LicenseVerificationQueueable</members>
         <members>MalpracticeCoverageCallback</members>
         <members>MedicalLicenseVerificationService</members>
         <members>MedicalRecruitmentController</members>
         <members>ProviderComplianceController</members>
+        <members>ClinicalAssessmentController</members>
         <name>ApexClass</name>
     </types>
 
@@ -27,6 +28,7 @@
         <members>jobPostingsList</members>
         <members>licenseStatusViewer</members>
         <members>providerComplianceOverview</members>
+        <members>clinicalAssessmentsManager</members>
         <name>LightningComponentBundle</name>
     </types>
 
@@ -42,6 +44,7 @@
         <members>ProfessionalReference__c</members>
         <members>ProviderCredential__c</members>
         <members>Trial_Assignment__c</members>
+        <members>Clinical_Assessment__c</members>
         <name>CustomObject</name>
     </types>
 
