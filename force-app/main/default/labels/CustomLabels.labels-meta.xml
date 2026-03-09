@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>Referral_Base_Url</fullName>
+        <categories>Referral</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Optional external base URL for referral links</shortDescription>
+        <value />
+    </labels>
+    <labels>
+        <fullName>Referral_Landing_Path</fullName>
+        <categories>Referral</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Path template for referral links (use {ref} placeholder optionally)</shortDescription>
+        <value>/</value>
+    </labels>
+</CustomLabels>
