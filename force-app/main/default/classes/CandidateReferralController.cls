@@ -172,10 +172,11 @@ public with sharing class CandidateReferralController {
   @TestVisible
   private static String buildReferralLink(String referralCode) {
     String encodedCode = EncodingUtil.urlEncode(referralCode, 'UTF-8');
+    String baseUrlLabel = System.Label.Referral_Base_Url;
 
-    String configuredBaseUrl = String.isBlank(System.Label.Referral_Base_Url)
+    String configuredBaseUrl = String.isBlank(baseUrlLabel) || baseUrlLabel.trim().equalsIgnoreCase('USE_ORG_DOMAIN')
       ? URL.getOrgDomainUrl().toExternalForm()
-      : System.Label.Referral_Base_Url.trim();
+      : baseUrlLabel.trim();
 
     String configuredPath = String.isBlank(System.Label.Referral_Landing_Path)
       ? '/'

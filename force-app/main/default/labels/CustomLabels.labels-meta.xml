@@ -7,7 +7,7 @@
         <protected>false</protected>
         <shortDescription
     >Optional external base URL for referral links</shortDescription>
-        <value />
+        <value>USE_ORG_DOMAIN</value>
     </labels>
     <labels>
         <fullName>Referral_Landing_Path</fullName>
