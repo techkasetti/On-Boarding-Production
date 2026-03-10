@@ -1,0 +1,94 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 02-19-2026
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
+<template>
+    <lightning-card title="Admin Console">
+
+        <lightning-tabset variant="scoped">
+
+            <!-- ================= FEATURES TAB ================= -->
+            <lightning-tab label="Features">
+
+                <template if:true={isLoading}>
+                    <lightning-spinner size="medium"></lightning-spinner>
+                </template>
+
+                <div class="feature-container">
+
+                    <template for:each={featureList} for:item="feature">
+                        <div class="feature-row" key={feature.apiName}>
+
+                            <!-- LEFT SIDE -->
+                            <div class="left-section">
+                                <div class="feature-title">
+                                    {feature.label}
+                                </div>
+
+                                <div class={feature.statusClass}>
+                                    {feature.status}
+                                </div>
+                            </div>
+
+                            <!-- RIGHT SIDE -->
+                            <div class="toggle-container">
+                                <lightning-input
+                                    type="toggle"
+                                    checked={feature.value}
+                                    data-field={feature.apiName}
+                                    onchange={handleToggleChange}>
+                                </lightning-input>
+                            </div>
+
+                        </div>
+                    </template>
+
+                </div>
+
+            </lightning-tab>
+
+            <!-- ================= UNCHANGED TABS ================= -->
+
+            <lightning-tab label="Models">
+                <div class="slds-p-around_medium">
+                    <c-model-selector></c-model-selector>
+                </div>
+            </lightning-tab>
+
+            <lightning-tab label="Connectors">
+                <div class="slds-p-around_medium">
+                    <c-connectors-tab></c-connectors-tab>
+                </div>
+            </lightning-tab>
+
+            <lightning-tab label="Audit Explorer">
+                <div class="slds-p-around_medium">
+                    <c-audit-explorer></c-audit-explorer>
+                </div>
+            </lightning-tab>
+
+            <lightning-tab label="Anomalies">
+                <div class="slds-p-around_medium">
+                    <c-anomaly-tab></c-anomaly-tab>
+                </div>
+            </lightning-tab>
+
+            <lightning-tab label="Billing Summary">
+                <c-billing-summary></c-billing-summary>
+            </lightning-tab>
+
+            <lightning-tab label="Billing Admin Dashboard">
+                <c-billing-admin-dashboard></c-billing-admin-dashboard>
+            </lightning-tab>
+
+            <lightning-tab label="RAG Chat">
+                <c-rag-chat-u-i></c-rag-chat-u-i>
+            </lightning-tab>
+
+        </lightning-tabset>
+
+    </lightning-card>
+</template>

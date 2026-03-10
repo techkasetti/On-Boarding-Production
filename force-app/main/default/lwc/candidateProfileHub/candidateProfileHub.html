@@ -49,10 +49,19 @@
                   <div class="slds-media">
                     <div class="slds-media__figure">
                       <div class="profile-avatar">
-                        <lightning-icon
-                          icon-name="standard:user"
-                          size="large"
-                        ></lightning-icon>
+                        <template if:true={hasPhoto}>
+                          <img
+                            src={photoUrl}
+                            alt="Profile photo"
+                            class="profile-avatar-image"
+                          />
+                        </template>
+                        <template if:false={hasPhoto}>
+                          <lightning-icon
+                            icon-name="standard:user"
+                            size="large"
+                          ></lightning-icon>
+                        </template>
                       </div>
                     </div>
                     <div
@@ -95,6 +104,60 @@
                             </span>
                           </template>
                         </p>
+                        <div class="profile-photo-actions slds-m-top_small">
+                          <template if:true={hasPhoto}>
+                            <button
+                              class="fancy-btn fancy-btn--neutral"
+                              onclick={handleChangePhoto}
+                            >
+                              <span class="fancy-btn__label">Change Photo</span>
+                            </button>
+                            <button
+                              class="fancy-btn fancy-btn--danger"
+                              onclick={handleRemovePhoto}
+                            >
+                              <span class="fancy-btn__label">Delete Photo</span>
+                            </button>
+                          </template>
+                          <template if:false={hasPhoto}>
+                            <button
+                              class="fancy-btn fancy-btn--primary"
+                              onclick={handleUploadPhoto}
+                            >
+                              <span class="fancy-btn__label">Upload Photo</span>
+                            </button>
+                          </template>
+                        </div>
+                        <template if:true={hasPhoto}>
+                          <p
+                            class="slds-text-body_small slds-text-color_weak slds-m-top_x-small"
+                          >
+                            {photoFileName} · {photoUploadDate}
+                          </p>
+                        </template>
+                        <template if:true={showPhotoUpload}>
+                          <div class="upload-container slds-m-top_small">
+                            <h4 class="slds-text-heading_small slds-m-bottom_small">
+                              Upload Profile Photo
+                            </h4>
+                            <lightning-file-upload
+                              label="Upload Photo"
+                              record-id={currentCandidateId}
+                              onuploadfinished={handlePhotoUploadFinished}
+                              multiple="false"
+                              accept=".jpg,.jpeg,.png,.webp,.gif"
+                            >
+                            </lightning-file-upload>
+                            <div class="slds-m-top_small">
+                              <lightning-button
+                                variant="neutral"
+                                label="Cancel"
+                                onclick={handleCancelPhotoUpload}
+                              >
+                              </lightning-button>
+                            </div>
+                          </div>
+                        </template>
                       </div>
                     </div>
                   </div>
@@ -137,10 +200,6 @@
             </div>
           </div>
 
-          <c-viral-referral-panel
-            candidate-id={candidateId}
-          ></c-viral-referral-panel>
-
           <!-- Resume Upload Section -->
           <div class="resume-section slds-box slds-m-bottom_medium">
             <div
@@ -162,6 +221,12 @@
                     label="Change Resume"
                     variant="neutral"
                     onclick={handleChangeResume}
+                    class="slds-m-right_x-small"
+                  ></lightning-button>
+                  <lightning-button
+                    label="Delete Resume"
+                    variant="destructive-text"
+                    onclick={handleDeleteResume}
                   ></lightning-button>
                 </template>
                 <template if:false={hasResume}>
@@ -722,6 +787,13 @@
               </div>
             </div>
           </c-profile-section>
+
+        </template>
+
+        <template if:true={showProfile}>
+          <c-viral-referral-panel
+            candidate-id={candidateId}
+          ></c-viral-referral-panel>
         </template>
       </div>
     </lightning-card>
@@ -825,5 +897,6 @@
         </div>
       </section>
     </template>
+
   </div>
 </template>

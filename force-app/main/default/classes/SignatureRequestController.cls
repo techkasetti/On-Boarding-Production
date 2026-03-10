@@ -800,12 +800,15 @@ public with sharing class SignatureRequestController {
     // // ══════════════════════════════════════════════════════════════
     // // LOG SIGNATURE VIEWED
     // // ══════════════════════════════════════════════════════════════
-    // @AuraEnabled
-    // public static void logSignatureViewed(Id requestId) {
-    //     AuditTrailManager.logSignatureActivity(
-    //         requestId, 'Signature Viewed', 'SUCCESS', 'Signer opened the document'
-    //     );
-    // }
+    @AuraEnabled
+    public static void logSignatureViewed(Id requestId) {
+        if (requestId == null) {
+            return;
+        }
+        AuditTrailManager.logSignatureActivity(
+            requestId, 'Signature Viewed', 'SUCCESS', 'Signer opened the document'
+        );
+    }
 
     // ══════════════════════════════════════════════════════════════
     // INITIATE SIGNATURE REQUEST

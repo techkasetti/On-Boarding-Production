@@ -1,4 +1,5 @@
 public without sharing class CandidateProfileController {
+    private static final String INTELLIGENT_RESUME_PARSING_FEATURE = 'Intelligent Resume Parsing';
     
     // DTO for returning profile data
     public class ProfileDataDto {
@@ -369,7 +370,7 @@ public without sharing class CandidateProfileController {
         try {
             List<Candidate__c> candidates = [
                 SELECT Id, Name, S3_Resume_URL__c, Resume_Status__c, 
-                       Resume_parsing_using_ai__c, LastModifiedDate
+                       LastModifiedDate
                 FROM Candidate__c
                 WHERE Id = :candidateId
                 LIMIT 1
@@ -405,12 +406,22 @@ public without sharing class CandidateProfileController {
                 result.put('s3Url', candidate.S3_Resume_URL__c);
             }
             
-            result.put('useAiParsing', candidate.Resume_parsing_using_ai__c == true);
+            result.put('useAiParsing', isIntelligentResumeParsingActive());
             return result;
             
         } catch (Exception e) {
             throw new AuraHandledException('Error fetching resume info: ' + e.getMessage());
         }
+    }
+
+    private static Boolean isIntelligentResumeParsingActive() {
+        return ![
+            SELECT Id
+            FROM AIFeature__c
+            WHERE Name__c = :INTELLIGENT_RESUME_PARSING_FEATURE
+            AND IsActive__c = true
+            LIMIT 1
+        ].isEmpty();
     }
 
     @AuraEnabled
@@ -437,6 +448,39 @@ public without sharing class CandidateProfileController {
         }
     }
 
+    @AuraEnabled
+    public static void deleteCandidateResume(Id candidateId) {
+        if (candidateId == null) {
+            throw new AuraHandledException('Candidate ID is required.');
+        }
+
+        try {
+            List<ContentDocumentLink> cdls = [
+                SELECT ContentDocumentId
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId = :candidateId
+                AND ContentDocument.FileExtension IN ('pdf', 'doc', 'docx')
+                ORDER BY ContentDocument.CreatedDate DESC
+                LIMIT 1
+            ];
+
+            if (cdls.isEmpty()) {
+                throw new AuraHandledException('No resume found for this candidate.');
+            }
+
+            delete new ContentDocument(Id = cdls[0].ContentDocumentId);
+            update new Candidate__c(
+                Id = candidateId,
+                Resume_Status__c = false,
+                S3_Resume_URL__c = null
+            );
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException('Failed to delete resume: ' + e.getMessage());
+        }
+    }
+
     @AuraEnabled(cacheable=false)
     public static PhotoInfo getCandidatePhotoInfo(Id candidateId) {
         if (candidateId == null) {
@@ -453,14 +497,14 @@ public without sharing class CandidateProfileController {
             LIMIT 1
         ];
 
-        if (String.isBlank(candidate.Profile_Photo_Document_Id__c)) return info;
+        if (String.isBlank(candidate.Profile_Photo_Document_Id__c)) {
+            return info;
+        }
 
         Id photoDocId;
         try {
             photoDocId = (Id) candidate.Profile_Photo_Document_Id__c;
         } catch (Exception e) {
-            candidate.Profile_Photo_Document_Id__c = null;
-            update candidate;
             return info;
         }
 
@@ -479,20 +523,12 @@ public without sharing class CandidateProfileController {
         }
 
         ContentVersion versionRec = versions[0];
-        Set<String> allowedExts = new Set<String>{ 'jpg', 'jpeg', 'png', 'webp', 'gif' };
-        String ext = versionRec.FileExtension == null ? '' : versionRec.FileExtension.toLowerCase();
-        if (!allowedExts.contains(ext)) {
-            candidate.Profile_Photo_Document_Id__c = null;
-            update candidate;
-            return info;
-        }
-
-        info.hasPhoto        = true;
+        info.hasPhoto = true;
         info.contentDocumentId = versionRec.ContentDocumentId;
-        info.contentVersionId  = versionRec.Id;
-        info.fileName        = versionRec.Title + '.' + versionRec.FileExtension;
-        info.uploadDate      = versionRec.CreatedDate.format('MMM dd, yyyy');
-        info.downloadUrl     = '/sfc/servlet.shepherd/version/download/' + versionRec.Id;
+        info.contentVersionId = versionRec.Id;
+        info.fileName = versionRec.Title + '.' + versionRec.FileExtension;
+        info.uploadDate = versionRec.CreatedDate.format('MMM dd, yyyy');
+        info.downloadUrl = '/sfc/servlet.shepherd/version/download/' + versionRec.Id;
         return info;
     }
 
@@ -513,7 +549,7 @@ public without sharing class CandidateProfileController {
 
         // ★ VersionData added — required to encode image for Face++ API
         ContentVersion versionRec = [
-            SELECT Id, FileExtension, ContentDocumentId, VersionData
+            SELECT Id, FileExtension, ContentDocumentId
             FROM ContentVersion
             WHERE ContentDocumentId = :contentDocumentId
             AND IsLatest = true
@@ -535,39 +571,12 @@ public without sharing class CandidateProfileController {
 
         String oldDocId = candidate.Profile_Photo_Document_Id__c;
         String newDocId = String.valueOf(contentDocumentId);
-
-        // ★ Call Face++ detect on uploaded photo to get face_token
-        // face_token = unique fingerprint Face++ assigns to the detected face
-        // Saved on Candidate__c so e-sign can compare it against live camera snapshot
-        String faceToken  = null;
-        String faceStatus = 'Pending';
-
-        try {
-            String imageBase64 = EncodingUtil.base64Encode(versionRec.VersionData);
-            faceToken  = FacePlusPlusService.detectFaceAndReturnToken(imageBase64);
-            faceStatus = (faceToken != null) ? 'Verified' : 'Failed';
-            System.debug('Face++ token: ' + faceToken + ' | status: ' + faceStatus);
-        } catch (Exception faceEx) {
-            faceStatus = 'Failed';
-            System.debug('Face++ detect failed: ' + faceEx.getMessage());
-        }
-
-        // ★ Save all three fields in one update
         candidate.Profile_Photo_Document_Id__c = newDocId;
-        candidate.Face_Token__c                = faceToken;
-        candidate.Face_Token_Status__c         = faceStatus;
         update candidate;
 
-        // Clean up old photo CDL
         if (!String.isBlank(oldDocId) && oldDocId != newDocId) {
             try {
-                Id oldDocIdAsId = (Id) oldDocId;
-                List<ContentDocumentLink> oldLinks = [
-                    SELECT Id FROM ContentDocumentLink
-                    WHERE LinkedEntityId = :candidateId
-                    AND ContentDocumentId = :oldDocIdAsId
-                ];
-                if (!oldLinks.isEmpty()) delete oldLinks;
+                delete new ContentDocument(Id = (Id) oldDocId);
             } catch (Exception e) {
                 System.debug('Old profile photo cleanup skipped: ' + e.getMessage());
             }
@@ -588,22 +597,12 @@ public without sharing class CandidateProfileController {
         ];
 
         String oldDocId = candidate.Profile_Photo_Document_Id__c;
-
-        // Clear photo + face token when photo is deleted
         candidate.Profile_Photo_Document_Id__c = null;
-        candidate.Face_Token__c                = null;
-        candidate.Face_Token_Status__c         = null;
         update candidate;
 
         if (!String.isBlank(oldDocId)) {
             try {
-                Id oldDocIdAsId = (Id) oldDocId;
-                List<ContentDocumentLink> oldLinks = [
-                    SELECT Id FROM ContentDocumentLink
-                    WHERE LinkedEntityId = :candidateId
-                    AND ContentDocumentId = :oldDocIdAsId
-                ];
-                if (!oldLinks.isEmpty()) delete oldLinks;
+                delete new ContentDocument(Id = (Id) oldDocId);
             } catch (Exception e) {
                 System.debug('Profile photo delete skipped: ' + e.getMessage());
             }

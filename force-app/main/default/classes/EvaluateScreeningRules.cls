@@ -74,6 +74,7 @@
 // Called from Record-Triggered Flow 
 // =====================================================
 public with sharing class EvaluateScreeningRules {
+    private static final String BACKGROUND_VERIFICATION_FEATURE = 'Background Verification';
 
     public class Request {
         @InvocableVariable(required=true label='Job Application ID')
@@ -113,8 +114,8 @@ public with sharing class EvaluateScreeningRules {
             WHERE Id IN :jobAppIds
         ];
 
-        // ── Step 3: Check AI_Features__c for AI Screening flag ─────────
-        Boolean aiEnabled = checkAIFeature('Background Verification');
+        // ── Step 3: Check AIFeature__c for AI Screening flag ─────────
+        Boolean aiEnabled = checkAIFeature(BACKGROUND_VERIFICATION_FEATURE);
         System.debug('AI Screening Enabled: ' + aiEnabled);
 
         // ── Step 4: Build candidateToJobMap ──────────────
@@ -123,19 +124,6 @@ public with sharing class EvaluateScreeningRules {
 
         for (Job_Application__c jobApp : jobApps) {
             Response res = new Response();
-
-            if (jobApp.Candidate__c == null) {
-                res.status  = 'Error';
-                res.message = 'No Candidate on Job Application: ' + jobApp.Id;
-                responses.add(res);
-                continue;
-            }
-            if (jobApp.Job_Posting__c == null) {
-                res.status  = 'Error';
-                res.message = 'No Job Posting on Job Application: ' + jobApp.Id;
-                responses.add(res);
-                continue;
-            }
 
             candidateToJobMap.put(jobApp.Candidate__c, jobApp.Job_Posting__c);
             candidateToJobAppMap.put(jobApp.Candidate__c, jobApp.Id);
@@ -176,18 +164,18 @@ public with sharing class EvaluateScreeningRules {
         return responses;
     }
 
-    // ── Query AI_Features__c ──────────────────────────────────────────────────
+    // ── Query AIFeature__c ──────────────────────────────────────────────────
     private static Boolean checkAIFeature(String featureName) {
         try {
-            List<AI_Features__c> features = [
-                SELECT Is_EnableorDesable__c
-                FROM AI_Features__c
-                WHERE Name = :featureName
+            List<AIFeature__c> features = [
+                SELECT IsActive__c
+                FROM AIFeature__c
+                WHERE Name__c = :featureName
                 LIMIT 1
             ];
-            return (!features.isEmpty() && features[0].Is_EnableorDesable__c == true);
+            return (!features.isEmpty() && features[0].IsActive__c == true);
         } catch (Exception e) {
-            System.debug('AI_Features__c query failed: ' + e.getMessage());
+            System.debug('AIFeature__c query failed: ' + e.getMessage());
             return false;
         }
     }

@@ -20,6 +20,10 @@ public with sharing class CandidateHiringMonitorController {
         @AuraEnabled public Integer convertedLast7Days;
         @AuraEnabled public Integer hiredLast7Days;
         @AuraEnabled public Decimal averagePendingAgeDays;
+        @AuraEnabled public Integer conversionSuccessLast7Days;
+        @AuraEnabled public Integer conversionFailedLast7Days;
+        @AuraEnabled public Datetime lastConversionFailureAt;
+        @AuraEnabled public String lastConversionFailureMessage;
         @AuraEnabled public List<CandidateRow> readyQueue;
         @AuraEnabled public List<CandidateRow> missingEmployeeQueue;
         @AuraEnabled public List<CandidateRow> oldestPendingQueue;
@@ -124,6 +128,34 @@ public with sharing class CandidateHiringMonitorController {
             WHERE Status__c = 'Hired'
                 AND LastModifiedDate = LAST_N_DAYS:7
         ];
+
+        out.conversionSuccessLast7Days = [
+            SELECT COUNT()
+            FROM Employee_Conversion_Audit__c
+            WHERE Stage__c = 'Conversion'
+                AND Status__c = 'Success'
+                AND Occurred_At__c = LAST_N_DAYS:7
+        ];
+        out.conversionFailedLast7Days = [
+            SELECT COUNT()
+            FROM Employee_Conversion_Audit__c
+            WHERE Stage__c = 'Conversion'
+                AND Status__c = 'Failed'
+                AND Occurred_At__c = LAST_N_DAYS:7
+        ];
+
+        List<Employee_Conversion_Audit__c> lastFailures = [
+            SELECT Occurred_At__c, Message__c
+            FROM Employee_Conversion_Audit__c
+            WHERE Stage__c = 'Conversion'
+                AND Status__c = 'Failed'
+            ORDER BY Occurred_At__c DESC NULLS LAST, CreatedDate DESC
+            LIMIT 1
+        ];
+        if (!lastFailures.isEmpty()) {
+            out.lastConversionFailureAt = lastFailures[0].Occurred_At__c;
+            out.lastConversionFailureMessage = lastFailures[0].Message__c;
+        }
 
         return out;
     }

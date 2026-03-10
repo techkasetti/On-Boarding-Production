@@ -6,6 +6,7 @@ import LightningConfirm from 'lightning/confirm';
 import getProfileData from '@salesforce/apex/CandidateProfileController.getProfileData';
 import getCandidateResumeInfo from '@salesforce/apex/CandidateProfileController.getCandidateResumeInfo';
 import resetResumeStatus from '@salesforce/apex/CandidateProfileController.resetResumeStatus';
+import deleteCandidateResume from '@salesforce/apex/CandidateProfileController.deleteCandidateResume';
 import getCandidatePhotoInfo from '@salesforce/apex/CandidateProfileController.getCandidatePhotoInfo';
 import setCandidateProfilePhoto from '@salesforce/apex/CandidateProfileController.setCandidateProfilePhoto';
 import deleteCandidatePhoto from '@salesforce/apex/CandidateProfileController.deleteCandidatePhoto';
@@ -231,6 +232,33 @@ export default class CandidateProfileHub extends LightningElement {
         
         await this.delay(100);
         console.log('🔄 Component re-rendered, record-id should be:', this._candidateId);
+    }
+
+    async handleDeleteResume() {
+        if (!this._candidateId) {
+            this.showToast('Error', 'Candidate ID is missing. Cannot delete resume. Please refresh the page.', 'error');
+            return;
+        }
+
+        const confirmed = await LightningConfirm.open({
+            message: 'Delete the current resume?',
+            label: 'Delete Resume',
+            variant: 'headerless'
+        });
+        if (!confirmed) return;
+
+        this.isLoading = true;
+        try {
+            await deleteCandidateResume({ candidateId: this._candidateId });
+            this.showResumeUpload = false;
+            this.resumeStatusWasReset = false;
+            await this.loadResumeInfo();
+            this.showToast('Success', 'Resume deleted successfully', 'success');
+        } catch (error) {
+            this.showToast('Error', error.body?.message || 'Failed to delete resume', 'error');
+        } finally {
+            this.isLoading = false;
+        }
     }
     
     handleCancelUpload() {

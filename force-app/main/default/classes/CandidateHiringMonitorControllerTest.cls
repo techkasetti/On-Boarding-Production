@@ -47,6 +47,22 @@ private class CandidateHiringMonitorControllerTest {
             Acknowledgment_Signed_Date__c = Date.today().addDays(-1)
         );
 
+        insert new Employee_Conversion_Audit__c(
+            Candidate__c = ready.Id,
+            Employee__c = emp.Id,
+            Stage__c = 'Conversion',
+            Status__c = 'Success',
+            Message__c = 'Converted successfully',
+            Occurred_At__c = System.now().addDays(-1)
+        );
+        insert new Employee_Conversion_Audit__c(
+            Candidate__c = missingEmployee.Id,
+            Stage__c = 'Conversion',
+            Status__c = 'Failed',
+            Message__c = 'Candidate missing on job application.',
+            Occurred_At__c = System.now().addDays(-2)
+        );
+
         Test.startTest();
         CandidateHiringMonitorController.Snapshot snap =
             CandidateHiringMonitorController.getHomeSnapshot(5);
@@ -65,6 +81,9 @@ private class CandidateHiringMonitorControllerTest {
         System.assertEquals(2, snap.oldestPendingQueue.size());
         System.assertEquals(ready.Id, snap.readyQueue[0].candidateId);
         System.assertEquals(true, snap.readyQueue[0].hipaaComplete);
+        System.assertEquals(1, snap.conversionSuccessLast7Days);
+        System.assertEquals(1, snap.conversionFailedLast7Days);
+        System.assertNotEquals(null, snap.lastConversionFailureMessage);
     }
 
     @IsTest
@@ -82,5 +101,7 @@ private class CandidateHiringMonitorControllerTest {
         System.assertEquals(0, snap.readyQueue.size());
         System.assertEquals(0, snap.missingEmployeeQueue.size());
         System.assertEquals(0, snap.oldestPendingQueue.size());
+        System.assertEquals(0, snap.conversionSuccessLast7Days);
+        System.assertEquals(0, snap.conversionFailedLast7Days);
     }
 }

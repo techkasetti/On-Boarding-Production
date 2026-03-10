@@ -20,8 +20,11 @@ Monitor and control the candidate state machine:
 - `Pending Missing Employee`: pending candidates without `Employee__c` link.
 - `Aging > 3 Days`: pending candidates older than 3 days since `Converted_To_Employee_On__c`.
 - `Converted Last 7 Days`
+- `Conversion Success (7d)`: count of successful conversions logged in `Employee_Conversion_Audit__c`.
+- `Conversion Fail (7d)`: count of failed conversions logged in `Employee_Conversion_Audit__c`.
 - `Hired Last 7 Days`
 - `Avg Pending Age (Days)`
+- `Last Conversion Failure`: latest failure message + timestamp from audit log.
 
 Queues:
 - Ready to Promote But Still Pending
@@ -52,3 +55,7 @@ Queues:
    - `Status__c = Completed`
    - `HIPAA_Training_Completed_Date__c` populated
    - `Acknowledgment_Signed_Date__c` populated
+5. Check audit log:
+   - Object: `Employee_Conversion_Audit__c`
+   - Filter: `Stage__c = Conversion` and `Status__c = Failed`
+   - Review `Message__c` and `Occurred_At__c` for root cause.

@@ -1,0 +1,49 @@
+.feature-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 12px;
+}
+
+/* 🔥 MAIN ROW FIX */
+.feature-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;   /* 👈 IMPORTANT */
+    padding: 14px 16px;
+    background: #f4f6f9;
+    border-radius: 12px;
+    width: 50%;
+}
+
+/* left side (label + status stacked) */
+.left-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* title */
+.feature-title {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* status */
+.status {
+    font-size: 12px;
+}
+
+.status.active {
+    color: #2e844a;
+}
+
+.status.inactive {
+    color: #c23934;
+}
+
+/* 🔥 toggle alignment fix */
+.toggle-container {
+    display: flex;
+    align-items: center;
+}

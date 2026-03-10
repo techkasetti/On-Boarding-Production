@@ -32,6 +32,10 @@ private class CandidateReferralControllerTest {
       generated.referralLink.contains('ref=' + generated.referralCode),
       'Referral link should embed code as query parameter'
     );
+    System.assert(
+      generated.referralLink.contains('/candidate?ref='),
+      'Referral link should target candidate landing page'
+    );
     System.assertEquals(1, shared.totalShares, 'Shares should increment');
   }
 

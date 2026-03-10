@@ -7,7 +7,7 @@
         <protected>false</protected>
         <shortDescription
     >Optional external base URL for referral links</shortDescription>
-        <value>USE_ORG_DOMAIN</value>
+        <value>https://ktonboarding-dev-ed.develop.my.site.com</value>
     </labels>
     <labels>
         <fullName>Referral_Landing_Path</fullName>
@@ -16,6 +16,6 @@
         <protected>false</protected>
         <shortDescription
     >Path template for referral links (use {ref} placeholder optionally)</shortDescription>
-        <value>/</value>
+        <value>/candidate</value>
     </labels>
 </CustomLabels>

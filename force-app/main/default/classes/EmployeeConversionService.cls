@@ -37,6 +37,7 @@ public with sharing class EmployeeConversionService {
         if (jobApplicationId == null) {
             out.success = false;
             out.message = 'jobApplicationId is required';
+            logAudit(null, null, null, null, 'Conversion', 'Failed', out.message, 'MISSING_JOB_APPLICATION');
             return out;
         }
 
@@ -51,6 +52,7 @@ public with sharing class EmployeeConversionService {
             if (app.Candidate__c == null) {
                 out.success = false;
                 out.message = 'Candidate is missing on job application.';
+                logAudit(null, null, null, app.Id, 'Conversion', 'Failed', out.message, 'MISSING_CANDIDATE');
                 return out;
             }
 
@@ -92,10 +94,12 @@ public with sharing class EmployeeConversionService {
             out.candidateId = candidate.Id;
             out.employeeId = employee.Id;
             out.contractId = contract.Id;
+            logAudit(candidate.Id, employee.Id, contract.Id, app.Id, 'Conversion', 'Success', out.message, null);
             return out;
         } catch (Exception ex) {
             out.success = false;
             out.message = 'Conversion failed: ' + ex.getMessage();
+            logAudit(null, null, null, jobApplicationId, 'Conversion', 'Failed', out.message, ex.getTypeName());
             return out;
         }
     }
@@ -211,6 +215,35 @@ public with sharing class EmployeeConversionService {
             // Retain conversion link even if status transition is blocked by org-specific validations.
             candidateUpdate.Status__c = null;
             update candidateUpdate;
+        }
+    }
+
+    private static void logAudit(
+        Id candidateId,
+        Id employeeId,
+        Id contractId,
+        Id jobApplicationId,
+        String stage,
+        String status,
+        String message,
+        String errorCode
+    ) {
+        try {
+            Employee_Conversion_Audit__c audit = new Employee_Conversion_Audit__c();
+            audit.Candidate__c = candidateId;
+            audit.Employee__c = employeeId;
+            audit.Employment_Contract__c = contractId;
+            audit.Job_Application__c = jobApplicationId;
+            audit.Stage__c = stage;
+            audit.Status__c = status;
+            audit.Message__c = message;
+            audit.Error_Code__c = errorCode;
+            audit.Occurred_At__c = System.now();
+            audit.Source__c = 'EmployeeConversionService';
+            audit.Actor__c = UserInfo.getUserId();
+            insert audit;
+        } catch (Exception ex) {
+            // Never block conversion because audit logging failed.
         }
     }
 }

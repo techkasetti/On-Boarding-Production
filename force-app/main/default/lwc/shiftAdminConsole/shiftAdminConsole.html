@@ -1,0 +1,496 @@
+<template>
+    <div class="admin-shell">
+        <lightning-card title="Shift Admin Console" icon-name="standard:shift">
+            <div slot="actions">
+                <lightning-button-icon
+                    icon-name="utility:refresh"
+                    alternative-text="Refresh"
+                    title="Refresh"
+                    onclick={handleRefresh}
+                    disabled={isRefreshDisabled}
+                ></lightning-button-icon>
+            </div>
+
+            <template if:true={isLoading}>
+                <div class="loading-overlay">
+                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <div class="hero-strip slds-p-horizontal_medium slds-p-top_small slds-p-bottom_small">
+                <div class="hero-left">
+                    <p class="hero-title">Workforce Shift Operations</p>
+                    <p class="hero-subtitle">Create templates, schedule staff, and prevent overlaps in one flow.</p>
+                    <p class="hero-version">{componentVersion}</p>
+                </div>
+                <div class="hero-metrics">
+                    <div class="metric-chip">
+                        <span class="metric-chip-label">Templates</span>
+                        <span class="metric-chip-value">{templateCount}</span>
+                    </div>
+                    <div class="metric-chip">
+                        <span class="metric-chip-label">Assignments</span>
+                        <span class="metric-chip-value">{assignmentCount}</span>
+                    </div>
+                    <div class="metric-chip metric-chip-alert">
+                        <span class="metric-chip-label">Conflicts</span>
+                        <span class="metric-chip-value">{conflictCount}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="slds-p-horizontal_medium slds-p-bottom_small">
+                <div class="account-panel">
+                    <lightning-combobox
+                        name="employerAccount"
+                        label="Employer Account"
+                        value={employerAccountId}
+                        placeholder="Select employer"
+                        options={employerOptions}
+                        onchange={handleEmployerChange}
+                    ></lightning-combobox>
+                    <template if:false={hasEmployerAccounts}>
+                        <div class="slds-text-color_error slds-text-body_small slds-m-top_x-small">
+                            No employer accounts found. Create an Account first to enable shift setup.
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <lightning-tabset active-tab-value={activeTab} onactive={handleTabChange}>
+                <lightning-tab label="Templates" value="templates">
+                    <div class="section-block fade-in">
+                        <div class="section-header">
+                            <h3 class="slds-text-title_bold">Create Shift Template</h3>
+                            <p class="slds-text-body_small slds-text-color_weak">
+                                Define a reusable shift pattern for scheduling.
+                            </p>
+                        </div>
+
+                        <div class="quick-actions">
+                            <button class="quick-pill" data-type="Day" onclick={handleQuickTemplate}>Quick Day</button>
+                            <button class="quick-pill" data-type="Evening" onclick={handleQuickTemplate}>Quick Evening</button>
+                            <button class="quick-pill" data-type="Night" onclick={handleQuickTemplate}>Quick Night</button>
+                        </div>
+
+                        <div class="form-grid form-grid-primary">
+                            <lightning-input
+                                label="Template Name"
+                                value={templateForm.name}
+                                onchange={handleTemplateChange}
+                                oninput={handleTemplateChange}
+                                data-field="name"
+                                data-id="template-name"
+                                required
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-combobox
+                                label="Status"
+                                value={templateForm.status}
+                                options={templateStatusOptions}
+                                onchange={handleTemplateChange}
+                                data-field="status"
+                                required
+                                disabled={isLoading}
+                            ></lightning-combobox>
+
+                            <lightning-combobox
+                                label="Shift Type"
+                                value={templateForm.shiftType}
+                                options={shiftTypeOptions}
+                                onchange={handleTemplateChange}
+                                data-field="shiftType"
+                                required
+                                disabled={isLoading}
+                            ></lightning-combobox>
+
+                            <lightning-input
+                                type="time"
+                                label="Start Time"
+                                value={templateForm.startTime}
+                                onchange={handleTemplateChange}
+                                oninput={handleTemplateChange}
+                                data-field="startTime"
+                                data-id="template-start"
+                                required
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-input
+                                type="time"
+                                label="End Time"
+                                value={templateForm.endTime}
+                                onchange={handleTemplateChange}
+                                oninput={handleTemplateChange}
+                                data-field="endTime"
+                                data-id="template-end"
+                                required
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-input
+                                type="number"
+                                label="Break Minutes"
+                                value={templateForm.breakMinutes}
+                                onchange={handleTemplateChange}
+                                oninput={handleTemplateChange}
+                                data-field="breakMinutes"
+                                min="0"
+                                max="240"
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-combobox
+                                label="Recurrence"
+                                value={templateForm.recurrence}
+                                options={recurrenceOptions}
+                                onchange={handleTemplateChange}
+                                data-field="recurrence"
+                                disabled={isLoading}
+                            ></lightning-combobox>
+                        </div>
+
+                        <div class="template-layout-secondary">
+                            <div class="form-grid form-grid-secondary">
+                            <lightning-input
+                                type="number"
+                                label="Max Headcount"
+                                value={templateForm.maxHeadcount}
+                                onchange={handleTemplateChange}
+                                oninput={handleTemplateChange}
+                                data-field="maxHeadcount"
+                                min="1"
+                                max="500"
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-combobox
+                                label="Required Skill"
+                                value={templateForm.requiredSkill}
+                                options={requiredSkillOptions}
+                                onchange={handleTemplateChange}
+                                data-field="requiredSkill"
+                                disabled={isLoading}
+                            ></lightning-combobox>
+
+                            <lightning-input
+                                type="checkbox"
+                                label="Compliance Required"
+                                checked={templateForm.complianceRequired}
+                                onchange={handleTemplateCheckbox}
+                                data-field="complianceRequired"
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-textarea
+                                label="Notes"
+                                value={templateForm.notes}
+                                onchange={handleTemplateChange}
+                                oninput={handleTemplateChange}
+                                data-field="notes"
+                                disabled={isLoading}
+                            ></lightning-textarea>
+                            </div>
+
+                            <div class="days-panel">
+                                <div class="days-panel-header">
+                                    <span class="days-panel-title">Days Of Week</span>
+                                    <span class="days-panel-subtitle">Choose recurring days</span>
+                                </div>
+                                <div class="days-actions">
+                                    <button class="days-action-btn" onclick={handleSelectWeekdays} disabled={isLoading}>Weekdays</button>
+                                    <button class="days-action-btn" onclick={handleSelectAllDays} disabled={isLoading}>All Days</button>
+                                    <button class="days-action-btn days-action-btn_clear" onclick={handleClearDays} disabled={isLoading}>Clear</button>
+                                </div>
+                                <div class="day-chip-grid">
+                                    <template for:each={dayChips} for:item="day">
+                                        <button
+                                            key={day.value}
+                                            class={day.className}
+                                            data-value={day.value}
+                                            onclick={handleDayToggle}
+                                            aria-pressed={day.selected}
+                                            disabled={isLoading}
+                                        >
+                                            {day.label}
+                                        </button>
+                                    </template>
+                                </div>
+                                <p class="days-summary">{selectedDaysSummary}</p>
+                            </div>
+                        </div>
+
+                        <div class="action-row">
+                            <lightning-button
+                                label="Save Template"
+                                variant="brand"
+                                onclick={handleSaveTemplate}
+                                disabled={templateSaveDisabled}
+                            ></lightning-button>
+                        </div>
+                    </div>
+
+                    <div class="section-block fade-in">
+                        <div class="section-header">
+                            <h3 class="slds-text-title_bold">Recent Templates</h3>
+                        </div>
+                        <template if:true={hasTemplateRows}>
+                            <lightning-datatable
+                                key-field="templateId"
+                                data={templateRows}
+                                columns={templateColumns}
+                                onrowaction={handleTemplateRowAction}
+                                hide-checkbox-column
+                            ></lightning-datatable>
+                        </template>
+                        <template if:false={hasTemplateRows}>
+                            <div class="empty-state">No recent templates for the selected employer account.</div>
+                        </template>
+                    </div>
+                </lightning-tab>
+
+                <lightning-tab label="Assignments" value="assignments">
+                    <div class="section-block fade-in">
+                        <div class="section-header">
+                            <h3 class="slds-text-title_bold">Create Shift Assignment</h3>
+                            <p class="slds-text-body_small slds-text-color_weak">
+                                Assign employees to a scheduled shift.
+                            </p>
+                        </div>
+
+                        <div class="form-grid">
+                            <lightning-combobox
+                                label="Employee"
+                                value={assignmentForm.employeeId}
+                                options={employeeOptions}
+                                onchange={handleAssignmentChange}
+                                data-field="employeeId"
+                                required
+                                disabled={isLoading}
+                            ></lightning-combobox>
+
+                            <lightning-combobox
+                                label="Template"
+                                value={assignmentForm.templateId}
+                                options={templateOptions}
+                                onchange={handleTemplateSelect}
+                                data-field="templateId"
+                                disabled={isLoading}
+                            ></lightning-combobox>
+
+                            <lightning-input
+                                type="date"
+                                label="Shift Date"
+                                value={assignmentForm.shiftDate}
+                                onchange={handleAssignmentChange}
+                                oninput={handleAssignmentChange}
+                                data-field="shiftDate"
+                                data-id="assignment-date"
+                                required
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-input
+                                type="time"
+                                label="Start Time"
+                                value={assignmentForm.startTime}
+                                onchange={handleAssignmentChange}
+                                oninput={handleAssignmentChange}
+                                data-field="startTime"
+                                data-id="assignment-start"
+                                required
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-input
+                                type="time"
+                                label="End Time"
+                                value={assignmentForm.endTime}
+                                onchange={handleAssignmentChange}
+                                oninput={handleAssignmentChange}
+                                data-field="endTime"
+                                data-id="assignment-end"
+                                required
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-combobox
+                                label="Status"
+                                value={assignmentForm.status}
+                                options={assignmentStatusOptions}
+                                onchange={handleAssignmentChange}
+                                data-field="status"
+                                required
+                                disabled={isLoading}
+                            ></lightning-combobox>
+
+                            <lightning-input
+                                label="Location"
+                                value={assignmentForm.locationName}
+                                onchange={handleAssignmentChange}
+                                oninput={handleAssignmentChange}
+                                data-field="locationName"
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-textarea
+                                label="Notes"
+                                value={assignmentForm.notes}
+                                onchange={handleAssignmentChange}
+                                oninput={handleAssignmentChange}
+                                data-field="notes"
+                                disabled={isLoading}
+                            ></lightning-textarea>
+                        </div>
+
+                        <template if:true={conflictBanner}>
+                            <div class={conflictBannerClass}>
+                                <lightning-icon icon-name={conflictIcon} size="small"></lightning-icon>
+                                <div>
+                                    <p class="conflict-title">{conflictTitle}</p>
+                                    <p class="conflict-message">{conflictBanner}</p>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div class="action-row">
+                            <lightning-button
+                                label="Save Assignment"
+                                variant="brand"
+                                onclick={handleSaveAssignment}
+                                disabled={assignmentSaveDisabled}
+                            ></lightning-button>
+                        </div>
+                    </div>
+
+                    <div class="section-block fade-in">
+                        <div class="section-header">
+                            <h3 class="slds-text-title_bold">Assignments (Date Range)</h3>
+                        </div>
+                        <div class="filter-row">
+                            <lightning-input
+                                type="date"
+                                label="Start"
+                                value={assignmentFilter.startDate}
+                                onchange={handleFilterChange}
+                                data-field="startDate"
+                                disabled={isLoading}
+                            ></lightning-input>
+                            <lightning-input
+                                type="date"
+                                label="End"
+                                value={assignmentFilter.endDate}
+                                onchange={handleFilterChange}
+                                data-field="endDate"
+                                disabled={isLoading}
+                            ></lightning-input>
+                            <lightning-button
+                                label="Apply"
+                                onclick={handleFilterApply}
+                                disabled={isLoading}
+                            ></lightning-button>
+                        </div>
+                        <template if:true={hasAssignmentRows}>
+                            <lightning-datatable
+                                key-field="assignmentId"
+                                data={assignmentRows}
+                                columns={assignmentColumns}
+                                hide-checkbox-column
+                            ></lightning-datatable>
+                        </template>
+                        <template if:false={hasAssignmentRows}>
+                            <div class="empty-state">No assignments found for the current filter.</div>
+                        </template>
+                    </div>
+                </lightning-tab>
+
+                <lightning-tab label="Guided Scheduling" value="guided">
+                    <div class="section-block fade-in">
+                        <div class="section-header">
+                            <h3 class="slds-text-title_bold">Conflict Check</h3>
+                            <p class="slds-text-body_small slds-text-color_weak">
+                                Validate a proposed shift before assigning.
+                            </p>
+                        </div>
+
+                        <div class="form-grid">
+                            <lightning-combobox
+                                label="Employee"
+                                value={guidedForm.employeeId}
+                                options={employeeOptions}
+                                onchange={handleGuidedChange}
+                                data-field="employeeId"
+                                disabled={isLoading}
+                            ></lightning-combobox>
+
+                            <lightning-input
+                                type="date"
+                                label="Shift Date"
+                                value={guidedForm.shiftDate}
+                                onchange={handleGuidedChange}
+                                oninput={handleGuidedChange}
+                                data-field="shiftDate"
+                                data-id="guided-date"
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-input
+                                type="time"
+                                label="Start Time"
+                                value={guidedForm.startTime}
+                                onchange={handleGuidedChange}
+                                oninput={handleGuidedChange}
+                                data-field="startTime"
+                                data-id="guided-start"
+                                disabled={isLoading}
+                            ></lightning-input>
+
+                            <lightning-input
+                                type="time"
+                                label="End Time"
+                                value={guidedForm.endTime}
+                                onchange={handleGuidedChange}
+                                oninput={handleGuidedChange}
+                                data-field="endTime"
+                                data-id="guided-end"
+                                disabled={isLoading}
+                            ></lightning-input>
+                        </div>
+
+                        <div class="action-row">
+                            <lightning-button
+                                label="Check Conflicts"
+                                variant="brand"
+                                onclick={handleConflictCheck}
+                                disabled={guidedCheckDisabled}
+                            ></lightning-button>
+                        </div>
+
+                        <template if:true={guidedConflictMessage}>
+                            <div class={guidedBannerClass}>
+                                <lightning-icon icon-name={guidedIcon} size="small"></lightning-icon>
+                                <div>
+                                    <p class="conflict-title">{guidedTitle}</p>
+                                    <p class="conflict-message">{guidedConflictMessage}</p>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template if:true={guidedConflicts.length}>
+                            <div class="section-header">
+                                <h3 class="slds-text-title_bold">Conflicting Shifts</h3>
+                            </div>
+                            <lightning-datatable
+                                key-field="assignmentId"
+                                data={guidedConflicts}
+                                columns={assignmentColumns}
+                                hide-checkbox-column
+                            ></lightning-datatable>
+                        </template>
+                    </div>
+                </lightning-tab>
+            </lightning-tabset>
+        </lightning-card>
+    </div>
+</template>

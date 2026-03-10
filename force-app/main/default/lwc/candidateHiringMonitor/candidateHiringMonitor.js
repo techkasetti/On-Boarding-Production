@@ -54,6 +54,19 @@ export default class CandidateHiringMonitor extends LightningElement {
         return this.snapshot?.averagePendingAgeDays ?? 0;
     }
 
+    get lastFailureText() {
+        if (!this.snapshot?.lastConversionFailureMessage) {
+            return 'None';
+        }
+        return this.snapshot.lastConversionFailureMessage;
+    }
+
+    get lastFailureAtText() {
+        return this.snapshot?.lastConversionFailureAt
+            ? new Date(this.snapshot.lastConversionFailureAt).toLocaleString()
+            : '';
+    }
+
     async handleRefresh() {
         if (this.wiredSnapshotResult) {
             await refreshApex(this.wiredSnapshotResult);

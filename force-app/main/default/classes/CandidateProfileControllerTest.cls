@@ -1,6 +1,29 @@
 @IsTest
 private class CandidateProfileControllerTest {
     private static Integer candidateCounter = 0;
+    private static final String INTELLIGENT_RESUME_PARSING_FEATURE = 'Intelligent Resume Parsing';
+
+    private static void upsertResumeParsingFeature(Boolean isActive) {
+        List<AIFeature__c> existing = [
+            SELECT Id
+            FROM AIFeature__c
+            WHERE Name__c = :INTELLIGENT_RESUME_PARSING_FEATURE
+            LIMIT 1
+        ];
+
+        if (existing.isEmpty()) {
+            insert new AIFeature__c(
+                Name__c = INTELLIGENT_RESUME_PARSING_FEATURE,
+                Description__c = 'Controls intelligent resume parsing',
+                IsActive__c = isActive
+            );
+        } else {
+            update new AIFeature__c(
+                Id = existing[0].Id,
+                IsActive__c = isActive
+            );
+        }
+    }
 
     private static Candidate__c createCandidate() {
         candidateCounter++;
@@ -166,6 +189,7 @@ private class CandidateProfileControllerTest {
 
     @IsTest
     static void testDocumentsResumeAndNegativePaths() {
+        upsertResumeParsingFeature(true);
         Candidate__c candidate = createCandidate();
 
         License_Certification__c license = new License_Certification__c(
@@ -263,6 +287,47 @@ private class CandidateProfileControllerTest {
         }
 
         System.assertEquals(0, CandidateProfileController.getLicenseDocuments(null).size());
+    }
+
+    @IsTest
+    static void testGetCandidateResumeInfo_UsesAIFeatureFlag() {
+        Candidate__c candidate = createCandidate();
+
+        upsertResumeParsingFeature(false);
+        Map<String, Object> disabledInfo = CandidateProfileController.getCandidateResumeInfo(candidate.Id);
+        System.assertEquals(false, (Boolean) disabledInfo.get('useAiParsing'));
+
+        upsertResumeParsingFeature(true);
+        Map<String, Object> enabledInfo = CandidateProfileController.getCandidateResumeInfo(candidate.Id);
+        System.assertEquals(true, (Boolean) enabledInfo.get('useAiParsing'));
+    }
+
+    @IsTest
+    static void testDeleteCandidateResume() {
+        Candidate__c candidate = createCandidate();
+
+        ContentVersion candidateResume = new ContentVersion(
+            Title = 'DeleteMeResume',
+            PathOnClient = 'DeleteMeResume.pdf',
+            VersionData = Blob.valueOf('resume'),
+            FirstPublishLocationId = candidate.Id,
+            IsMajorVersion = true
+        );
+        insert candidateResume;
+
+        Test.startTest();
+        CandidateProfileController.deleteCandidateResume(candidate.Id);
+        Map<String, Object> resumeInfo = CandidateProfileController.getCandidateResumeInfo(candidate.Id);
+        Test.stopTest();
+
+        Candidate__c updated = [
+            SELECT Resume_Status__c, S3_Resume_URL__c
+            FROM Candidate__c
+            WHERE Id = :candidate.Id
+        ];
+        System.assertEquals(false, updated.Resume_Status__c);
+        System.assertEquals(null, updated.S3_Resume_URL__c);
+        System.assertEquals(false, (Boolean) resumeInfo.get('hasResume'));
     }
 
     @IsTest

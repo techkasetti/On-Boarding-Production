@@ -1,0 +1,10 @@
+List<SObject> templates = Database.query('SELECT Id, Name, Template_Status__c, Start_Time__c, End_Time__c FROM Shift_Template__c ORDER BY CreatedDate DESC LIMIT 20');
+System.debug('TEMPLATE_ROWS=' + JSON.serialize(templates));
+List<SObject> shifts = Database.query('SELECT Id, Name, Assignment_Status__c, Shift_Date__c, Start_Time__c, End_Time__c FROM Shift_Assignment__c ORDER BY CreatedDate DESC LIMIT 20');
+System.debug('SHIFT_ROWS=' + JSON.serialize(shifts));
+List<SObject> leaves = Database.query('SELECT Id, Name, Status__c, Start_Date__c, End_Date__c FROM Leave_Request__c ORDER BY CreatedDate DESC LIMIT 20');
+System.debug('LEAVE_ROWS=' + JSON.serialize(leaves));
+List<SObject> attendance = Database.query('SELECT Id, Name, Verification_Status__c, Anomaly_Flag__c, Check_In__c FROM Attendance__c ORDER BY CreatedDate DESC LIMIT 20');
+System.debug('ATTENDANCE_ROWS=' + JSON.serialize(attendance));
+List<SObject> caseAssignments = Database.query('SELECT Id, Name, Assignment_Status__c FROM Case_Assignment__c ORDER BY CreatedDate DESC LIMIT 20');
+System.debug('CASE_ASSIGN_ROWS=' + JSON.serialize(caseAssignments));
